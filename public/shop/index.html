@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assets — Kuro Labs</title>
+<meta name="description" content="VRChat props and decor packs for PC and Quest.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+</head><body>
+<header class="bar"><div class="wrap">
+  <a class="barbrand" href="/"><img src="/assets/img/emblem.webp" alt="" width="440" height="641"><span>Kuro Labs</span></a>
+  <nav><a href="/about/">About</a><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/" aria-current="page">Shop</a><a href="/contact/">Contact</a></nav>
+</div></header>
+
+<main class="wrap">
+  <p class="eyebrow">For sale</p>
+  <h1 class="pagetitle">Assets</h1>
+  <p class="lede">VRChat props and decor, built for PC and Quest. Click one to read what
+     is in it; buying happens on Gumroad.</p>
+  <div class="cards" id="grid"></div>
+  <div class="todo"><b>To finish</b> — product images, the Jinxxy link, and the
+     "Aestetic" &rarr; "Aesthetic" title fix on both platforms.</div>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sheetName">
+    <button class="sheet__x" aria-label="Close">&times;</button>
+    <div class="sheet__shot" id="sheetShot"></div>
+    <h2 id="sheetName"></h2>
+    <p class="sheet__price" id="sheetPrice"></p>
+    <p id="sheetLong"></p>
+    <table id="sheetSpecs"></table>
+    <div class="btn-row" id="sheetBuy"></div>
+    <p class="muted" style="font-size:12.5px;margin-top:14px">Checkout is handled by Gumroad. You will leave this site to pay.</p>
+  </div>
+</div>
+<script>
+let DATA=[];
+const sheet=document.getElementById('sheet');
+fetch('/shop/products.json').then(r=>r.json()).then(d=>{
+  DATA=d.products;
+  document.getElementById('grid').innerHTML=DATA.map((p,i)=>`
+    <button class="card" data-i="${i}">
+      <span class="num">${p.price}</span>
+      <h3>${p.name}</h3><p>${p.short}</p>
+      <span class="go">Details →</span>
+    </button>`).join('');
+  document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>openSheet(+b.dataset.i));
+});
+function openSheet(i){
+  const p=DATA[i];
+  document.getElementById('sheetShot').innerHTML=p.img?`<img src="${p.img}" alt="">`:'<span>no image yet</span>';
+  document.getElementById('sheetName').textContent=p.name;
+  document.getElementById('sheetPrice').textContent=p.price;
+  document.getElementById('sheetLong').textContent=p.long;
+  document.getElementById('sheetSpecs').innerHTML=p.specs.map(s=>`<tr><th>${s[0]}</th><td>${s[1]}</td></tr>`).join('');
+  document.getElementById('sheetBuy').innerHTML=
+    `<a class="btn primary" href="${p.buy}" rel="noopener">Head to buy</a>`+
+    (p.buy2?`<a class="btn" href="${p.buy2}" rel="noopener">Jinxxy</a>`:'');
+  sheet.hidden=false; document.body.style.overflow='hidden';
+}
+function closeSheet(){ sheet.hidden=true; document.body.style.overflow='' }
+sheet.onclick=e=>{ if(e.target===sheet||e.target.classList.contains('sheet__x')) closeSheet() };
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet() });
+</script><footer class="site"><div class="wrap">
+  <span>© <span id="y"></span> Kuro Labs</span>
+  <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+<script>/* internal notes: visit any page with ?draft=1 to reveal them */
+if(location.search.includes('draft'))document.body.classList.add('draft')</script>
+</body></html>

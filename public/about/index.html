@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About — Kuro Labs</title>
+<meta name="description" content="Jiří Fikejs — custom software, AI assistants, 3D and VR assets, web, games.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+</head><body>
+<header class="bar"><div class="wrap">
+  <a class="barbrand" href="/"><img src="/assets/img/emblem.webp" alt="" width="440" height="641"><span>Kuro Labs</span></a>
+  <nav><a href="/about/" aria-current="page">About</a><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></header>
+
+<main class="wrap">
+  <p class="eyebrow">Who</p>
+  <h1 class="pagetitle">About</h1>
+  <div class="bio" style="margin:0 0 52px">
+    <p>Jiří, or Kuro to most people. I build things that probably shouldn't exist and then
+       make them work anyway: software that runs on my own machine, assistants that remember,
+       props with unwholesome contents, and games my friends can't stop arguing over.</p>
+    <p>Most of it starts as a stupid idea at two in the morning. Some of it ends up here.
+       If you want something built, I'd rather tell you a job is out of my depth than take
+       your money and find out halfway.</p>
+  </div>
+
+  <section>
+    <h2>What I do</h2>
+    <div class="cards four">
+      <div class="card"><span class="num">I</span><h3>Software &amp; AI assistants</h3>
+        <p>Tools built for one person's actual workflow. Including assistants that run
+           locally, keep their own memory, and answer to you rather than a subscription.</p></div>
+      <div class="card"><span class="num">II</span><h3>3D &amp; VR assets</h3>
+        <p>Modelled in Blender, optimised properly. Props and decor for VRChat on PC and
+           Quest, or standalone models.</p></div>
+      <div class="card"><span class="num">III</span><h3>Web design</h3>
+        <p>Small, fast, unique sites. No template you've seen on forty other pages.</p></div>
+      <div class="card"><span class="num">IV</span><h3>Games</h3>
+        <p>Browser multiplayer that works on a phone in a Discord call. No accounts,
+           no install.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Elsewhere</h2>
+    <div class="btn-row">
+      <a class="btn" href="/projects/">See the projects</a>
+      <a class="btn" href="/games/">Play something</a>
+      <a class="btn primary" href="/contact/">Get in touch</a>
+    </div>
+  </section>
+</main><footer class="site"><div class="wrap">
+  <span>© <span id="y"></span> Kuro Labs</span>
+  <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+<script>/* internal notes: visit any page with ?draft=1 to reveal them */
+if(location.search.includes('draft'))document.body.classList.add('draft')</script>
+</body></html>

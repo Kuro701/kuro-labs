@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Games — Kuro Labs</title>
+<meta name="description" content="Free browser party games. No account, no install, nothing paywalled.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+</head><body>
+<header class="bar"><div class="wrap">
+  <a class="barbrand" href="/"><img src="/assets/img/emblem.webp" alt="" width="440" height="641"><span>Kuro Labs</span></a>
+  <nav><a href="/about/">About</a><a href="/games/" aria-current="page">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></header>
+
+<main class="wrap">
+  <p class="eyebrow">Play</p>
+  <h1 class="pagetitle">Games</h1>
+  <p class="lede">Free, browser-based, no account needed. Make a room, send the code to your
+     friends, play. Nothing here is or will be paywalled.</p>
+  <div class="cards" id="list"></div>
+  <p class="muted" id="empty" hidden>Could not load the games list.</p>
+  <div class="todo"><b>Pending</b> — these still live on workers.dev. Moving each client to
+     /games/&lt;slug&gt;/ on this domain makes them same-origin (see the hub plan); an iframe
+     would break the reconnect logic via third-party storage partitioning.</div>
+</main>
+<script>
+fetch('/games/games.json').then(r=>r.json()).then(d=>{
+  document.getElementById('list').innerHTML = d.games.map(g=>{
+    const live = g.status==='live' && g.url;
+    const badge = live ? '<span class="badge live">Live</span>'
+                       : '<span class="badge wip">In development</span>';
+    const meta = [g.players+' players', g.language].filter(Boolean).join(' · ');
+    const inner = `<h3>${g.title} ${badge}</h3><p>${g.blurb}</p>
+        <p class="muted" style="margin-top:10px;font-size:13.5px">${meta}</p>
+        <span class="go">${live?'Play →':'Coming soon'}</span>`;
+    return live ? `<a class="card" href="${g.url}">${inner}</a>`
+                : `<div class="card" style="opacity:.6">${inner}</div>`;
+  }).join('');
+}).catch(()=>{document.getElementById('empty').hidden=false});
+</script><footer class="site"><div class="wrap">
+  <span>© <span id="y"></span> Kuro Labs</span>
+  <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+<script>/* internal notes: visit any page with ?draft=1 to reveal them */
+if(location.search.includes('draft'))document.body.classList.add('draft')</script>
+</body></html>

@@ -1,0 +1,89 @@
+{
+ "_comment": "Add a project = one entry here. The page renders itself from this file.",
+ "projects": [
+  {
+   "slug": "metatron",
+   "name": "Metatron",
+   "tag": "3D pipeline",
+   "what": "A local image-to-3D forge. Feed it one reference photo, get back a textured mesh.",
+   "does": [
+    "Runs Hunyuan3D locally on a single GPU",
+    "Orchestrates its own VRAM so a 12GB card can host the engine and an LLM without either dying",
+    "Queue, live forge log, in-browser preview of the result",
+    "Exports textured GLB at up to 100k tris"
+   ],
+   "stack": [
+    "Python",
+    "CUDA",
+    "Hunyuan3D",
+    "Local web UI"
+   ],
+   "status": "in use",
+   "img": null,
+   "link": null
+  },
+  {
+   "slug": "cloe",
+   "name": "Cloe",
+   "tag": "AI assistant",
+   "what": "A personal AI assistant that runs on my own machine and keeps its own memory.",
+   "does": [
+    "Local model, no subscription, no data leaving the machine",
+    "Persistent memory with real timestamps — she says 'I don't know' rather than inventing one",
+    "Desktop overlay UI built in Tauri",
+    "Log watching and self-diagnostics"
+   ],
+   "stack": [
+    "Python",
+    "Flask",
+    "Tauri",
+    "Svelte"
+   ],
+   "status": "in development",
+   "img": null,
+   "link": null
+  },
+  {
+   "slug": "mytheder",
+   "name": "Mytheder / HELLFIRE",
+   "tag": "Multiplayer game",
+   "what": "A Czech party card game, rebuilt from an abandoned repo and re-skinned for two different Discord communities.",
+   "does": [
+    "Private rooms, five-character join codes, no accounts",
+    "1016 cards across five themed packs, loaded from JSON — no database",
+    "Chat, reconnect with backoff, rooms held open 90s for dropped players",
+    "Whole theme is three colour tokens: re-skinning is a config change"
+   ],
+   "stack": [
+    "Svelte",
+    "TypeScript",
+    "WebSocket",
+    "Cloudflare",
+    "Render"
+   ],
+   "status": "live",
+   "img": null,
+   "link": "/games/"
+  },
+  {
+   "slug": "monkey-paw",
+   "name": "Monkey Paw",
+   "tag": "Multiplayer game",
+   "what": "One player makes a wish. Everyone else writes the catch that makes them regret it.",
+   "does": [
+    "Free text instead of a deck — nothing ever runs out",
+    "A monkey's paw that curls one finger per wish spent",
+    "Czech or English, chosen per room",
+    "Built on the same engine lessons as Mytheder"
+   ],
+   "stack": [
+    "Svelte",
+    "TypeScript",
+    "WebSocket"
+   ],
+   "status": "in development",
+   "img": null,
+   "link": null
+  }
+ ]
+}

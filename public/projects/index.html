@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Projects — Kuro Labs</title>
+<meta name="description" content="Things I have built: local AI, a 3D pipeline, multiplayer games.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+</head><body>
+<header class="bar"><div class="wrap">
+  <a class="barbrand" href="/"><img src="/assets/img/emblem.webp" alt="" width="440" height="641"><span>Kuro Labs</span></a>
+  <nav><a href="/about/">About</a><a href="/games/">Games</a><a href="/projects/" aria-current="page">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></header>
+
+<main class="wrap">
+  <p class="eyebrow">The work</p>
+  <h1 class="pagetitle">Projects</h1>
+  <p class="lede">Everything here I actually built and actually use. Where something is
+     unfinished it says so.</p>
+  <div class="repos" id="list"></div>
+  <div class="todo" id="noimg"><b>Missing</b> — none of these have a screenshot yet.
+     One image each (a UI shot, a render, a screengrab) turns this page from a list into a portfolio.</div>
+</main>
+<script>
+fetch('/projects/projects.json').then(r=>r.json()).then(d=>{
+  document.getElementById('list').innerHTML = d.projects.map(p=>`
+    <article class="repo">
+      <div class="repo__shot">${p.img?`<img src="${p.img}" alt="${p.name}">`:'<span>no image yet</span>'}</div>
+      <div class="repo__body">
+        <h2>${p.name} <span class="badge ${p.status==='live'?'live':'wip'}">${p.status}</span></h2>
+        <p class="repo__tag">${p.tag}</p>
+        <p class="repo__what">${p.what}</p>
+        <ul>${p.does.map(x=>`<li>${x}</li>`).join('')}</ul>
+        <p class="repo__stack">${p.stack.map(s=>`<span>${s}</span>`).join('')}</p>
+        ${p.link?`<a class="btn" href="${p.link}">Open</a>`:''}
+      </div>
+    </article>`).join('');
+});
+</script><footer class="site"><div class="wrap">
+  <span>© <span id="y"></span> Kuro Labs</span>
+  <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+<script>/* internal notes: visit any page with ?draft=1 to reveal them */
+if(location.search.includes('draft'))document.body.classList.add('draft')</script>
+</body></html>

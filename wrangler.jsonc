@@ -1,0 +1,12 @@
+{
+  // Static site — no Worker script, Cloudflare just serves the files in public/.
+  "name": "kuro-labs",
+  "compatibility_date": "2026-08-24",
+  "assets": {
+    "directory": "./public/",
+    // /about/ and /about both resolve to /about/index.html
+    "html_handling": "auto-trailing-slash",
+    // serve our own themed 404 instead of Cloudflare's default
+    "not_found_handling": "404-page"
+  }
+}

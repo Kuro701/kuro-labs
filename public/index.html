@@ -1,35 +1,61 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kuro_Labs</title>
+<title>Kuro Labs — custom software, 3D, web and games</title>
 <meta name="description" content="Custom software, AI assistants, 3D and VR assets, web design and browser games. Built by Jiří Fikejs.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&family=UnifrakturMaguntia&family=Cinzel+Decorative:wght@700&family=Metal+Mania&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
 <link rel="stylesheet" href="/assets/style.css">
 </head><body>
-<header class="site"><div class="wrap">
-  <a class="brand" href="/">KURO_LABS</a>
-  <nav class="site"><a href="/games/">Games</a><a href="/shop/">Shop</a><a href="/commissions/">Commissions</a><a href="/about/">About</a></nav>
-</div></header>
+<section class="hall" id="top">
+  <div class="hall__bg">
+    <picture>
+      <source media="(max-aspect-ratio:3/4)" srcset="/assets/img/hall-portrait.webp">
+      <source media="(max-width:1280px)" srcset="/assets/img/hall-wide@1280.webp">
+      <img src="/assets/img/hall-wide.webp" alt="" fetchpriority="high" decoding="async">
+    </picture>
+  </div>
+  <div class="hall__flicker"></div>
+  <div class="frame"><i></i><i></i><i></i><i></i></div>
+
+  <p class="ribbon">Welcome to <b>Kuro Labs</b></p>
+
+  <nav class="hallnav">
+    <a href="/" aria-current="page">Home</a>
+    <a href="/about/">About</a>
+    <a href="/games/">Games</a>
+    <span class="sigilwrap"><img class="sigil" src="/assets/img/emblem.webp" alt="Kuro Labs emblem" width="440" height="641"></span>
+    <a href="/projects/">Projects</a>
+    <a href="#services">Services</a>
+    <a href="/shop/">Shop</a>
+  </nav>
+
+  <div class="hall__mid">
+    <h1 class="mark">
+      <img src="/assets/img/wordmark.webp" alt="Kuro Labs" width="1400" height="471" fetchpriority="high">
+    </h1>
+    <p class="tagline">Exploring the <em>unknown</em>. Creating the <em>unseen</em>.</p>
+    <p class="enter"><a href="#services">Enter the Labs</a></p>
+  </div>
+
+  <p class="scrollcue">Scroll<span></span></p>
+</section>
 
 <div class="wrap">
 
-  <div class="hero">
-    <p class="kicker">Welcome to</p>
-    <h1>Kuro_Labs</h1>
-    <div class="rule"><span></span></div>
-
-    <div class="bio">
-      <p>Jiří, or Kuro to most people. I build things that probably shouldn't exist
-         and then make them work anyway: software that runs on my own machine, assistants that
-         remember, props with unwholesome contents, and games my friends can't stop
-         arguing over.</p>
-      <p>Most of it starts as a stupid idea at two in the morning. Some of it ends up
-         here. If you want something built, the four things below are what I actually
-         do — and I'd rather tell you a job is out of my depth than take your money
-         and find out halfway.</p>
-    </div>
+  <div class="bio" style="margin:78px auto 64px">
+    <p>Jiří, or Kuro to most people. I build things that probably shouldn't exist
+       and then make them work anyway: software that runs on my own machine, assistants
+       that remember, props with unwholesome contents, and games my friends can't stop
+       arguing over.</p>
+    <p>Most of it starts as a stupid idea at two in the morning. Some of it ends up
+       here. If you want something built, the four things below are what I actually do
+       — and I'd rather tell you a job is out of my depth than take your money and find
+       out halfway.</p>
   </div>
 
+  <span id="services"></span>
   <p class="eyebrow">What I do</p>
   <h2 class="sec-title">Four kinds of work</h2>
 
@@ -92,4 +118,6 @@
   <nav><a href="/games/">Games</a><a href="/shop/">Shop</a><a href="/commissions/">Commissions</a><a href="/about/">About</a></nav>
 </div></footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+<script>/* internal notes: visit any page with ?draft=1 to reveal them */
+if(location.search.includes('draft'))document.body.classList.add('draft')</script>
 </body></html>

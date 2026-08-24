@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contact — Kuro Labs</title>
+<meta name="description" content="How to reach Jiří Fikejs — commissions, questions, work.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+</head><body>
+<header class="bar"><div class="wrap">
+  <a class="barbrand" href="/"><img src="/assets/img/emblem.webp" alt="" width="440" height="641"><span>Kuro Labs</span></a>
+  <nav><a href="/about/">About</a><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/" aria-current="page">Contact</a></nav>
+</div></header>
+
+<main class="wrap">
+  <p class="eyebrow">Reach me</p>
+  <h1 class="pagetitle">Contact</h1>
+  <p class="lede">Commission enquiries, questions about an asset, or work — any of these
+     reach me. The first one is the fastest.</p>
+
+  <div class="cards three" id="contacts"></div>
+
+  <div class="todo"><b>To fill in</b> — decide which of these are public and give me the
+     handles: e-mail · Discord · VGen · GitHub · TikTok · Gumroad. Only list the ones you
+     will actually check; a dead contact link is worse than one fewer.</div>
+
+  <section style="margin-top:56px">
+    <h2>Commissions</h2>
+    <p class="muted" style="max-width:62ch">Custom VRChat props and world assets, modelled
+       in Blender and optimised for PC and Quest. Tiers, terms and turnaround are on the
+       commissions page.</p>
+    <div class="btn-row"><a class="btn primary" href="/commissions/">Rates and terms</a></div>
+  </section>
+</main>
+<script>
+// Placeholder rows, deliberately marked as such. Replace href and handle when Kuro
+// decides which are public — see the note above.
+const CONTACTS=[
+ {label:'E-mail',   handle:'not set yet', href:null},
+ {label:'Discord',  handle:'not set yet', href:null},
+ {label:'Gumroad',  handle:'rajcu.gumroad.com', href:'https://rajcu.gumroad.com'},
+ {label:'Jinxxy',   handle:'not set yet', href:null},
+ {label:'GitHub',   handle:'not set yet', href:null},
+ {label:'TikTok',   handle:'not set yet', href:null}
+];
+document.getElementById('contacts').innerHTML=CONTACTS.map(c=>{
+  const body=`<span class="num">${c.label}</span><h3>${c.handle}</h3>`;
+  return c.href?`<a class="card" href="${c.href}" rel="noopener">${body}<span class="go">Open →</span></a>`
+               :`<div class="card" style="opacity:.55">${body}<span class="go">Pending</span></div>`;
+}).join('');
+</script><footer class="site"><div class="wrap">
+  <span>© <span id="y"></span> Kuro Labs</span>
+  <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+<script>/* internal notes: visit any page with ?draft=1 to reveal them */
+if(location.search.includes('draft'))document.body.classList.add('draft')</script>
+</body></html>

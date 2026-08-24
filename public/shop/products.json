@@ -1,0 +1,29 @@
+{
+ "_comment": "Add a product = one entry. buy = the external checkout URL.",
+ "products": [
+  {
+   "slug": "gift-basket",
+   "name": "Aesthetic Gift Basket",
+   "price": "$10",
+   "short": "Cursed decor prop pack. Wholesome gift basket, absolutely unhinged contents.",
+   "long": "A decorative gift basket for VRChat worlds and avatars, filled with things nobody would actually gift. Built for PC and Quest, delivered as a unitypackage you drop straight into your project.",
+   "specs": [
+    [
+     "Platforms",
+     "PC and Quest"
+    ],
+    [
+     "Format",
+     "Unity package"
+    ],
+    [
+     "Contents",
+     "Basket plus contents as separate prefabs"
+    ]
+   ],
+   "img": null,
+   "buy": "https://rajcu.gumroad.com",
+   "buy2": null
+  }
+ ]
+}
