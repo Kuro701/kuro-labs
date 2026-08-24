@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
+<title>Games — Kuro_Labs</title>
+<link rel="stylesheet" href="/assets/style.css">
+</head><body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/">KURO_LABS</a>
+  <nav class="site"><a href="/games/">Games</a><a href="/shop/">Shop</a><a href="/commissions/">Commissions</a><a href="/about/">About</a></nav>
+</div></header>
+<main class="wrap">
+  <h1>Games</h1>
+  <p class="lede">Free, browser-based, no account needed. Make a room, send the code
+     to your friends, play. Nothing here is or will be paywalled.</p>
+  <div class="cards" id="list"></div>
+  <p class="muted" id="empty" hidden>Could not load the games list.</p>
+</main>
+<footer class="site"><div class="wrap">
+  <span>© <span id="y"></span> Kuro_Labs</span>
+  <nav><a href="/games/">Games</a><a href="/shop/">Shop</a><a href="/commissions/">Commissions</a><a href="/about/">About</a></nav>
+</div></footer>
+<script>document.getElementById("y").textContent=new Date().getFullYear()</script>
+</body></html>
+<script>
+// The list renders from games.json so adding a game never means editing this page.
+fetch('/games/games.json').then(r=>r.json()).then(d=>{
+  const el=document.getElementById('list');
+  el.innerHTML = d.games.map(g=>{
+    const live = g.status==='live' && g.url;
+    const badge = live ? '<span class="badge live">Live</span>'
+                       : '<span class="badge wip">In development</span>';
+    const meta = [g.players+' players', g.language].filter(Boolean).join(' · ');
+    const inner = `<h3>${g.title} ${badge}</h3><p>${g.blurb}</p>
+        <p class="muted" style="margin-top:10px;font-size:13.5px">${meta}</p>
+        <span class="go">${live?'Play →':'Coming soon'}</span>`;
+    return live ? `<a class="card" href="${g.url}">${inner}</a>`
+                : `<div class="card" style="opacity:.72">${inner}</div>`;
+  }).join('');
+}).catch(()=>{document.getElementById('empty').hidden=false});
+</script>

@@ -1,0 +1,35 @@
+{
+  "_comment": "Adding a game = drop a folder in /games/ (or point url at an external build) and add an entry here. The index page renders itself from this file — no HTML editing.",
+  "games": [
+    {
+      "slug": "mytheder",
+      "title": "Mytheder",
+      "blurb": "Czech Cards Against Humanity. Private rooms, five-character codes, five themed packs, 1016 cards.",
+      "url": "https://mytheder.jirka-fre.workers.dev",
+      "status": "live",
+      "players": "3–15",
+      "language": "Czech",
+      "thumb": null
+    },
+    {
+      "slug": "hellfire",
+      "title": "HELLFIRE Cards",
+      "blurb": "The same card game in its original red-and-ember skin, built for the HELLFIRE CZ/SK server.",
+      "url": "https://hellfirecards.jirka-fre.workers.dev",
+      "status": "live",
+      "players": "3–15",
+      "language": "Czech",
+      "thumb": null
+    },
+    {
+      "slug": "monkey-paw",
+      "title": "Monkey Paw",
+      "blurb": "One player makes a wish. Everyone else writes the catch that makes them regret it. Free text, no deck, nothing ever runs out.",
+      "url": null,
+      "status": "wip",
+      "players": "3–10",
+      "language": "Czech / English",
+      "thumb": null
+    }
+  ]
+}
