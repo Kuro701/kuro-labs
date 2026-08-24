@@ -1,16 +1,19 @@
 {
- "_comment": "Add a project = one entry here. The page renders itself from this file.",
+ "_comment": "Add a project = one entry. `detail` powers the click-through panel; omit it and the card just won't open.",
  "projects": [
   {
    "slug": "metatron",
    "name": "Metatron",
    "tag": "3D pipeline",
+   "status": "in use",
+   "img": null,
+   "link": null,
    "what": "A local image-to-3D forge. Feed it one reference photo, get back a textured mesh.",
    "does": [
-    "Runs Hunyuan3D locally on a single GPU",
-    "Orchestrates its own VRAM so a 12GB card can host the engine and an LLM without either dying",
-    "Queue, live forge log, in-browser preview of the result",
-    "Exports textured GLB at up to 100k tris"
+    "Runs Hunyuan3D locally on a single consumer GPU",
+    "Orchestrates its own VRAM so a 12GB card can host the forge and a language model without either dying",
+    "Job queue, live forge log, in-browser preview of the result",
+    "Exports textured GLB at up to 100k triangles"
    ],
    "stack": [
     "Python",
@@ -18,40 +21,135 @@
     "Hunyuan3D",
     "Local web UI"
    ],
-   "status": "in use",
-   "img": null,
-   "link": null
+   "detail": {
+    "intro": "Image-to-3D generation usually means uploading your reference to somebody else's GPU and waiting. Metatron runs the whole pipeline on one machine — background removal, generation, texture painting — and gives it a control room: a queue you can watch, a log that says what stage it is at, and a viewer to orbit the result before you keep it.",
+    "sections": [
+     {
+      "h": "The hard part was memory, not modelling",
+      "p": "A 12GB card cannot hold a 3D generation model and a language model at once. Metatron treats VRAM as a resource to be scheduled rather than hoped for: the engine can be pinned hot for a run of jobs, or released so the assistant can have the card back. When a forge dies mid-run the service notices on restart and marks the job failed instead of leaving it hanging forever."
+     },
+     {
+      "h": "Built to be watched",
+      "p": "Every forge reports elapsed time and current stage — removing background, generating, texturing — so a seven-minute job is legible rather than a spinner. Failures name what died and when.",
+      "bullets": [
+       "Queue with retry and discard per job",
+       "Per-job elapsed time and stage",
+       "In-browser mesh preview before approval",
+       "Output straight to GLB, ready for Blender"
+      ]
+     }
+    ],
+    "facts": [
+     [
+      "Runs on",
+      "One local GPU, no cloud"
+     ],
+     [
+      "Engine",
+      "Hunyuan3D"
+     ],
+     [
+      "Typical job",
+      "5–8 minutes"
+     ],
+     [
+      "Output",
+      "Textured GLB, up to 100k tris"
+     ]
+    ]
+   }
   },
   {
    "slug": "cloe",
    "name": "Cloe",
-   "tag": "AI assistant",
-   "what": "A personal AI assistant that runs on my own machine and keeps its own memory.",
-   "does": [
-    "Local model, no subscription, no data leaving the machine",
-    "Persistent memory with real timestamps — she says 'I don't know' rather than inventing one",
-    "Desktop overlay UI built in Tauri",
-    "Log watching and self-diagnostics"
-   ],
-   "stack": [
-    "Python",
-    "Flask",
-    "Tauri",
-    "Svelte"
-   ],
+   "tag": "AI companion stack",
    "status": "in development",
    "img": null,
-   "link": null
+   "link": null,
+   "what": "A local AI companion with persistent graph memory, an autonomous mind, and a transparent desktop presence.",
+   "does": [
+    "Graph memory of roughly 3,200 nodes and 29,000 connections across five typed trees",
+    "Confidence scoring with temporal decay, and a self-pruning compressor that protects core identity nodes",
+    "A per-pixel-transparent Tauri v2 orb that stays click-through where it is transparent",
+    "Researches on its own while idle — mood-driven behaviour that does not wait to be spoken to"
+   ],
+   "stack": [
+    "Python 3.12",
+    "Flask",
+    "Ollama",
+    "Tauri v2",
+    "JSON graph store",
+    "AGPL-3.0"
+   ],
+   "detail": {
+    "intro": "Cloe is not a chat window with a personality prompt on top. She is a stack: a Flask backend, three local models, a memory that is a graph rather than a transcript, and a desktop orb with real per-pixel transparency. Everything runs on one consumer GPU. Nothing is sent anywhere.",
+    "sections": [
+     {
+      "h": "Memory is a graph, and it forgets on purpose",
+      "p": "Roughly 3,200 nodes and 29,000 connections across five typed trees — knowledge, mood, personality, relationship, desire. Every node carries a confidence score that decays over time, so something reinforced once in April does not carry the same weight as something reinforced weekly.",
+      "bullets": [
+       "Five typed trees rather than one flat store",
+       "Confidence scoring with temporal decay",
+       "A compressor scores nodes on several factors and prunes with Jaccard similarity matching",
+       "Core identity nodes are protected from pruning — she cannot compress away who she is"
+      ]
+     },
+     {
+      "h": "Three models, each doing what it is good at",
+      "p": "Mistral-Nemo 12B for conversation, qwen2.5-coder for a separate coding workspace, moondream for vision — all hosted by a local Ollama instance and coordinated through one Flask backend. An image is described by the vision model first, then reacted to in character by the conversational one; what is in the picture and what she thinks about it stay separate jobs."
+     },
+     {
+      "h": "The orb is genuinely transparent",
+      "p": "Built with Tauri v2, using per-pixel transparency and coordinate mapping so clicks pass through the transparent regions to whatever is behind. She sits on the desktop rather than in a window."
+     },
+     {
+      "h": "She acts when nobody is talking to her",
+      "p": "Self-directed research during idle periods, mood-driven responses that are not replies to anything, a diary on a schedule, and a wake-word listener. There is also a Minecraft mod bridge that lets her participate in a game and make her own decisions in it.",
+      "bullets": [
+       "Idle research loop",
+       "Autonomous mood-driven behaviour",
+       "Minecraft mod bridge with independent decision-making",
+       "Raphael — a separate diagnostic service that watches logs for patterns"
+      ]
+     }
+    ],
+    "facts": [
+     [
+      "Runs on",
+      "One consumer GPU, fully local"
+     ],
+     [
+      "Memory",
+      "~3,200 nodes / ~29,000 connections"
+     ],
+     [
+      "Models",
+      "Mistral-Nemo 12B · qwen2.5-coder · moondream"
+     ],
+     [
+      "Frontend",
+      "Tauri v2, per-pixel transparent"
+     ],
+     [
+      "Licence",
+      "AGPL-3.0"
+     ]
+    ]
+   },
+   "repo": "https://github.com/Kuro701/project-cloe"
   },
   {
    "slug": "mytheder",
    "name": "Mytheder",
    "tag": "Multiplayer game",
+   "status": "live",
+   "img": null,
+   "link": "/games/mytheder/",
    "what": "A Czech party card game, rebuilt from an abandoned repo and given a new identity for a Discord community.",
    "does": [
     "Private rooms, five-character join codes, no accounts",
     "1016 cards across five themed packs, loaded from JSON — no database",
-    "Chat, reconnect with backoff, rooms held open 90s for dropped players",
+    "Chat, reconnect with backoff, rooms held open 90 seconds for dropped players",
     "Whole theme is three colour tokens: re-skinning is a config change"
    ],
    "stack": [
@@ -61,29 +159,95 @@
     "Cloudflare",
     "Render"
    ],
-   "status": "live",
-   "img": null,
-   "link": "/games/"
+   "detail": {
+    "intro": "The original author shut the project down and released the code. I rebuilt it: deleted the database, removed the dead accounts system, wrote the chat that was never finished, and re-skinned it for a Discord server that wanted its own version. It now runs as part of this site rather than on somebody's spare subdomain.",
+    "sections": [
+     {
+      "h": "The database was doing nothing",
+      "p": "The game only ever read cards from MySQL — three queries, no writes. All 1016 cards now load from JSON at boot and the entire database layer is gone. Adding cards is editing a file; there are no migrations."
+     },
+     {
+      "h": "Most of the work was failure handling",
+      "p": "The bugs that actually ruined games were never about rules.",
+      "bullets": [
+       "A one-second auth timeout was fine on localhost and killed every real connection through a proxy",
+       "One dropped socket ended everyone's game, because rooms were destroyed the moment they fell below three players",
+       "A small pack could run its prompt pile dry and take the room down with it",
+       "A player who dropped out of a full game was locked out by a headcount they were still part of"
+      ]
+     },
+     {
+      "h": "Re-skinnable by design",
+      "p": "The first build hard-coded one accent colour across ten components. Every colour now resolves from three tokens, so giving a new community its own version is a config change and four images rather than a hunt through the codebase."
+     }
+    ],
+    "facts": [
+     [
+      "Players",
+      "3–15"
+     ],
+     [
+      "Language",
+      "Czech"
+     ],
+     [
+      "Cards",
+      "1016 across five themed packs"
+     ],
+     [
+      "Cost to run",
+      "Free tier, no database"
+     ]
+    ]
+   },
+   "repo": "https://github.com/Kuro701/kpl"
   },
   {
    "slug": "monkey-paw",
    "name": "Monkey Paw",
    "tag": "Multiplayer game",
+   "status": "in development",
+   "img": null,
+   "link": null,
    "what": "One player makes a wish. Everyone else writes the catch that makes them regret it.",
    "does": [
     "Free text instead of a deck — nothing ever runs out",
-    "A monkey's paw that curls one finger per wish spent",
+    "A monkey's paw curls one finger per wish spent",
     "Czech or English, chosen per room",
-    "Built on the same engine lessons as Mytheder"
+    "Built on everything the card game taught me"
    ],
    "stack": [
     "Svelte",
     "TypeScript",
     "WebSocket"
    ],
-   "status": "in development",
-   "img": null,
-   "link": null
+   "detail": {
+    "intro": "A party game with no cards. The chooser writes a wish; everyone else writes the twist that ruins it; the chooser picks the one that hurt most. Because the content is typed rather than dealt, it never repeats and never runs out.",
+    "sections": [
+     {
+      "h": "Free text changes the failure modes",
+      "p": "A card game can always play a random card for someone who has gone quiet. You cannot autogenerate a person's joke — so a timed-out player gets a funny stock line instead of an empty slot, and three consecutive misses flips their paw over until they come back."
+     },
+     {
+      "h": "The paw is the clock, then it isn't",
+      "p": "Each player's paw closes a finger per wish they spend. Round count is fixed when the game starts, so somebody who wanders off ends with fingers still up — a visible record of having been away — rather than holding the game open forever."
+     }
+    ],
+    "facts": [
+     [
+      "Players",
+      "3–10"
+     ],
+     [
+      "Language",
+      "Czech or English, per room"
+     ],
+     [
+      "Status",
+      "Designed, not yet built"
+     ]
+    ]
+   }
   }
  ]
 }

@@ -321,3 +321,20 @@ button.card{border:0; text-align:left; font:inherit; cursor:pointer; width:100%}
 .sheet__price{margin:0 0 16px; color:rgb(var(--ember)); font-size:19px; font-family:var(--head)}
 .sheet__panel table{margin:18px 0 4px}
 .sheet__panel th{width:38%}
+
+/* ── project detail ──────────────────────────────────────────────── */
+.repo--open{cursor:pointer; transition:background .2s}
+.repo--open:hover{background:#180e0f}
+.repo--open:focus-visible{outline:2px solid rgb(var(--ember)); outline-offset:-2px}
+.repo--open:hover .repo__body h2{color:rgb(var(--ember))}
+.repo .go{display:inline-block; font-size:11.5px; letter-spacing:.2em;
+  text-transform:uppercase; color:rgb(var(--ember))}
+.sheet__panel--wide{max-width:760px; max-height:88vh; overflow:auto}
+.dtag{margin:0 0 4px; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:rgb(var(--ember))}
+.dintro{color:#cfc4c2; margin:14px 0 4px}
+.dsec{margin:26px 0 0}
+.dsec h3{font-family:var(--head); font-size:15px; letter-spacing:.16em; text-transform:uppercase;
+  color:rgb(var(--ember)); margin:0 0 8px; padding-bottom:8px; border-bottom:1px solid var(--rule)}
+.dsec p{margin:0 0 10px; color:#cfc4c2}
+.dsec ul{margin:0; padding-left:18px; color:var(--dust); font-size:14.6px}
+.dsec li{margin:0 0 5px}

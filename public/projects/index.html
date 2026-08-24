@@ -16,28 +16,93 @@
 <main class="wrap">
   <p class="eyebrow">The work</p>
   <h1 class="pagetitle">Projects</h1>
-  <p class="lede">Everything here I actually built and actually use. Where something is
-     unfinished it says so.</p>
+  <p class="lede">Everything here I actually built and actually use. Click one to read how
+     it works. Where something is unfinished it says so.</p>
   <div class="repos" id="list"></div>
-  <div class="todo" id="noimg"><b>Missing</b> — none of these have a screenshot yet.
-     One image each (a UI shot, a render, a screengrab) turns this page from a list into a portfolio.</div>
+  <div class="todo"><b>Missing</b> &mdash; none of these have a screenshot yet.
+     One image each turns this page from a list into a portfolio.</div>
 </main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet__panel sheet__panel--wide" role="dialog" aria-modal="true" aria-labelledby="dName">
+    <button class="sheet__x" aria-label="Close">&times;</button>
+    <p class="dtag" id="dTag"></p>
+    <h2 id="dName"></h2>
+    <p class="dintro" id="dIntro"></p>
+    <table id="dFacts"></table>
+    <div id="dSections"></div>
+    <div class="btn-row" id="dLinks"></div>
+  </div>
+</div>
+
 <script>
+let DATA = [];
+const sheet = document.getElementById('sheet');
+
 fetch('/projects/projects.json').then(r=>r.json()).then(d=>{
-  document.getElementById('list').innerHTML = d.projects.map(p=>`
-    <article class="repo">
+  DATA = d.projects;
+  document.getElementById('list').innerHTML = DATA.map((p,i)=>`
+    <article class="repo${p.detail?' repo--open':''}"${p.detail?` data-i="${i}" tabindex="0" role="button" aria-label="Read more about ${p.name}"`:''}>
       <div class="repo__shot">${p.img?`<img src="${p.img}" alt="${p.name}">`:'<span>no image yet</span>'}</div>
       <div class="repo__body">
         <h2>${p.name} <span class="badge ${p.status==='live'?'live':'wip'}">${p.status}</span></h2>
         <p class="repo__tag">${p.tag}</p>
         <p class="repo__what">${p.what}</p>
         <ul>${p.does.map(x=>`<li>${x}</li>`).join('')}</ul>
-        <p class="repo__stack">${p.stack.map(s=>`<span>${s}</span>`).join('')}</p>
-        ${p.link?`<a class="btn" href="${p.link}">Open</a>`:''}
+        <p class="repo__stack">${p.stack.map(t=>`<span>${t}</span>`).join('')}</p>
+        ${p.detail?'<span class="go">Read more &rarr;</span>':''}
       </div>
     </article>`).join('');
+
+  document.querySelectorAll('.repo--open').forEach(el=>{
+    const i = +el.dataset.i;
+    el.addEventListener('click', ()=>openProject(i));
+    el.addEventListener('keydown', e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openProject(i); }
+    });
+  });
+
+  // deep link: /projects/?p=cloe opens straight into that project
+  const want = new URLSearchParams(location.search).get('p');
+  if(want){ const i = DATA.findIndex(p=>p.slug===want); if(i>-1) openProject(i,true); }
 });
-</script><footer class="site"><div class="wrap">
+
+function openProject(i, silent){
+  const p = DATA[i], d = p.detail;
+  document.getElementById('dTag').textContent   = p.tag;
+  document.getElementById('dName').textContent  = p.name;
+  document.getElementById('dIntro').textContent = d.intro;
+  document.getElementById('dFacts').innerHTML =
+    (d.facts||[]).map(f=>`<tr><th>${f[0]}</th><td>${f[1]}</td></tr>`).join('');
+  document.getElementById('dSections').innerHTML = (d.sections||[]).map(sec=>`
+    <section class="dsec"><h3>${sec.h}</h3><p>${sec.p}</p>
+      ${sec.bullets?`<ul>${sec.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
+    </section>`).join('');
+  document.getElementById('dLinks').innerHTML =
+    (p.link?`<a class="btn primary" href="${p.link}">Open ${p.name}</a>`:'')+
+    (p.repo?`<a class="btn" href="${p.repo}" rel="noopener">Source on GitHub</a>`:'');
+  sheet.hidden = false;
+  sheet.querySelector('.sheet__panel').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  if(!silent) history.pushState({p:p.slug}, '', '?p='+p.slug);
+}
+function closeProject(push){
+  sheet.hidden = true;
+  document.body.style.overflow = '';
+  if(push !== false) history.pushState({}, '', location.pathname);
+}
+sheet.addEventListener('click', e=>{
+  if(e.target===sheet || e.target.classList.contains('sheet__x')) closeProject();
+});
+addEventListener('keydown', e=>{ if(e.key==='Escape' && !sheet.hidden) closeProject(); });
+addEventListener('popstate', ()=>{
+  const want = new URLSearchParams(location.search).get('p');
+  if(want){ const i = DATA.findIndex(p=>p.slug===want); if(i>-1) return openProject(i,true); }
+  closeProject(false);
+});
+</script>
+
+<footer class="site"><div class="wrap">
   <span>© <span id="y"></span> Kuro Labs</span>
   <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
 </div></footer>
