@@ -45,9 +45,9 @@
   },
   {
    "slug": "mytheder",
-   "name": "Mytheder / HELLFIRE",
+   "name": "Mytheder",
    "tag": "Multiplayer game",
-   "what": "A Czech party card game, rebuilt from an abandoned repo and re-skinned for two different Discord communities.",
+   "what": "A Czech party card game, rebuilt from an abandoned repo and given a new identity for a Discord community.",
    "does": [
     "Private rooms, five-character join codes, no accounts",
     "1016 cards across five themed packs, loaded from JSON — no database",
