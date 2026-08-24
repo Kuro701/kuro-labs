@@ -338,3 +338,6 @@ button.card{border:0; text-align:left; font:inherit; cursor:pointer; width:100%}
 .dsec p{margin:0 0 10px; color:#cfc4c2}
 .dsec ul{margin:0; padding-left:18px; color:var(--dust); font-size:14.6px}
 .dsec li{margin:0 0 5px}
+.dshot{margin:22px 0 0; padding:0}
+.dshot img{width:100%; display:block; border:1px solid var(--rule)}
+.dshot figcaption{margin-top:8px; font-size:13px; color:var(--dust)}

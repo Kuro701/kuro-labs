@@ -6,7 +6,7 @@
    "name": "Metatron",
    "tag": "3D pipeline",
    "status": "in use",
-   "img": null,
+   "img": "/assets/img/proj-metatron.webp",
    "link": null,
    "what": "A local image-to-3D forge. Feed it one reference photo, get back a textured mesh.",
    "does": [
@@ -64,7 +64,7 @@
    "name": "Cloe",
    "tag": "AI companion stack",
    "status": "in development",
-   "img": null,
+   "img": "/assets/img/proj-cloe.webp",
    "link": null,
    "what": "A local AI companion with persistent graph memory, an autonomous mind, and a transparent desktop presence.",
    "does": [
@@ -134,6 +134,12 @@
       "Licence",
       "AGPL-3.0"
      ]
+    ],
+    "shots": [
+     {
+      "src": "/assets/img/proj-cloe-stats.webp",
+      "cap": "Her own stats view: memory reactor, current mood, system pulse, and the five mind trees with live node counts."
+     }
     ]
    },
    "repo": "https://github.com/Kuro701/project-cloe"
@@ -143,7 +149,7 @@
    "name": "Mytheder",
    "tag": "Multiplayer game",
    "status": "live",
-   "img": null,
+   "img": "/assets/img/proj-mytheder.webp",
    "link": "/games/mytheder/",
    "what": "A Czech party card game, rebuilt from an abandoned repo and given a new identity for a Discord community.",
    "does": [

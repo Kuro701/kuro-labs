@@ -19,8 +19,7 @@
   <p class="lede">Everything here I actually built and actually use. Click one to read how
      it works. Where something is unfinished it says so.</p>
   <div class="repos" id="list"></div>
-  <div class="todo"><b>Missing</b> &mdash; none of these have a screenshot yet.
-     One image each turns this page from a list into a portfolio.</div>
+  <div class="todo"><b>Note</b> &mdash; all four have images now. Monkey Paw is deliberately without one until the game has something real to show.</div>
 </main>
 
 <div class="sheet" id="sheet" hidden>
@@ -30,6 +29,7 @@
     <h2 id="dName"></h2>
     <p class="dintro" id="dIntro"></p>
     <table id="dFacts"></table>
+    <div id="dShots"></div>
     <div id="dSections"></div>
     <div class="btn-row" id="dLinks"></div>
   </div>
@@ -74,6 +74,9 @@ function openProject(i, silent){
   document.getElementById('dIntro').textContent = d.intro;
   document.getElementById('dFacts').innerHTML =
     (d.facts||[]).map(f=>`<tr><th>${f[0]}</th><td>${f[1]}</td></tr>`).join('');
+  document.getElementById('dShots').innerHTML = (d.shots||[]).map(sh=>`
+    <figure class="dshot"><img src="${sh.src}" alt="" loading="lazy">
+      ${sh.cap?`<figcaption>${sh.cap}</figcaption>`:''}</figure>`).join('');
   document.getElementById('dSections').innerHTML = (d.sections||[]).map(sec=>`
     <section class="dsec"><h3>${sec.h}</h3><p>${sec.p}</p>
       ${sec.bullets?`<ul>${sec.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
