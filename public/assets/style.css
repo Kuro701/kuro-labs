@@ -352,3 +352,8 @@ button.card{border:0; text-align:left; font:inherit; cursor:pointer; width:100%}
   text-transform:uppercase; color:rgb(var(--ember)); margin-bottom:8px}
 .note p{margin:0; color:#cfc4c2; max-width:64ch}
 .card .num{white-space:nowrap}
+.joinline{margin:14px 0 0 !important; font-size:13px}
+.joinline a{color:var(--dust); border-bottom:1px solid rgb(var(--blood) / .5); padding-bottom:1px}
+.joinline a:hover{color:rgb(var(--ember)); border-color:rgb(var(--ember))}
+.card--go{cursor:pointer}
+.card--go:focus-visible{outline:2px solid rgb(var(--ember)); outline-offset:-2px}

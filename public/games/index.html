@@ -27,16 +27,29 @@
 <script>
 fetch('/games/games.json').then(r=>r.json()).then(d=>{
   document.getElementById('list').innerHTML = d.games.map(g=>{
-    const live = g.status==='live' && g.url;
+    const live  = g.status==='live' && g.url;
     const badge = live ? '<span class="badge live">Live</span>'
                        : '<span class="badge wip">In development</span>';
-    const meta = [g.players+' players', g.language].filter(Boolean).join(' · ');
-    const inner = `<h3>${g.title} ${badge}</h3><p>${g.blurb}</p>
+    const meta  = [g.players+' players', g.language].filter(Boolean).join(' · ');
+    // The card must NOT be an <a>: it can contain a second link (the Discord
+    // invite), and nesting anchors is invalid HTML that browsers rearrange.
+    // Same pattern as the projects page — a div, made clickable in JS.
+    return `<div class="card${live?' card--go':''}"${live?` data-href="${g.url}" tabindex="0" role="link"`:''}>
+        <h3>${g.title} ${badge}</h3>
+        <p>${g.blurb}</p>
         <p class="muted" style="margin-top:10px;font-size:13.5px">${meta}</p>
-        <span class="go">${live?'Play →':'Coming soon'}</span>`;
-    return live ? `<a class="card" href="${g.url}">${inner}</a>`
-                : `<div class="card" style="opacity:.6">${inner}</div>`;
+        ${live ? `<span class="go">Play →</span>` : `<span class="go">Coming soon</span>`}
+        ${g.discord ? `<p class="joinline"><a href="${g.discord}" rel="noopener">Join the ${g.community||'community'} Discord →</a></p>` : ''}
+      </div>`;
   }).join('');
+
+  document.querySelectorAll('.card--go').forEach(el=>{
+    const go = () => { location.href = el.dataset.href; };
+    el.addEventListener('click', e=>{ if(!e.target.closest('a')) go(); });
+    el.addEventListener('keydown', e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); }
+    });
+  });
 }).catch(()=>{document.getElementById('empty').hidden=false});
 </script><footer class="site"><div class="wrap">
   <span>© <span id="y"></span> Kuro Labs</span>
