@@ -16,40 +16,52 @@
 <main class="wrap">
   <p class="eyebrow">Reach me</p>
   <h1 class="pagetitle">Contact</h1>
-  <p class="lede">Commission enquiries, questions about an asset, or work — any of these
-     reach me. The first one is the fastest.</p>
+  <p class="lede">Commission enquiries, questions about an asset, or work &mdash; any of these
+     reach me. Discord is the fastest.</p>
 
   <div class="cards three" id="contacts"></div>
 
-  <div class="todo"><b>To fill in</b> — decide which of these are public and give me the
-     handles: e-mail · Discord · VGen · GitHub · TikTok · Gumroad. Only list the ones you
-     will actually check; a dead contact link is worse than one fewer.</div>
-
   <section style="margin-top:56px">
     <h2>Commissions</h2>
-    <p class="muted" style="max-width:62ch">Custom VRChat props and world assets, modelled
-       in Blender and optimised for PC and Quest. Tiers, terms and turnaround are on the
-       commissions page.</p>
+    <p class="muted" style="max-width:64ch">Custom software and AI systems, 3D and VR assets,
+       sites and games. Priced per job, with a number and a turnaround before anything starts.</p>
     <div class="btn-row"><a class="btn primary" href="/commissions/">Rates and terms</a></div>
   </section>
+
+  <div class="todo"><b>Still missing</b> &mdash; e-mail, TikTok and the Jinxxy shop link.
+     Only add them here once they exist; a dead contact is worse than one fewer.</div>
 </main>
+
 <script>
-// Placeholder rows, deliberately marked as such. Replace href and handle when Kuro
-// decides which are public — see the note above.
-const CONTACTS=[
- {label:'E-mail',   handle:'not set yet', href:null},
- {label:'Discord',  handle:'not set yet', href:null},
- {label:'Gumroad',  handle:'rajcu.gumroad.com', href:'https://rajcu.gumroad.com'},
- {label:'Jinxxy',   handle:'not set yet', href:null},
- {label:'GitHub',   handle:'not set yet', href:null},
- {label:'TikTok',   handle:'not set yet', href:null}
+// Only real, working contacts are listed. Anything not set stays out of the page
+// entirely rather than rendering as an empty row.
+const CONTACTS = [
+  {label:'Discord',   handle:'kuro701',              href:null, copy:true},
+  {label:'Instagram', handle:'@6kuro_labs9',         href:'https://instagram.com/6kuro_labs9'},
+  {label:'YouTube',   handle:'@KuroLab701',          href:'https://youtube.com/@KuroLab701'},
+  {label:'GitHub',    handle:'Kuro701',              href:'https://github.com/Kuro701'},
+  {label:'Gumroad',   handle:'rajcu.gumroad.com',    href:'https://rajcu.gumroad.com'}
 ];
-document.getElementById('contacts').innerHTML=CONTACTS.map(c=>{
-  const body=`<span class="num">${c.label}</span><h3>${c.handle}</h3>`;
-  return c.href?`<a class="card" href="${c.href}" rel="noopener">${body}<span class="go">Open →</span></a>`
-               :`<div class="card" style="opacity:.55">${body}<span class="go">Pending</span></div>`;
+
+document.getElementById('contacts').innerHTML = CONTACTS.map((c,i)=>{
+  const inner = `<span class="num">${c.label}</span><h3>${c.handle}</h3>`;
+  if (c.copy) return `<button class="card" data-copy="${c.handle}" data-i="${i}">${inner}
+      <span class="go">Copy →</span></button>`;
+  return `<a class="card" href="${c.href}" rel="noopener">${inner}<span class="go">Open →</span></a>`;
 }).join('');
-</script><footer class="site"><div class="wrap">
+
+// Discord has no profile URL for a username, so hand over the handle instead
+document.querySelectorAll('[data-copy]').forEach(b=>{
+  b.addEventListener('click', async ()=>{
+    const go = b.querySelector('.go');
+    try { await navigator.clipboard.writeText(b.dataset.copy); go.textContent = 'Copied ✓'; }
+    catch { go.textContent = b.dataset.copy; }          // clipboard blocked — show it to select
+    setTimeout(()=>{ go.textContent = 'Copy →'; }, 2000);
+  });
+});
+</script>
+
+<footer class="site"><div class="wrap">
   <span>© <span id="y"></span> Kuro Labs</span>
   <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
 </div></footer>
