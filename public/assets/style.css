@@ -344,3 +344,11 @@ button.card{border:0; text-align:left; font:inherit; cursor:pointer; width:100%}
 .dshot{margin:22px 0 0; padding:0}
 .dshot img{width:100%; display:block; border:1px solid var(--rule)}
 .dshot figcaption{margin-top:8px; font-size:13px; color:var(--dust)}
+
+/* an aside that is information, not an unfinished-content marker */
+.note{border-left:2px solid rgb(var(--ember) / .7); background:rgb(var(--blood) / .08);
+  padding:16px 20px; margin:26px 0 0}
+.note b{display:block; font-family:var(--head); font-size:12px; letter-spacing:.2em;
+  text-transform:uppercase; color:rgb(var(--ember)); margin-bottom:8px}
+.note p{margin:0; color:#cfc4c2; max-width:64ch}
+.card .num{white-space:nowrap}

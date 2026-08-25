@@ -16,44 +16,88 @@
 <main class="wrap">
   <p class="eyebrow">Hire me</p>
   <h1 class="pagetitle">Commissions</h1>
-  <p class="lede">Custom VRChat props and world assets, modelled in Blender and optimised
-     for PC and Quest.</p>
+  <p class="lede">Software, AI systems, 3D assets, sites and games. Tell me what you want
+     and roughly what it has to run on &mdash; you get a number and a turnaround before
+     anything starts.</p>
 
   <section>
     <h2>What I take on</h2>
-    <div class="cards three">
-      <div class="card"><span class="num">01</span><h3>Single prop</h3>
-        <p>One object, modelled, textured and optimised. The most common job.</p></div>
-      <div class="card"><span class="num">02</span><h3>Prop set</h3>
-        <p>Several matched pieces built for one scene, sharing a material and a look.</p></div>
-      <div class="card"><span class="num">03</span><h3>World assets</h3>
-        <p>Larger environment pieces, built to sit in a world without wrecking its budget.</p></div>
+    <div class="cards four">
+      <div class="card"><span class="num">01</span><h3>Software &amp; AI systems</h3>
+        <p>Tools built for one person's actual workflow. Local assistants, pipelines,
+           desktop apps &mdash; things that run on your machine and answer to you.</p></div>
+      <div class="card"><span class="num">02</span><h3>3D &amp; VR assets</h3>
+        <p>Props, decor and world pieces modelled in Blender and optimised properly for
+           VRChat on PC and Quest, or standalone models.</p></div>
+      <div class="card"><span class="num">03</span><h3>Web</h3>
+        <p>Small, fast, unique sites. No template you have seen on forty other pages and
+           no framework weighing four megabytes to show a paragraph.</p></div>
+      <div class="card"><span class="num">04</span><h3>Games</h3>
+        <p>Browser multiplayer that works on a phone in a Discord call. Private rooms,
+           no accounts, no install.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Software and AI, specifically</h2>
+    <p style="max-width:64ch;color:#cfc4c2">This is the part I get asked about least and
+       have built most. <a href="/projects/?p=cloe">Cloe</a> is a local AI companion with a
+       persistent graph memory and a transparent desktop presence;
+       <a href="/projects/?p=metatron">Metatron</a> is an image-to-3D pipeline that
+       schedules its own VRAM so one consumer card can host a generation engine and a
+       language model without either falling over. Both run entirely on one machine.</p>
+    <div class="cards three" style="margin-top:26px">
+      <div class="card"><span class="num">Local AI</span><h3>Assistants that stay yours</h3>
+        <p>An assistant running on your own hardware against your own models. No
+           subscription, no API key, nothing leaving the machine. Persistent memory that
+           actually remembers between sessions.</p></div>
+      <div class="card"><span class="num">Pipelines</span><h3>Tools that do the boring part</h3>
+        <p>Batch processing, asset pipelines, job queues with logs you can read when
+           something fails at 2am. Built to be watched, not to be a spinner.</p></div>
+      <div class="card"><span class="num">Apps</span><h3>Desktop and web front-ends</h3>
+        <p>Interfaces for the above &mdash; desktop apps, overlays, local web UIs. Including
+           the awkward ones: transparency, multi-monitor, always-on-top.</p></div>
+    </div>
+
+    <div class="note">
+      <b>Worth knowing before you ask</b>
+      <p>Local AI needs hardware to run on. Cloe lives on a 12&nbsp;GB card and that is
+         roughly the floor for a 12B model with anything else running beside it. Smaller
+         models run on less. What I will not do is take your money and then discover your
+         machine cannot host what you asked for &mdash; so tell me the GPU early and I will
+         tell you honestly what it can carry.</p>
     </div>
   </section>
 
   <section>
     <h2>Pricing</h2>
-    <p style="max-width:62ch;color:#cfc4c2">Priced per job rather than per tier, because
-      a simple prop and a detailed multi-part piece are not the same work. Tell me what you
-      want and roughly what it needs to run on, and you get a number and a turnaround before
-      anything starts. No surprises halfway through.</p>
+    <p style="max-width:64ch;color:#cfc4c2">Priced per job rather than per tier, because a
+       simple prop and a multi-part system are not the same work. Tell me the scope and the
+       constraints and you get a number and a turnaround up front. No surprises halfway
+       through, and if a job is out of my depth I will say so rather than find out on your
+       time.</p>
     <div class="btn-row"><a class="btn primary" href="/contact/">Ask for a quote</a></div>
   </section>
 
   <section>
     <h2>How it works</h2>
     <table>
-      <tr><th>Delivery</th><td>Unity package, with the FBX and textures alongside</td></tr>
-      <tr><th>Platforms</th><td>PC, or PC and Quest — Quest builds are optimised separately</td></tr>
+      <tr><th>You get</th><td>The source. It is yours &mdash; no licence tricks, no phoning home</td></tr>
+      <tr><th>3D delivery</th><td>Unity package, with the FBX and textures alongside</td></tr>
+      <tr><th>Platforms</th><td>PC, or PC and Quest &mdash; Quest builds are optimised separately</td></tr>
+      <tr><th>Software delivery</th><td>Repository plus a README that says how to run it</td></tr>
       <tr><th>Revisions</th><td>Agreed up front as part of the quote</td></tr>
       <tr><th>Turnaround</th><td>Quoted per job, before work starts</td></tr>
+      <tr><th>After delivery</th><td>Bugs in what I built, I fix. New features are a new job</td></tr>
     </table>
   </section>
 
-  <div class="todo"><b>To settle</b> — whether to publish fixed tier prices later. Current
+  <div class="todo"><b>To settle</b> &mdash; whether to publish fixed prices later. Current
      rate is well under market (SHOP_FUNNEL_PLAN puts VRChat prop work at $30&ndash;150).
-     Revisions and payment timing need real numbers before this reads as a contract.</div>
-</main><footer class="site"><div class="wrap">
+     Payment timing and deposit terms need real numbers before this reads as a contract.</div>
+</main>
+
+<footer class="site"><div class="wrap">
   <span>© <span id="y"></span> Kuro Labs</span>
   <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
 </div></footer>
