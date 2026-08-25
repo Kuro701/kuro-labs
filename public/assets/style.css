@@ -284,10 +284,13 @@ th{font-family:var(--head); color:rgb(var(--ember)); font-size:11.5px; letter-sp
 /* ── project cards (repo-style) ──────────────────────────────────── */
 .repos{display:flex; flex-direction:column; gap:1px; background:rgb(var(--blood) / .3);
   border:1px solid rgb(var(--blood) / .3); margin:34px 0 40px}
-.repo{display:grid; grid-template-columns:minmax(0,340px) 1fr; background:var(--crypt)}
+.repo{display:grid; grid-template-columns:minmax(0,420px) 1fr; background:var(--crypt)}
+/* These are wide UI screenshots. `cover` in a narrow column crops them into an
+   unreadable slice, so contain them and let the dark ground letterbox. */
 .repo__shot{background:#0a0607; border-right:1px solid rgb(var(--blood) / .22);
-  min-height:190px; display:flex; align-items:center; justify-content:center; overflow:hidden}
-.repo__shot img{width:100%; height:100%; object-fit:cover}
+  min-height:190px; padding:18px; display:flex; align-items:center; justify-content:center; overflow:hidden}
+.repo__shot img{max-width:100%; max-height:280px; width:auto; height:auto;
+  object-fit:contain; border:1px solid rgb(var(--blood) / .3)}
 .repo__shot span{font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:#5c5150}
 .repo__body{padding:26px 28px 28px}
 .repo__body h2{font-family:var(--head); font-size:22px; color:var(--ash); margin:0 0 4px}

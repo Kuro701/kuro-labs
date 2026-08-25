@@ -74,7 +74,10 @@ function openProject(i, silent){
   document.getElementById('dIntro').textContent = d.intro;
   document.getElementById('dFacts').innerHTML =
     (d.facts||[]).map(f=>`<tr><th>${f[0]}</th><td>${f[1]}</td></tr>`).join('');
-  document.getElementById('dShots').innerHTML = (d.shots||[]).map(sh=>`
+  // every project should show its screenshot in the panel, not just the ones
+  // with an explicit gallery
+  const shots = (d.shots && d.shots.length) ? d.shots : (p.img ? [{src:p.img}] : []);
+  document.getElementById('dShots').innerHTML = shots.map(sh=>`
     <figure class="dshot"><img src="${sh.src}" alt="" loading="lazy">
       ${sh.cap?`<figcaption>${sh.cap}</figcaption>`:''}</figure>`).join('');
   document.getElementById('dSections').innerHTML = (d.sections||[]).map(sec=>`
