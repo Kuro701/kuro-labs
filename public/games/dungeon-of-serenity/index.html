@@ -36,9 +36,6 @@
   .room{ position:absolute; overflow:hidden; }
   .room img{ position:absolute; left:0; top:0; width:100%; height:100%; display:block;
     -webkit-user-drag:none; user-select:none; image-rendering:auto; }
-  .roomLabel{ position:absolute; left:6px; bottom:4px; font-size:9px; letter-spacing:.06em;
-    text-transform:uppercase; color:rgba(230,222,219,.55); background:rgba(0,0,0,.45);
-    padding:1px 5px; border-radius:2px; pointer-events:none; }
 
   .ladderZone, .holeZone{ position:absolute; pointer-events:none; }
   .ladderZone .marker, .holeZone .marker{ position:absolute; bottom:2px; left:50%; transform:translateX(-50%);
@@ -154,8 +151,7 @@ for (let f = 0; f < FLOOR_COUNT; f++){
     div.style.top = roomTopY(f) + 'px';
     div.style.width = roomW(r) + 'px';
     div.style.height = roomH(f) + 'px';
-    div.innerHTML = `<img src="assets/floor${f+1}_room${r+1}.jpg" alt="">
-      <div class="roomLabel">F${f+1} &middot; R${r+1}/${ROOMS_PER_FLOOR}</div>`;
+    div.innerHTML = `<img src="assets/floor${f+1}_room${r+1}.jpg" alt="">`;
     worldEl.appendChild(div);
   }
 }
