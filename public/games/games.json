@@ -22,6 +22,16 @@
    "players": "3–10",
    "language": "Czech / English",
    "thumb": null
+  },
+  {
+   "slug": "dungeon-of-serenity",
+   "title": "Dungeon of Serenity",
+   "blurb": "Side-view clone-diving shooter. Descend an endless procedural hive, gear up on cards each run, plant the nest bomb on the queen. Early prototype: movement + floor traversal only so far.",
+   "url": "/games/dungeon-of-serenity/",
+   "status": "wip",
+   "players": "1",
+   "language": "English",
+   "thumb": null
   }
  ]
 }
