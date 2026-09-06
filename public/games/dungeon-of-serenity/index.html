@@ -202,17 +202,34 @@ function roomH(floor){ return ROW_H_ART[floor] * ZOOM; }
 
 const WALK_SPEED  = 420;   // px/s (zoomed world units)
 const CLIMB_SPEED = 300;   // px/s
-const LADDER_HALF_W = 70;
+const LADDER_HALF_W = 110;
 const PLAYER_W = 110, PLAYER_H = 300;
 
 // Which room each floor's inter-floor connector sits in, and whether it's the
 // "down" (hole, in the floor above) or the room this floor climbs FROM -- this
 // is exactly the v1 zigzag (right edge on even floors, left edge on odd), which
 // turned out to already match where the art actually draws its ladders/holes.
+//
+// BUG FIX (Kuro report: "going up and down on ladder doesent work"): the trigger
+// x below used to be the room's plain geometric center (roomW/2), on the
+// assumption the hole art sits dead-center in its room. It doesn't -- measured
+// directly off the actual JPGs (pixel column scan of the pit ring), the hole
+// sits noticeably right-of-center in both room widths that carry one:
+// art-x 360 of 604 in the rightmost room (roomIdx 2, ~40px right of the 302
+// center), and art-x 240 of 408 in the leftmost room (roomIdx 0, ~36px right
+// of the 204 center). At ZOOM 2.6 that's 100-150 world-px off from where the
+// old code thought the hole was -- more than the old 70px trigger half-width,
+// so the invisible trigger zone and the visible pit barely overlapped, making
+// the ladder feel broken even when standing right on top of the art. Fixed by
+// keying off the measured art-x instead of the room center, and widening the
+// trigger half-width to 110 (still comfortably inside the pit's own ~150px
+// visual radius) so near-misses still register.
+const HOLE_X_ART_BY_ROOMIDX = { 0: 240, 2: 360 };
 const ladders = [];
 for (let f = 0; f < FLOOR_COUNT - 1; f++){
   const roomIdx = (f % 2 === 0) ? (ROOMS_PER_FLOOR - 1) : 0;   // 0-based room index
-  ladders.push({ fromFloor: f, toFloor: f+1, roomIdx, x: roomX(roomIdx) + roomW(roomIdx)/2 });
+  const holeXArt = HOLE_X_ART_BY_ROOMIDX[roomIdx] ?? (COL_W_ART[roomIdx] / 2);
+  ladders.push({ fromFloor: f, toFloor: f+1, roomIdx, x: roomX(roomIdx) + holeXArt * ZOOM });
 }
 function findDownLadder(floor){ return ladders.find(l => l.fromFloor === floor); }
 function findUpLadder(floor){ return ladders.find(l => l.toFloor === floor); }
