@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dungeon of Serenity — Prototype v2 (real map art wired in)</title>
+<style>
+  :root{ --coal:#070506; --crypt:#100a0b; --ash:#e6dedb; --dust:#8e8280; --blood:175,47,44; --ember:214,48,40; }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--coal); color:var(--ash); font-family:ui-sans-serif,system-ui,sans-serif; }
+
+  /* ============================================================================
+     v2 CHANGE FROM v1: the flat colored floor bands are replaced with Kuro's own
+     "Finished game Hive tech planet" map art -- cropped into 15 real room images
+     (5 floors x 3 rooms, assets/floor{N}_room{N}.jpg) plus a 16th (floor5_room2_open)
+     for the final gate's "blown open" state, not wired up yet. The crop boundaries
+     were measured directly off the source composite, so floor/room sizes below come
+     from the ART's real proportions (times ZOOM), not made-up numbers -- and the
+     zigzag ladder placement this prototype already had turned out to exactly match
+     which room the art puts each ladder/hole in, so no gameplay logic needed to
+     change, only the numbers feeding it.
+     Still DOM/CSS-based, not canvas, for the same reason as v1: the player is a
+     placeholder (see #player) and everything about rendering/positioning here is
+     plain absolutely-positioned elements, matching how the real character rig
+     (character_rig_editor_v7_compact pipeline) is built -- swapping the placeholder
+     for the finished rig later is a markup swap, not a rewrite.
+     ============================================================================ */
+
+  html, body{ height:100%; overflow:hidden; }
+  body{ display:flex; }
+
+  /* ============================================================================
+     v3 CHANGE: full-window game shell, per Kuro -- "its only in corner... we
+     want it full scren in browser basicly enlarge so it fits the whole browser
+     window." The old layout put a fixed 1100x620 box with a title/paragraph
+     above and below it, floating in a mostly-empty page. Now #gameShell fills
+     the entire viewport (100vw/100dvh) with a top bar, the game view, and a
+     bottom stat bar stacked in a column -- no page scroll, no dead space.
+     The tutorial text that used to sit as a permanent paragraph below the game
+     is now a dismissible modal opened from the book-and-"?" button top-right,
+     and corner brackets + the top/bottom bars act as the "showcase" HUD frame
+     around the screen, in the site's existing black/red gothic language
+     (--coal/--crypt/--ash/--dust/--blood/--ember, from assets/style.css).
+     ============================================================================ */
+  #gameShell{ position:fixed; inset:0; display:flex; flex-direction:column; }
+
+  #topBar{ flex:0 0 54px; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:0 16px; background:linear-gradient(180deg, rgba(16,10,11,.96), rgba(16,10,11,.82));
+    border-bottom:1px solid rgba(var(--blood),.4); z-index:6; }
+  #topBar .brand{ font-family:Georgia,serif; font-size:1.02rem; letter-spacing:.03em; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  #topBar .brand .ver{ color:var(--dust); font-weight:400; font-size:.78rem; margin-left:8px; }
+  #topBar .topBtns{ display:flex; gap:8px; flex:0 0 auto; }
+
+  .iconBtn{ position:relative; width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+    background:var(--crypt); color:var(--ash); border:1px solid rgba(var(--blood),.5); border-radius:6px;
+    cursor:pointer; padding:0; }
+  .iconBtn:hover{ border-color:rgb(var(--ember)); color:#fff; }
+  .iconBtn svg{ width:18px; height:18px; display:block; }
+  .iconBtn .qmark{ position:absolute; top:-5px; right:-5px; width:14px; height:14px; border-radius:50%;
+    background:rgb(var(--ember)); color:#fff; font-size:9px; font-weight:700; line-height:14px; text-align:center;
+    box-shadow:0 0 4px rgba(0,0,0,.6); }
+
+  #viewport{ position:relative; flex:1 1 auto; overflow:hidden; background:#000; min-height:0; }
+  #world{ position:absolute; left:0; top:0; will-change:transform; }
+
+  .room{ position:absolute; overflow:hidden; }
+  .room img{ position:absolute; left:0; top:0; width:100%; height:100%; display:block;
+    -webkit-user-drag:none; user-select:none; image-rendering:auto; }
+
+  /* corner brackets -- the "showcase bars" framing the play area itself */
+  .corner{ position:absolute; width:30px; height:30px; border:2px solid rgba(var(--blood),.6);
+    pointer-events:none; z-index:4; }
+  .corner.tl{ top:8px; left:8px; border-right:none; border-bottom:none; }
+  .corner.tr{ top:8px; right:8px; border-left:none; border-bottom:none; }
+  .corner.bl{ bottom:8px; left:8px; border-right:none; border-top:none; }
+  .corner.br{ bottom:8px; right:8px; border-left:none; border-top:none; }
+
+  .ladderZone, .holeZone{ position:absolute; pointer-events:none; }
+  .ladderZone .marker, .holeZone .marker{ position:absolute; bottom:2px; left:50%; transform:translateX(-50%);
+    font-size:9px; color:rgba(255,255,255,.5); white-space:nowrap; }
+
+  /* ---- placeholder player (swap target for the real rig later) ---- */
+  #player{ position:absolute; }
+  #player.facing-left .rig{ transform:scaleX(-1); }
+  #player .rig{ position:relative; width:100%; height:100%; transition:transform .05s linear; }
+  #player .body{ position:absolute; left:15%; top:22%; width:70%; height:64%;
+    border-radius:14%; background:linear-gradient(180deg,#2a2022,#171213);
+    border:2px solid rgba(var(--blood),.6); box-shadow:inset 0 0 14px rgba(var(--ember),.2), 0 4px 10px rgba(0,0,0,.5); }
+  #player .head{ position:absolute; left:24%; top:0; width:52%; height:24%; border-radius:50%;
+    background:#221a1c; border:2px solid rgba(var(--blood),.65); }
+  #player .visor{ position:absolute; left:34%; top:9%; width:32%; height:6%; border-radius:3px;
+    background:rgb(var(--ember)); box-shadow:0 0 8px rgb(var(--ember)); }
+  #player .tag{ position:absolute; left:50%; top:-18px; transform:translateX(-50%); font-size:10px;
+    color:var(--dust); white-space:nowrap; }
+  #player.walking .rig{ animation:stepBob .34s ease-in-out infinite; }
+  #player.climbing .rig{ animation:climbBob .3s ease-in-out infinite; }
+  @keyframes stepBob{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-4px) rotate(-1.5deg); } }
+  @keyframes climbBob{ 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(3px); } }
+  #player.facing-left.walking .rig{ animation-name:stepBobL; }
+  @keyframes stepBobL{ 0%,100%{ transform:scaleX(-1) translateY(0) rotate(0deg); } 50%{ transform:scaleX(-1) translateY(-4px) rotate(-1.5deg); } }
+
+  #bottomBar{ flex:0 0 42px; display:flex; align-items:center; gap:22px; padding:0 16px;
+    background:rgba(16,10,11,.92); border-top:1px solid rgba(var(--blood),.35);
+    font-size:.78rem; color:var(--dust); z-index:6; }
+  #bottomBar b{ color:var(--ash); }
+
+  #tutorialBackdrop{ position:fixed; inset:0; background:rgba(0,0,0,.72); display:flex;
+    align-items:center; justify-content:center; z-index:20; padding:20px; }
+  #tutorialBackdrop[hidden]{ display:none; }
+  #tutorialCard{ position:relative; max-width:560px; width:100%; background:var(--crypt);
+    border:1px solid rgba(var(--blood),.5); border-radius:8px; padding:22px 24px;
+    box-shadow:0 12px 40px rgba(0,0,0,.6); }
+  #tutorialCard h2{ font-family:Georgia,serif; margin:0 0 12px; font-size:1.15rem; letter-spacing:.02em; }
+  #tutorialCard p{ font-size:.85rem; color:var(--dust); line-height:1.6; margin:0 0 8px; }
+  #tutorialCard code{ color:var(--ash); }
+  #tutorialCard .closeBtn{ position:absolute; top:10px; right:12px; background:none; border:none;
+    color:var(--dust); font-size:1.4rem; line-height:1; cursor:pointer; padding:4px 8px; }
+  #tutorialCard .closeBtn:hover{ color:#fff; }
+  #tutorialCard .wide{ width:100%; margin-top:10px; background:var(--crypt); color:var(--ash);
+    border:1px solid rgba(var(--blood),.5); padding:9px; border-radius:5px; cursor:pointer; font-size:.85rem; }
+  #tutorialCard .wide:hover{ border-color:rgb(var(--ember)); color:#fff; }
+</style>
+</head>
+<body>
+
+<div id="gameShell">
+  <div id="topBar">
+    <div class="brand">DUNGEON OF SERENITY <span class="ver">prototype v2</span></div>
+    <div class="topBtns">
+      <button id="btnTutorial" class="iconBtn" title="How to play" aria-label="How to play">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+          <path d="M4 4.8C4 3.8 4.8 3 5.8 3H12v17H5.8C4.8 20 4 19.2 4 18.2Z"/>
+          <path d="M20 4.8C20 3.8 19.2 3 18.2 3H12v17h6.2c1 0 1.8-.8 1.8-1.8Z"/>
+        </svg>
+        <span class="qmark">?</span>
+      </button>
+      <button id="btnFullscreen" class="iconBtn" title="Fullscreen" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="viewport">
+    <div id="world"></div>
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+  </div>
+
+  <div id="bottomBar">
+    <div>Floor <b id="hudFloor">1</b>/5</div>
+    <div>Room <b id="hudRoom">1</b>/3</div>
+    <div>x:<b id="hudX">0</b> y:<b id="hudY">0</b></div>
+    <div>State <b id="hudState">walk</b></div>
+  </div>
+</div>
+
+<div id="tutorialBackdrop" hidden>
+  <div id="tutorialCard">
+    <button id="btnCloseTutorial" class="closeBtn" aria-label="Close">&times;</button>
+    <h2>How to play</h2>
+    <p><b>A/D</b> or <b>Left/Right</b> to move. Stand under a ladder and hold <b>S</b>/<b>Down</b> to descend
+      to the next floor, or <b>W</b>/<b>Up</b> to climb back.</p>
+    <p>The floor-hole art (the circular pit) marks the same connection from the floor above &mdash; nothing
+      drops you through it yet, that's the floor-hole kill-threshold event, still to build. The room at
+      floor 5's middle slot is the final gate (the closed wheel door); the blown-open tunnel art already
+      exists (<code>assets/floor5_room2_open.jpg</code>) but isn't wired to any trigger yet either &mdash;
+      both are next-system work, not part of this pass.</p>
+    <button id="btnGotIt" class="wide">Got it</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------------------------------------------------------------------------
+   MAP DATA -- measured directly from the source composite
+   ("Finished game Hive tech planet.png", 1584x993), then scaled by ZOOM.
+   Row/col pixel bounds were found by locating the dark gutter between cells,
+   split at the gutter's midpoint so adjacent crops share the frame border.
+--------------------------------------------------------------------------- */
+const ZOOM = 2.6;
+const ROW_H_ART = [200, 185, 190, 185, 233];         // floor 1..5, source px
+const COL_W_ART = [408, 572, 604];                    // room 1..3, source px
+const ROOMS_PER_FLOOR = COL_W_ART.length;
+const FLOOR_COUNT = ROW_H_ART.length;
+
+const colX_art = [0, COL_W_ART[0], COL_W_ART[0]+COL_W_ART[1]];
+const rowY_art = [0];
+for (let i=1;i<ROW_H_ART.length;i++) rowY_art.push(rowY_art[i-1] + ROW_H_ART[i-1]);
+
+const FLOOR_W = COL_W_ART.reduce((a,b)=>a+b,0) * ZOOM;
+const WORLD_H = (rowY_art[FLOOR_COUNT-1] + ROW_H_ART[FLOOR_COUNT-1]) * ZOOM;
+
+// ground line = near the bottom of each room's floor plane, ~30 source-px of
+// perspective floor/frame below it (eyeballed against the art, not exact).
+function groundY(floor){ return (rowY_art[floor] + ROW_H_ART[floor] - 30) * ZOOM; }
+function roomX(idx){ return colX_art[idx] * ZOOM; }
+function roomW(idx){ return COL_W_ART[idx] * ZOOM; }
+function roomTopY(floor){ return rowY_art[floor] * ZOOM; }
+function roomH(floor){ return ROW_H_ART[floor] * ZOOM; }
+
+const WALK_SPEED  = 420;   // px/s (zoomed world units)
+const CLIMB_SPEED = 300;   // px/s
+const LADDER_HALF_W = 110;
+const PLAYER_W = 110, PLAYER_H = 300;
+
+// Which room each floor's inter-floor connector sits in, and whether it's the
+// "down" (hole, in the floor above) or the room this floor climbs FROM -- this
+// is exactly the v1 zigzag (right edge on even floors, left edge on odd), which
+// turned out to already match where the art actually draws its ladders/holes.
+//
+// BUG FIX (Kuro report: "going up and down on ladder doesent work"): the trigger
+// x below used to be the room's plain geometric center (roomW/2), on the
+// assumption the hole art sits dead-center in its room. It doesn't -- measured
+// directly off the actual JPGs (pixel column scan of the pit ring), the hole
+// sits noticeably right-of-center in both room widths that carry one:
+// art-x 360 of 604 in the rightmost room (roomIdx 2, ~40px right of the 302
+// center), and art-x 240 of 408 in the leftmost room (roomIdx 0, ~36px right
+// of the 204 center). At ZOOM 2.6 that's 100-150 world-px off from where the
+// old code thought the hole was -- more than the old 70px trigger half-width,
+// so the invisible trigger zone and the visible pit barely overlapped, making
+// the ladder feel broken even when standing right on top of the art. Fixed by
+// keying off the measured art-x instead of the room center, and widening the
+// trigger half-width to 110 (still comfortably inside the pit's own ~150px
+// visual radius) so near-misses still register.
+const HOLE_X_ART_BY_ROOMIDX = { 0: 240, 2: 360 };
+const ladders = [];
+for (let f = 0; f < FLOOR_COUNT - 1; f++){
+  const roomIdx = (f % 2 === 0) ? (ROOMS_PER_FLOOR - 1) : 0;   // 0-based room index
+  const holeXArt = HOLE_X_ART_BY_ROOMIDX[roomIdx] ?? (COL_W_ART[roomIdx] / 2);
+  ladders.push({ fromFloor: f, toFloor: f+1, roomIdx, x: roomX(roomIdx) + holeXArt * ZOOM });
+}
+function findDownLadder(floor){ return ladders.find(l => l.fromFloor === floor); }
+function findUpLadder(floor){ return ladders.find(l => l.toFloor === floor); }
+
+/* ---------------------------------------------------------------------------
+   WORLD DOM -- 15 room images + labels, built once
+--------------------------------------------------------------------------- */
+const worldEl = document.getElementById('world');
+worldEl.style.width = FLOOR_W + 'px';
+worldEl.style.height = WORLD_H + 'px';
+
+for (let f = 0; f < FLOOR_COUNT; f++){
+  for (let r = 0; r < ROOMS_PER_FLOOR; r++){
+    const div = document.createElement('div');
+    div.className = 'room';
+    div.style.left = roomX(r) + 'px';
+    div.style.top = roomTopY(f) + 'px';
+    div.style.width = roomW(r) + 'px';
+    div.style.height = roomH(f) + 'px';
+    div.innerHTML = `<img src="assets/floor${f+1}_room${r+1}.jpg" alt="">`;
+    worldEl.appendChild(div);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   PLAYER (placeholder visual -- swap target, see header comment)
+--------------------------------------------------------------------------- */
+const playerEl = document.createElement('div');
+playerEl.id = 'player';
+playerEl.style.width = PLAYER_W + 'px';
+playerEl.style.height = PLAYER_H + 'px';
+playerEl.innerHTML = `<div class="tag">clone</div><div class="rig">
+  <div class="head"></div><div class="visor"></div><div class="body"></div>
+</div>`;
+worldEl.appendChild(playerEl);
+
+const player = {
+  x: roomX(1) + roomW(1)/2, y: groundY(0), floor: 0,
+  mode: 'walk', facing: 1, climb: null,
+};
+
+/* ---------------------------------------------------------------------------
+   INPUT
+--------------------------------------------------------------------------- */
+const keys = Object.create(null);
+const KEYMAP = { arrowleft:'left', a:'left', arrowright:'right', d:'right',
+                  arrowup:'up', w:'up', arrowdown:'down', s:'down' };
+window.addEventListener('keydown', e => { const k = KEYMAP[e.key.toLowerCase()]; if (k){ keys[k]=true; e.preventDefault(); } });
+window.addEventListener('keyup',   e => { const k = KEYMAP[e.key.toLowerCase()]; if (k){ keys[k]=false; e.preventDefault(); } });
+
+/* ---------------------------------------------------------------------------
+   UPDATE -- identical state machine to v1, only the numbers feeding it changed
+--------------------------------------------------------------------------- */
+function update(dt){
+  if (player.mode === 'walk'){
+    let vx = 0;
+    if (keys.left) vx -= WALK_SPEED;
+    if (keys.right) vx += WALK_SPEED;
+    if (vx !== 0){ player.x += vx*dt; player.facing = vx > 0 ? 1 : -1; }
+    player.x = Math.max(0, Math.min(FLOOR_W - 1, player.x));
+    player.y = groundY(player.floor);
+
+    const nearLadderX = (lx) => Math.abs(player.x - lx) < LADDER_HALF_W;
+    const down = findDownLadder(player.floor);
+    const up = findUpLadder(player.floor);
+    if (keys.down && down && nearLadderX(down.x)){
+      player.mode = 'climb'; player.climb = down; player.x = down.x;
+    } else if (keys.up && up && nearLadderX(up.x)){
+      player.mode = 'climb'; player.climb = up; player.x = up.x;
+    }
+    playerEl.classList.toggle('walking', vx !== 0);
+    playerEl.classList.remove('climbing');
+  } else { // climbing
+    const c = player.climb;
+    const topY = groundY(c.fromFloor), botY = groundY(c.toFloor);
+    let vy = 0;
+    if (keys.down) vy += CLIMB_SPEED;
+    if (keys.up) vy -= CLIMB_SPEED;
+    player.y += vy*dt;
+    if (player.y <= topY){ player.y = topY; player.floor = c.fromFloor; player.mode='walk'; player.climb=null; }
+    else if (player.y >= botY){ player.y = botY; player.floor = c.toFloor; player.mode='walk'; player.climb=null; }
+    playerEl.classList.toggle('climbing', vy !== 0);
+    playerEl.classList.remove('walking');
+  }
+  playerEl.classList.toggle('facing-left', player.facing < 0);
+}
+
+/* ---------------------------------------------------------------------------
+   CAMERA + RENDER
+--------------------------------------------------------------------------- */
+const viewportEl = document.getElementById('viewport');
+function render(){
+  const VIEW_W = viewportEl.clientWidth, VIEW_H = viewportEl.clientHeight;
+  playerEl.style.left = (player.x - PLAYER_W/2) + 'px';
+  playerEl.style.top  = (player.y - PLAYER_H) + 'px';
+
+  const camX = Math.max(0, Math.min(Math.max(0,FLOOR_W - VIEW_W), player.x - VIEW_W/2));
+  const camY = Math.max(0, Math.min(Math.max(0,WORLD_H - VIEW_H), (player.y - PLAYER_H*0.6) - VIEW_H/2));
+  worldEl.style.transform = `translate(${-camX}px, ${-camY}px)`;
+
+  document.getElementById('hudFloor').textContent = player.floor + 1;
+  let roomIdx = 0, acc = 0;
+  for (let r=0;r<ROOMS_PER_FLOOR;r++){ if (player.x < acc + roomW(r)) { roomIdx = r; break; } acc += roomW(r); roomIdx = r; }
+  document.getElementById('hudRoom').textContent = roomIdx + 1;
+  document.getElementById('hudX').textContent = Math.round(player.x);
+  document.getElementById('hudY').textContent = Math.round(player.y);
+  document.getElementById('hudState').textContent = player.mode;
+}
+
+/* ---------------------------------------------------------------------------
+   UI CHROME -- tutorial modal + fullscreen toggle (v3)
+--------------------------------------------------------------------------- */
+const tutorialBackdrop = document.getElementById('tutorialBackdrop');
+document.getElementById('btnTutorial').addEventListener('click', () => { tutorialBackdrop.hidden = false; });
+document.getElementById('btnCloseTutorial').addEventListener('click', () => { tutorialBackdrop.hidden = true; });
+document.getElementById('btnGotIt').addEventListener('click', () => { tutorialBackdrop.hidden = true; });
+tutorialBackdrop.addEventListener('click', (e) => { if (e.target === tutorialBackdrop) tutorialBackdrop.hidden = true; });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !tutorialBackdrop.hidden) tutorialBackdrop.hidden = true; });
+
+const btnFullscreen = document.getElementById('btnFullscreen');
+btnFullscreen.addEventListener('click', () => {
+  if (document.fullscreenElement){
+    document.exitFullscreen().catch(()=>{});
+  } else {
+    document.getElementById('gameShell').requestFullscreen().catch(()=>{});
+  }
+});
+
+/* ---------------------------------------------------------------------------
+   LOOP
+--------------------------------------------------------------------------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+window.__game = { player, ladders, groundY, roomX, roomW, FLOOR_W, WORLD_H, ROOMS_PER_FLOOR, FLOOR_COUNT };
+</script>
+</body>
+</html>
