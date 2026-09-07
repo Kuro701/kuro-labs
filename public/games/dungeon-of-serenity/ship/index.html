@@ -46,12 +46,12 @@
     transform:translate(-50%,-50%); }
   .lifeGlow.pod{ background:radial-gradient(circle, rgba(180,225,255,.75) 0%, rgba(120,190,255,.3) 45%, rgba(120,190,255,0) 75%);
     filter:blur(10px); animation:podPulse 4.2s ease-in-out infinite; }
-  .lifeGlow.hazard{ background:radial-gradient(circle, rgba(255,60,40,.85) 0%, rgba(255,30,20,.4) 50%, rgba(255,20,10,0) 78%);
-    filter:blur(6px); animation:hazardFlicker 1.8s ease-in-out infinite; }
+  .lifeGlow.hazard{ background:radial-gradient(ellipse, rgba(255,70,45,.6) 0%, rgba(255,35,20,.32) 55%, rgba(255,20,10,0) 82%);
+    filter:blur(14px); animation:hazardFlicker 1.8s ease-in-out infinite; }
   @keyframes podPulse{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
   @keyframes hazardFlicker{
-    0%{opacity:.7} 15%{opacity:.3} 25%{opacity:.85} 40%{opacity:.5}
-    55%{opacity:1} 70%{opacity:.4} 100%{opacity:.7}
+    0%{opacity:.65} 15%{opacity:.35} 25%{opacity:.8} 40%{opacity:.5}
+    55%{opacity:.95} 70%{opacity:.45} 100%{opacity:.65}
   }
 
   #scrim{ position:absolute; inset:0; z-index:2;
@@ -107,6 +107,58 @@
   .hotspot.primary .dot{ width:16px; height:16px; }
   .hotspot.primary .label{ font-size:.82rem; padding:12px 22px;
     background:linear-gradient(135deg, rgba(70,14,12,.92), rgba(30,10,10,.85)); }
+
+  /* ---------------------------------------------------------------------------
+     HUD CHROME, per Kuro's follow-up ("all sort of buttons bars gadget to that
+     screen with pod... money counter, xp, transfer button... armory... shop...
+     all other things from the ingame plan"). These aren't hotspots on the room
+     art -- they're UI chrome overlaid on the whole screen, same as the
+     gameplay page's own top HUD bar. Values pulled from the same
+     `dos_active_save` localStorage record the menu's save-recovery stub
+     already writes (see menu-logic.js / the menu's inline copy of it) --
+     salvage/skillPoints default to 0 until the real hub economy exists, so
+     this reads live off whatever save is active rather than showing a
+     fabricated number. Terms match the already-decided hub economy in
+     ALIEN_DRONE_ROGUELITE.md: Salvage (gear currency) and skill points (spent
+     on permanent clone stat upgrades in the briefing room) -- kept the SP bar
+     rather than inventing a separate "XP" resource since one doesn't exist in
+     the design yet. Briefing Room and Leaderboard are real planned hub
+     destinations from that doc with no physical spot in this particular room
+     photo, so they live here as chrome rather than art hotspots. "Transfer"
+     is Kuro's own wording and its exact purpose wasn't clear from that message
+     -- stubbed the same "coming soon" way as the rest so it's a one-line
+     rename/wire-up once he confirms what it should do.
+     --------------------------------------------------------------------------- */
+  .hud{ position:absolute; z-index:6; display:flex; flex-direction:column; gap:8px; }
+  .hud.left{ top:52px; left:22px; }
+
+  .resPill{ display:flex; align-items:center; gap:7px; padding:7px 12px;
+    background:linear-gradient(135deg, rgba(16,10,11,.88), rgba(16,10,11,.68));
+    border:1px solid rgba(var(--blood),.4);
+    clip-path:polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    font-family:var(--head); font-size:.72rem; letter-spacing:.04em; color:var(--ash); white-space:nowrap; }
+  .resPill .icon{ font-size:.8rem; color:rgb(var(--ember)); text-shadow:0 0 6px rgba(var(--ember),.7); }
+  .resPill .val{ font-weight:700; }
+  .resPill .lbl{ color:var(--dust); font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; margin-left:1px; }
+
+  .spPill{ flex-direction:column; align-items:stretch; width:168px; }
+  .spPill .spTop{ display:flex; align-items:center; gap:7px; }
+  .spPill .icon{ color:#9fd6ff; text-shadow:0 0 6px rgba(120,190,255,.7); }
+  .spPill .barTrack{ width:100%; height:5px; margin-top:6px; background:rgba(255,255,255,.08);
+    border:1px solid rgba(var(--blood),.3); overflow:hidden; }
+  .spPill .barFill{ height:100%; background:linear-gradient(90deg, rgba(var(--ember),.9), rgba(255,150,90,.9));
+    box-shadow:0 0 8px rgba(var(--ember),.6); }
+
+  .navMini{ position:absolute; top:52px; right:22px; z-index:6; display:flex; gap:8px; }
+  .miniBtn{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 14px;
+    text-decoration:none; font-family:var(--head); font-size:.64rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dust);
+    background:linear-gradient(135deg, rgba(16,10,11,.88), rgba(16,10,11,.68));
+    border:1px solid rgba(var(--blood),.35);
+    clip-path:polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    opacity:.55; cursor:not-allowed; white-space:nowrap; }
+  .miniBtn .sub{ font-family:ui-sans-serif,system-ui,sans-serif; font-size:.5rem; letter-spacing:.05em;
+    text-transform:none; opacity:.85; }
 </style>
 </head>
 <body>
@@ -114,8 +166,8 @@
 <div id="room">
   <div id="bgWrap">
     <div id="bgBase"></div>
-    <div class="lifeGlow pod"    style="left:32.7%; top:34%;   width:220px; height:340px;"></div>
-    <div class="lifeGlow hazard" style="left:87.4%; top:32%;   width:120px; height:260px;"></div>
+    <div class="lifeGlow pod"    style="left:31.8%; top:34%;   width:220px; height:340px;"></div>
+    <div class="lifeGlow hazard" style="left:83.3%; top:41.7%; width:5%;    height:50%;"></div>
   </div>
   <div id="scrim"></div>
   <div class="corner tl"></div><div class="corner tr"></div>
@@ -128,8 +180,25 @@
     <div class="tag">Cloning Bay</div>
   </div>
 
+  <!-- resource HUD, values read from the active save (see script below) -->
+  <div class="hud left">
+    <div class="resPill"><span class="icon">&#9670;</span><span class="val" id="salvageVal">0</span><span class="lbl">Salvage</span></div>
+    <div class="resPill spPill">
+      <div class="spTop"><span class="icon">&#9650;</span><span class="val" id="spVal">0</span><span class="lbl">Skill Points</span></div>
+      <div class="barTrack"><div class="barFill" id="spBarFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- other hub destinations from the plan with no physical spot in this
+       room's art -- chrome buttons rather than photo hotspots -->
+  <div class="navMini">
+    <div class="miniBtn">Briefing Room<span class="sub">stat upgrades — soon</span></div>
+    <div class="miniBtn">Leaderboard<span class="sub">soon</span></div>
+    <div class="miniBtn">Transfer<span class="sub">soon</span></div>
+  </div>
+
   <!-- hotspot: cloning pod -> the real destination, drop into the hive -->
-  <a class="hotspot live primary" href="../hive/" style="left:32.7%; top:72%;">
+  <a class="hotspot live primary" href="../hive/" style="left:31.8%; top:72%;">
     <span class="dot"></span>
     <span class="label">Enter the Hive<span class="sub">deploy your clone</span></span>
   </a>
@@ -147,11 +216,32 @@
   </div>
 
   <!-- hotspot: side hatch, red hazard lights -> bridge (not built yet) -->
-  <div class="hotspot soon" style="left:87.4%; top:39.5%;">
+  <div class="hotspot soon" style="left:83.3%; top:19%;">
     <span class="dot"></span>
     <span class="label">Bridge<span class="sub">coming soon</span></span>
   </div>
 </div>
+
+<script>
+'use strict';
+// Read the same stub save record the menu writes (dos_active_save). Salvage
+// and skillPoints don't exist in that record yet (the real hub economy isn't
+// built), so this defaults both to 0 rather than showing a fabricated number
+// -- once the real economy lands, New Game / hive runs just need to start
+// writing those two fields and this HUD updates for free.
+(function(){
+  var save = null;
+  try {
+    var raw = localStorage.getItem('dos_active_save');
+    if (raw) save = JSON.parse(raw);
+  } catch (e) {}
+  var salvage = (save && typeof save.salvage === 'number') ? save.salvage : 0;
+  var sp = (save && typeof save.skillPoints === 'number') ? save.skillPoints : 0;
+  document.getElementById('salvageVal').textContent = salvage.toLocaleString();
+  document.getElementById('spVal').textContent = sp.toLocaleString();
+  document.getElementById('spBarFill').style.width = Math.max(0, Math.min(100, sp % 100)) + '%';
+})();
+</script>
 
 </body>
 </html>
