@@ -104,6 +104,44 @@
     border:1px solid rgba(var(--blood),.3); overflow:hidden; }
   .spPill .barFill{ height:100%; background:linear-gradient(90deg, rgba(var(--ember),.9), rgba(255,150,90,.9));
     box-shadow:0 0 8px rgba(var(--ember),.6); }
+
+  /* ---------------------------------------------------------------------------
+     LOADOUT STATS SCREEN -- per Kuro: "map out the screen if you can... there
+     will be screen with all the stats of the thing we will have equiped."
+     The wall display is close to front-on in this shot (almost no perspective
+     skew), so rather than a floating hotspot dot in front of it, this panel is
+     sized/positioned to the screen's actual inner bezel edges (measured off
+     Kuro's own screenshot, corner-checked top/bottom/left/right) so it reads
+     as the screen's own content. Mocked up as the 5 permanent clone stats from
+     the hub economy doc (HP/Damage/Armor/Crit/Speed) with empty bars -- no
+     fabricated numbers, just the shape of the real readout once gear exists
+     to drive it. Still "soon" -- not clickable yet, no equip system behind it.
+     --------------------------------------------------------------------------- */
+  .screenPanel{ position:absolute; left:48.2%; top:21.6%; width:26.3%; height:27.8%;
+    z-index:4; cursor:not-allowed; padding:3% 5%; box-sizing:border-box;
+    display:flex; flex-direction:column;
+    background:
+      repeating-linear-gradient(180deg, rgba(140,210,255,.05) 0px, rgba(140,210,255,.05) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 4px),
+      linear-gradient(160deg, rgba(10,18,24,.55), rgba(6,10,13,.7));
+    border:1px solid rgba(140,210,255,.32);
+    box-shadow:inset 0 0 26px rgba(120,190,255,.12), 0 0 18px rgba(120,190,255,.08);
+    animation:screenFlicker 5s ease-in-out infinite; }
+  @keyframes screenFlicker{ 0%,100%{ opacity:.92; } 50%{ opacity:1; } 62%{ opacity:.85; } 64%{ opacity:1; } }
+  .screenPanel .scHead{ display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid rgba(140,210,255,.25); padding-bottom:5%; margin-bottom:6%; }
+  .screenPanel .scHead .scTitle{ font-family:var(--head); font-size:.86rem; letter-spacing:.12em;
+    text-transform:uppercase; color:#cfeaff; }
+  .screenPanel .scHead .scSub{ font-family:ui-sans-serif,system-ui,sans-serif; font-size:.56rem;
+    letter-spacing:.06em; color:var(--dust); }
+  .screenPanel .scRows{ display:flex; flex-direction:column; gap:7%; flex:1; justify-content:center; }
+  .screenPanel .scRow{ display:flex; align-items:center; gap:8px; }
+  .screenPanel .scRow .scLbl{ width:34%; font-family:var(--head); font-size:.6rem; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--dust); flex-shrink:0; }
+  .screenPanel .scRow .scTrack{ flex:1; height:5px; background:rgba(140,210,255,.1);
+    border:1px solid rgba(140,210,255,.28); overflow:hidden; }
+  .screenPanel .scRow .scFill{ height:100%; width:0%; background:linear-gradient(90deg, rgba(140,210,255,.7), rgba(140,210,255,.35)); }
+  .screenPanel .scFoot{ margin-top:6%; text-align:center; font-family:var(--head); font-size:.56rem;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--dust); opacity:.75; }
 </style>
 </head>
 <body>
@@ -111,7 +149,7 @@
 <div id="room">
   <div id="bgWrap">
     <div id="bgBase"></div>
-    <div class="lifeGlow pedestal" style="left:28.5%; top:15%; width:260px; height:180px;"></div>
+    <div class="lifeGlow pedestal" style="left:30.4%; top:15%; width:260px; height:180px;"></div>
   </div>
   <div id="scrim"></div>
   <div class="corner tl"></div><div class="corner tr"></div>
@@ -134,7 +172,7 @@
   </div>
 
   <!-- hotspot: the central equip pedestal -- room's main feature -->
-  <div class="hotspot soon primary" style="left:28.5%; top:70%;">
+  <div class="hotspot soon primary" style="left:30.4%; top:70%;">
     <span class="dot"></span>
     <span class="label">Equip Loadout<span class="sub">coming soon</span></span>
   </div>
@@ -151,10 +189,20 @@
     <span class="label">Armor<span class="sub">coming soon</span></span>
   </div>
 
-  <!-- hotspot: the blank loadout/stats screen -->
-  <div class="hotspot soon" style="left:60.6%; top:41%;">
-    <span class="dot"></span>
-    <span class="label">Loadout Stats<span class="sub">coming soon</span></span>
+  <!-- the wall screen itself, mapped to its actual bezel edges -->
+  <div class="screenPanel">
+    <div class="scHead">
+      <span class="scTitle">Loadout Stats</span>
+      <span class="scSub">coming soon</span>
+    </div>
+    <div class="scRows">
+      <div class="scRow"><span class="scLbl">HP</span><span class="scTrack"><span class="scFill"></span></span></div>
+      <div class="scRow"><span class="scLbl">Damage</span><span class="scTrack"><span class="scFill"></span></span></div>
+      <div class="scRow"><span class="scLbl">Armor</span><span class="scTrack"><span class="scFill"></span></span></div>
+      <div class="scRow"><span class="scLbl">Crit Chance</span><span class="scTrack"><span class="scFill"></span></span></div>
+      <div class="scRow"><span class="scLbl">Move Speed</span><span class="scTrack"><span class="scFill"></span></span></div>
+    </div>
+    <div class="scFoot">Equip gear to view stats</div>
   </div>
 </div>
 
