@@ -193,6 +193,11 @@
     opacity:.55; cursor:not-allowed; white-space:nowrap; }
   .miniBtn .sub{ font-family:ui-sans-serif,system-ui,sans-serif; font-size:.5rem; letter-spacing:.05em;
     text-transform:none; opacity:.85; }
+  .miniBtn.live{ opacity:1; cursor:pointer; color:#fff; border-color:rgb(var(--ember));
+    box-shadow:0 0 14px rgba(var(--ember),.4); transition:box-shadow .15s, transform .1s; }
+  .miniBtn.live:hover{ box-shadow:0 0 22px rgba(var(--ember),.65); }
+  .miniBtn.live:active{ transform:translateY(1px); }
+  .miniBtn.live .sub{ opacity:.9; }
 </style>
 </head>
 <body>
@@ -235,7 +240,7 @@
   <!-- other hub destinations from the plan with no physical spot in this
        room's art -- chrome buttons rather than photo hotspots -->
   <div class="navMini">
-    <div class="miniBtn">Briefing Room<span class="sub">stat upgrades — soon</span></div>
+    <a class="miniBtn live" href="briefing/">Briefing Room<span class="sub">stat upgrades</span></a>
     <div class="miniBtn">Leaderboard<span class="sub">soon</span></div>
     <div class="miniBtn">Transfer<span class="sub">soon</span></div>
   </div>

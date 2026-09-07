@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dungeon of Serenity — Briefing Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --coal:#070506; --crypt:#100a0b; --ash:#e6dedb; --dust:#8e8280;
+    --blood:175,47,44; --ember:214,48,40;
+    --display:'Pirata One', serif; --head:'Cinzel', serif;
+  }
+  *{ box-sizing:border-box; }
+  html, body{ height:100%; margin:0; overflow:hidden; background:var(--coal); color:var(--ash);
+    font-family:ui-sans-serif, system-ui, sans-serif; }
+
+  /* ===========================================================================
+     BRIEFING ROOM -- first of the "menu track" screens Kuro asked to finish
+     before moving on to actual combat programming: "i would like to stay in
+     menu to finish everything than move on to battle." No room render exists
+     for this one yet (unlike the cloning bay / armory, which are built on
+     Kuro's own photos) -- this is a functional UI screen using the same
+     black/red gothic chrome as the rest of the site (vignette + corner
+     brackets, same as the very first ship placeholder hub) rather than a
+     blocked-on-art photo room. Swap in a real backdrop later the same way the
+     ship interior replaced its own placeholder, if Kuro generates one --
+     nothing about the stat logic below needs to change either way.
+
+     Spends Skill Points on the 5 permanent clone stats per the cost curve
+     already decided in ALIEN_DRONE_ROGUELITE.md: nth point costs
+     round(10 * 1.15^(n-1)) SP. Reads/writes the same dos_active_save record
+     the rest of the site uses. Since no combat exists yet to actually earn
+     SP, a clearly-labeled dev-only panel grants test currency -- this is NOT
+     a real game feature, just how Kuro can test this screen before the
+     earning loop exists. Remove it once runs actually pay out SP.
+     =========================================================================== */
+  #room{ position:fixed; inset:0; overflow:hidden;
+    background:
+      radial-gradient(ellipse 1200px 900px at 50% 26%, rgba(40,14,14,.4) 0%, rgba(7,5,6,0) 62%),
+      radial-gradient(ellipse 900px 700px at 50% 100%, rgba(20,10,14,.5) 0%, rgba(7,5,6,0) 60%),
+      var(--coal); }
+
+  .corner{ position:absolute; width:34px; height:34px; border:2px solid rgba(var(--blood),.65);
+    pointer-events:none; z-index:6; }
+  .corner.tl{ top:14px; left:14px; border-right:none; border-bottom:none; }
+  .corner.tr{ top:14px; right:14px; border-left:none; border-bottom:none; }
+  .corner.bl{ bottom:14px; left:14px; border-right:none; border-top:none; }
+  .corner.br{ bottom:14px; right:14px; border-left:none; border-top:none; }
+
+  #titleBlock{ position:absolute; top:5%; left:50%; transform:translateX(-50%); text-align:center; z-index:5; }
+  #titleBlock h1{ margin:0; font-family:var(--display); font-size:clamp(1.6rem, 3.4vw, 2.4rem);
+    letter-spacing:.04em; color:var(--ash); text-shadow:0 0 16px rgba(var(--ember),.7), 0 2px 3px #000; }
+  #titleBlock .tag{ margin-top:4px; font-family:var(--head); font-size:.66rem; letter-spacing:.28em;
+    color:var(--dust); text-transform:uppercase; }
+
+  #back{ position:absolute; top:22px; left:22px; z-index:6; font-size:.7rem; letter-spacing:.08em;
+    color:var(--dust); text-decoration:none; border-bottom:1px solid rgba(var(--blood),.4); padding-bottom:2px; }
+  #back:hover{ color:var(--ash); border-color:rgb(var(--ember)); }
+
+  /* --- resource HUD, same as the ship/armory pages --- */
+  .hud{ position:absolute; z-index:6; display:flex; flex-direction:column; gap:8px; top:62px; left:22px; }
+  .resPill{ display:flex; align-items:center; gap:7px; padding:7px 12px;
+    background:linear-gradient(135deg, rgba(16,10,11,.88), rgba(16,10,11,.68));
+    border:1px solid rgba(var(--blood),.4);
+    clip-path:polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    font-family:var(--head); font-size:.72rem; letter-spacing:.04em; color:var(--ash); white-space:nowrap; }
+  .resPill .icon{ font-size:.8rem; color:rgb(var(--ember)); text-shadow:0 0 6px rgba(var(--ember),.7); }
+  .resPill .val{ font-weight:700; }
+  .resPill .lbl{ color:var(--dust); font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; margin-left:1px; }
+  .spPill .icon{ color:#9fd6ff; text-shadow:0 0 6px rgba(120,190,255,.7); }
+
+  /* --- central stat panel --- */
+  #panelWrap{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    padding:120px 24px 40px; }
+  #statPanel{ width:100%; max-width:620px; display:flex; flex-direction:column; gap:12px; }
+  .statRow{ display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:14px 20px; background:linear-gradient(135deg, rgba(16,10,11,.85), rgba(16,10,11,.62));
+    border:1px solid rgba(var(--blood),.35);
+    clip-path:polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
+  .statMain{ display:flex; flex-direction:column; gap:4px; }
+  .statName{ font-family:var(--head); font-size:1rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ash); }
+  .statLvl{ font-family:ui-sans-serif,system-ui,sans-serif; font-size:.72rem; color:var(--dust); }
+  .statLvl b{ color:#9fd6ff; font-weight:700; }
+  .statBuy{ display:flex; flex-direction:column; align-items:center; gap:2px; min-width:118px;
+    padding:10px 16px; font-family:var(--head); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+    color:#fff; background:linear-gradient(135deg, rgba(70,14,12,.9), rgba(30,10,10,.85));
+    border:1px solid rgb(var(--ember)); cursor:pointer;
+    clip-path:polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    box-shadow:0 0 14px rgba(var(--ember),.4); transition:box-shadow .15s, transform .1s, opacity .15s;
+  }
+  .statBuy:hover{ box-shadow:0 0 22px rgba(var(--ember),.65); }
+  .statBuy:active{ transform:translateY(1px); }
+  .statBuy .buyCost{ font-family:ui-sans-serif,system-ui,sans-serif; font-size:.62rem; letter-spacing:.02em;
+    text-transform:none; opacity:.85; }
+  .statBuy.disabled{ opacity:.4; cursor:not-allowed; box-shadow:none;
+    background:linear-gradient(135deg, rgba(16,10,11,.9), rgba(16,10,11,.7)); border-color:rgba(var(--blood),.4); }
+
+  #panelFoot{ margin-top:6px; text-align:center; font-family:ui-sans-serif,system-ui,sans-serif;
+    font-size:.72rem; color:var(--dust); line-height:1.5; }
+
+  /* --- dev test tools, clearly marked as non-final --- */
+  .devTools{ position:absolute; bottom:20px; right:22px; z-index:6; padding:10px 14px;
+    background:rgba(16,10,11,.85); border:1px dashed rgba(180,225,255,.4);
+    display:flex; flex-direction:column; gap:6px; max-width:220px; }
+  .devTools .devTitle{ font-family:var(--head); font-size:.62rem; letter-spacing:.12em; text-transform:uppercase;
+    color:#9fd6ff; }
+  .devTools .devRow{ display:flex; gap:6px; }
+  .devTools button{ font-family:var(--head); font-size:.6rem; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--ash); background:rgba(120,190,255,.12); border:1px solid rgba(120,190,255,.4);
+    padding:6px 8px; cursor:pointer; }
+  .devTools button:hover{ background:rgba(120,190,255,.22); }
+  .devTools .devNote{ font-family:ui-sans-serif,system-ui,sans-serif; font-size:.58rem; color:var(--dust);
+    line-height:1.4; }
+</style>
+</head>
+<body>
+
+<div id="room">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+
+  <a id="back" href="../">Back to ship</a>
+
+  <div id="titleBlock">
+    <h1>Briefing Room</h1>
+    <div class="tag">Clone Augmentation</div>
+  </div>
+
+  <div class="hud">
+    <div class="resPill"><span class="icon">&#9670;</span><span class="val" id="salvageVal">0</span><span class="lbl">Salvage</span></div>
+    <div class="resPill spPill"><span class="icon">&#9650;</span><span class="val" id="spVal">0</span><span class="lbl">Skill Points</span></div>
+  </div>
+
+  <div id="panelWrap">
+    <div id="statPanel">
+      <div class="statRow" data-stat="hp">
+        <div class="statMain"><span class="statName">HP</span><span class="statLvl">Level <b>0</b></span></div>
+        <button class="statBuy" data-stat="hp"><span>Upgrade</span><span class="buyCost">10 SP</span></button>
+      </div>
+      <div class="statRow" data-stat="damage">
+        <div class="statMain"><span class="statName">Damage</span><span class="statLvl">Level <b>0</b></span></div>
+        <button class="statBuy" data-stat="damage"><span>Upgrade</span><span class="buyCost">10 SP</span></button>
+      </div>
+      <div class="statRow" data-stat="armor">
+        <div class="statMain"><span class="statName">Armor</span><span class="statLvl">Level <b>0</b></span></div>
+        <button class="statBuy" data-stat="armor"><span>Upgrade</span><span class="buyCost">10 SP</span></button>
+      </div>
+      <div class="statRow" data-stat="critChance">
+        <div class="statMain"><span class="statName">Crit Chance</span><span class="statLvl">Level <b>0</b></span></div>
+        <button class="statBuy" data-stat="critChance"><span>Upgrade</span><span class="buyCost">10 SP</span></button>
+      </div>
+      <div class="statRow" data-stat="moveSpeed">
+        <div class="statMain"><span class="statName">Move Speed</span><span class="statLvl">Level <b>0</b></span></div>
+        <button class="statBuy" data-stat="moveSpeed"><span>Upgrade</span><span class="buyCost">10 SP</span></button>
+      </div>
+      <div id="panelFoot">Permanent upgrades, spent with Skill Points earned from hive runs.<br>Each point costs more than the last.</div>
+    </div>
+  </div>
+
+  <div class="devTools">
+    <div class="devTitle">Dev Test Tools</div>
+    <div class="devRow">
+      <button id="devAddSalvage">+100 Salvage</button>
+      <button id="devAddSP">+50 SP</button>
+    </div>
+    <div class="devNote">Testing only -- combat isn't built yet, so this is the only way to earn currency right now. Remove once runs pay out for real.</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function(){
+  var STATS = ['hp','damage','armor','critChance','moveSpeed'];
+
+  function loadSave(){
+    var save = null;
+    try {
+      var raw = localStorage.getItem('dos_active_save');
+      if (raw) save = JSON.parse(raw);
+    } catch (e) {}
+    if (!save || typeof save !== 'object') save = {};
+    if (typeof save.salvage !== 'number') save.salvage = 0;
+    if (typeof save.skillPoints !== 'number') save.skillPoints = 0;
+    if (!save.statLevels || typeof save.statLevels !== 'object') save.statLevels = {};
+    STATS.forEach(function(s){ if (typeof save.statLevels[s] !== 'number') save.statLevels[s] = 0; });
+    return save;
+  }
+  function writeSave(save){
+    try { localStorage.setItem('dos_active_save', JSON.stringify(save)); } catch (e) {}
+  }
+  // nth point (1-indexed) costs round(10 * 1.15^(n-1)) SP -- the decided cost curve.
+  function spCost(n){ return Math.round(10 * Math.pow(1.15, n - 1)); }
+
+  var save = loadSave();
+
+  function render(){
+    document.getElementById('salvageVal').textContent = save.salvage.toLocaleString();
+    document.getElementById('spVal').textContent = save.skillPoints.toLocaleString();
+    STATS.forEach(function(stat){
+      var row = document.querySelector('.statRow[data-stat="' + stat + '"]');
+      var level = save.statLevels[stat];
+      var cost = spCost(level + 1);
+      row.querySelector('.statLvl b').textContent = level;
+      var btn = row.querySelector('.statBuy');
+      btn.querySelector('.buyCost').textContent = cost.toLocaleString() + ' SP';
+      btn.classList.toggle('disabled', save.skillPoints < cost);
+    });
+  }
+
+  document.querySelectorAll('.statBuy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var stat = btn.getAttribute('data-stat');
+      var cost = spCost(save.statLevels[stat] + 1);
+      if (save.skillPoints < cost) return;
+      save.skillPoints -= cost;
+      save.statLevels[stat] += 1;
+      writeSave(save);
+      render();
+    });
+  });
+
+  document.getElementById('devAddSalvage').addEventListener('click', function(){
+    save.salvage += 100; writeSave(save); render();
+  });
+  document.getElementById('devAddSP').addEventListener('click', function(){
+    save.skillPoints += 50; writeSave(save); render();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
