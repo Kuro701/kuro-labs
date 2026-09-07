@@ -77,36 +77,43 @@
   #back:hover{ color:var(--ash); border-color:rgb(var(--ember)); }
 
   /* --- hotspots, positioned on the actual room art --- */
+  /* v2, per Kuro: "buttons need to be bigger and much more visible, easy to
+     overlook now" -- bumped every dimension up a tier (dots, ring, label
+     type/padding), gave the "soon" ones real contrast instead of fading
+     almost into the dark art, and gave every dot -- not just the live one --
+     a soft breathing ring so the eye actually catches them against a busy
+     photo instead of reading as background debris. */
   .hotspot{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column;
     align-items:center; z-index:4; text-decoration:none; }
-  .hotspot .dot{ width:12px; height:12px; border-radius:50%; background:var(--dust);
-    box-shadow:0 0 0 rgba(0,0,0,0); margin-bottom:8px; }
-  .hotspot .line{ width:1px; height:16px; background:rgba(var(--blood),.5); margin-bottom:-1px; order:-1; }
-  .hotspot .label{ font-family:var(--head); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase;
-    color:var(--dust); padding:8px 14px; white-space:nowrap;
-    background:linear-gradient(135deg, rgba(16,10,11,.9), rgba(16,10,11,.72));
-    border:1px solid rgba(var(--blood),.45);
-    clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
-  .hotspot .label .sub{ display:block; margin-top:2px; font-family:ui-sans-serif,system-ui,sans-serif;
-    font-size:.6rem; letter-spacing:.02em; text-transform:none; opacity:.75; }
+  .hotspot .dot{ width:20px; height:20px; border-radius:50%; background:var(--dust);
+    margin-bottom:10px; box-shadow:0 0 10px rgba(180,170,165,.35); animation:dotPulseSoon 2.6s ease-in-out infinite; }
+  .hotspot .label{ font-family:var(--head); font-size:.88rem; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ash); padding:12px 20px; white-space:nowrap;
+    background:linear-gradient(135deg, rgba(16,10,11,.94), rgba(16,10,11,.8));
+    border:1.5px solid rgba(var(--blood),.65);
+    clip-path:polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+  .hotspot .label .sub{ display:block; margin-top:3px; font-family:ui-sans-serif,system-ui,sans-serif;
+    font-size:.66rem; letter-spacing:.02em; text-transform:none; opacity:.8; color:var(--dust); }
+  @keyframes dotPulseSoon{ 0%,100%{ box-shadow:0 0 8px rgba(180,170,165,.3); } 50%{ box-shadow:0 0 16px rgba(180,170,165,.55); } }
 
   .hotspot.soon{ cursor:not-allowed; }
-  .hotspot.soon .dot{ background:var(--dust); opacity:.5; }
-  .hotspot.soon .label{ opacity:.5; }
+  .hotspot.soon .dot{ background:#a89e9a; opacity:.85; }
+  .hotspot.soon .label{ opacity:.82; }
 
   .hotspot.live{ cursor:pointer; }
-  .hotspot.live .dot{ background:rgb(var(--ember)); box-shadow:0 0 10px rgba(var(--ember),.85);
+  .hotspot.live .dot{ background:rgb(var(--ember)); box-shadow:0 0 16px rgba(var(--ember),.9);
     animation:dotPulse 1.8s ease-in-out infinite; }
   .hotspot.live .label{ color:#fff; border-color:rgb(var(--ember));
-    box-shadow:0 0 16px rgba(var(--ember),.4); transition:box-shadow .15s, transform .1s; }
-  .hotspot.live:hover .label{ box-shadow:0 0 26px rgba(var(--ember),.7); }
+    box-shadow:0 0 22px rgba(var(--ember),.55); transition:box-shadow .15s, transform .1s; }
+  .hotspot.live:hover .label{ box-shadow:0 0 34px rgba(var(--ember),.85); }
   .hotspot.live:active .label{ transform:translateY(1px); }
-  @keyframes dotPulse{ 0%,100%{ box-shadow:0 0 8px rgba(var(--ember),.7); } 50%{ box-shadow:0 0 18px rgba(var(--ember),1); } }
+  @keyframes dotPulse{ 0%,100%{ box-shadow:0 0 12px rgba(var(--ember),.75); } 50%{ box-shadow:0 0 26px rgba(var(--ember),1); } }
 
-  /* the pod is the main action -- bigger, bolder, its own glow ring */
-  .hotspot.primary .dot{ width:16px; height:16px; }
-  .hotspot.primary .label{ font-size:.82rem; padding:12px 22px;
-    background:linear-gradient(135deg, rgba(70,14,12,.92), rgba(30,10,10,.85)); }
+  /* the pod is the main action -- bigger and bolder still than the others */
+  .hotspot.primary .dot{ width:26px; height:26px; }
+  .hotspot.primary .label{ font-size:1.05rem; padding:16px 28px;
+    background:linear-gradient(135deg, rgba(70,14,12,.95), rgba(30,10,10,.9)); }
+  .hotspot.primary .label .sub{ font-size:.72rem; color:var(--ash); opacity:.85; }
 
   /* ---------------------------------------------------------------------------
      HUD CHROME, per Kuro's follow-up ("all sort of buttons bars gadget to that
@@ -130,7 +137,7 @@
      rename/wire-up once he confirms what it should do.
      --------------------------------------------------------------------------- */
   .hud{ position:absolute; z-index:6; display:flex; flex-direction:column; gap:8px; }
-  .hud.left{ top:52px; left:22px; }
+  .hud.left{ top:62px; left:22px; }
 
   .resPill{ display:flex; align-items:center; gap:7px; padding:7px 12px;
     background:linear-gradient(135deg, rgba(16,10,11,.88), rgba(16,10,11,.68));
@@ -149,7 +156,7 @@
   .spPill .barFill{ height:100%; background:linear-gradient(90deg, rgba(var(--ember),.9), rgba(255,150,90,.9));
     box-shadow:0 0 8px rgba(var(--ember),.6); }
 
-  .navMini{ position:absolute; top:52px; right:22px; z-index:6; display:flex; gap:8px; }
+  .navMini{ position:absolute; top:62px; right:22px; z-index:6; display:flex; gap:8px; }
   .miniBtn{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 14px;
     text-decoration:none; font-family:var(--head); font-size:.64rem; letter-spacing:.08em;
     text-transform:uppercase; color:var(--dust);
@@ -209,11 +216,11 @@
     <span class="label">Shop<span class="sub">coming soon</span></span>
   </div>
 
-  <!-- hotspot: weapon rack -> armory (not built yet) -->
-  <div class="hotspot soon" style="left:66.5%; top:47.3%;">
+  <!-- hotspot: weapon rack -> armory, now live -->
+  <a class="hotspot live" href="armory/" style="left:66.5%; top:47.3%;">
     <span class="dot"></span>
-    <span class="label">Armory<span class="sub">coming soon</span></span>
-  </div>
+    <span class="label">Armory<span class="sub">equip your clone</span></span>
+  </a>
 
   <!-- hotspot: side hatch, red hazard lights -> bridge (not built yet) -->
   <div class="hotspot soon" style="left:83.3%; top:19%;">
