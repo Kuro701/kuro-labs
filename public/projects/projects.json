@@ -2,65 +2,6 @@
   "_comment": "Add a project = one entry. `detail` powers the click-through panel; omit it and the card just won't open.",
   "projects": [
     {
-      "slug": "metatron",
-      "name": "Metatron",
-      "tag": "3D pipeline",
-      "status": "in use",
-      "img": "/assets/img/proj-metatron.webp",
-      "link": null,
-      "what": "A local image-to-3D forge. Feed it one reference photo, get back a textured mesh.",
-      "does": [
-        "Runs Hunyuan3D locally on a single consumer GPU",
-        "Orchestrates its own VRAM so a 12GB card can host the forge and a language model without either dying",
-        "Job queue, live forge log, in-browser preview of the result",
-        "Exports textured GLB at up to 100k triangles",
-        "Doubles as one of Cloe's four sub-minds (<a href=\"/projects/?p=cloe\">see the stack</a>)"
-      ],
-      "stack": [
-        "Python",
-        "CUDA",
-        "Hunyuan3D",
-        "Local web UI"
-      ],
-      "detail": {
-        "intro": "Image-to-3D generation usually means uploading your reference to somebody else's GPU and waiting. Metatron runs the whole pipeline on one machine — background removal, generation, texture painting — and gives it a control room: a queue you can watch, a log that says what stage it is at, and a viewer to orbit the result before you keep it.",
-        "sections": [
-          {
-            "h": "The hard part was memory, not modelling",
-            "p": "A 12GB card cannot hold a 3D generation model and a language model at once. Metatron treats VRAM as a resource to be scheduled rather than hoped for: the engine can be pinned hot for a run of jobs, or released so the assistant can have the card back. When a forge dies mid-run the service notices on restart and marks the job failed instead of leaving it hanging forever."
-          },
-          {
-            "h": "Built to be watched",
-            "p": "Every forge reports elapsed time and current stage — removing background, generating, texturing — so a seven-minute job is legible rather than a spinner. Failures name what died and when.",
-            "bullets": [
-              "Queue with retry and discard per job",
-              "Per-job elapsed time and stage",
-              "In-browser mesh preview before approval",
-              "Output straight to GLB, ready for Blender"
-            ]
-          }
-        ],
-        "facts": [
-          [
-            "Runs on",
-            "One local GPU, no cloud"
-          ],
-          [
-            "Engine",
-            "Hunyuan3D"
-          ],
-          [
-            "Typical job",
-            "5–8 minutes"
-          ],
-          [
-            "Output",
-            "Textured GLB, up to 100k tris"
-          ]
-        ]
-      }
-    },
-    {
       "slug": "cloe",
       "name": "Cloe",
       "tag": "AI companion stack",
@@ -101,10 +42,10 @@
             "h": "Four sub-minds, and each one is its own service",
             "p": "Work she cannot do in a language model gets handed to a separate program with its own lifecycle, its own UI panel and its own claim on the GPU. They are separate processes on purpose: a 3D forge running out of VRAM should take down the forge, not the assistant, and the card has to be handed between them cleanly rather than fought over.",
             "bullets": [
-              "<b>Raphael</b> — diagnostic watcher. Reads her own logs looking for patterns, so a fault gets named rather than noticed three days later",
-              "<b>Vretil</b> — filesystem and scheduling, behind a book-style panel: find things, move things, run things later",
-              "<b>Metatron</b> — the local 3D forge, image or text to a textured GLB. It has its own entry on this page (<a href=\"/projects/?p=metatron\">read about it</a>)",
-              "<b>Jophiel</b> — the newest one. Local image generation and editing on a self-hosted ComfyUI: FLUX.1 [schnell] to make a picture, Qwen-Image-Edit to change one"
+              "<b><a href=\"/projects/?p=raphael\">Raphael</a></b> — diagnostic watcher. Its own service on :5002, reading her logs live so a fault gets named rather than noticed three days later",
+              "<b><a href=\"/projects/?p=vretil\">Vretil</a></b> — working assistant: files and scheduling in plain language, behind a book-shaped panel",
+              "<b><a href=\"/projects/?p=metatron\">Metatron</a></b> — 3D prop forge, reference image or text to a textured GLB",
+              "<b><a href=\"/projects/?p=jophiel\">Jophiel</a></b> — image engine. FLUX.1 [schnell] to make a picture, Qwen-Image-Edit to change one, on a self-hosted ComfyUI"
             ]
           },
           {
@@ -157,9 +98,253 @@
         ],
         "shots": [
           {
+            "src": "/assets/img/proj-cloe-skills.webp",
+            "cap": "The Skills panel — all four sub-minds live, each with its own sigil. The dormant sockets stay visibly empty rather than being hidden."
+          },
+          {
             "src": "/assets/img/proj-cloe-stats.webp",
             "cap": "Her own stats view: memory reactor, current mood, system pulse, and the five mind trees with live node counts."
           }
+        ]
+      },
+      "repo": "https://github.com/Kuro701/project-cloe"
+    },
+    {
+      "slug": "raphael",
+      "name": "Raphael",
+      "tag": "Cloe sub-mind · diagnostic watcher",
+      "status": "in use",
+      "img": "/assets/img/proj-raphael.webp",
+      "link": null,
+      "what": "The first sub-mind: a separate service that reads Cloe's own logs and says when something is wrong.",
+      "does": [
+        "Runs as its own Flask service on :5002, independent of the assistant",
+        "Tails the logs live and matches them against a watchlist of patterns",
+        "Surfaces findings instead of burying them in a file nobody opens",
+        "Watchlist, sources and live feed kept apart — what to look for, where, and what is arriving"
+      ],
+      "stack": [
+        "Python",
+        "Flask",
+        "Log tailing",
+        "Pattern matching"
+      ],
+      "detail": {
+        "intro": "A system that writes logs nobody reads does not have diagnostics, it has an archive. Raphael is the thing that actually reads them: a separate process watching Cloe from the outside, matching what goes past against patterns worth caring about, and putting whatever it finds somewhere visible.",
+        "sections": [
+          {
+            "h": "Watching from outside is the point",
+            "p": "Raphael is a separate service, not a module. A watcher that lives inside the thing it watches goes down with it — and the moment you most want diagnostics is the moment the main process has stopped answering. Running apart means a fault gets named while it is happening rather than reconstructed three days later."
+          },
+          {
+            "h": "Four panes, because they are four different questions",
+            "p": "The panel splits what a diagnostic tool actually has to answer, instead of pouring everything into one scrolling column.",
+            "bullets": [
+              "<b>Watchlist</b> — the patterns being matched, and how many are active",
+              "<b>Sources</b> — which logs are being tailed right now",
+              "<b>Live feed</b> — what is streaming past this second",
+              "<b>Findings</b> — what actually matched, with counts, and an honest “no patterns matched yet” when nothing has"
+            ]
+          }
+        ],
+        "facts": [
+          [
+            "Runs on",
+            "Its own Flask service, :5002"
+          ],
+          [
+            "Watches",
+            "Cloe's own logs, live"
+          ],
+          [
+            "Part of",
+            "Cloe — skill 1 of 4"
+          ]
+        ]
+      },
+      "repo": "https://github.com/Kuro701/project-cloe"
+    },
+    {
+      "slug": "vretil",
+      "name": "Vretil",
+      "tag": "Cloe sub-mind · working assistant",
+      "status": "in use",
+      "img": "/assets/img/proj-vretil.webp",
+      "link": null,
+      "what": "Files and scheduling in plain language: find it, read it, write it, file it, remind me about it.",
+      "does": [
+        "Browse, search, read, summarise, write and organise files by asking",
+        "Reminders that are one-off, recurring or weekday-scoped — and survive a restart",
+        "A cheap intent gate runs before the model, so ordinary chat pays nothing for the feature",
+        "Files land in flat top-level categories; new categories never nest",
+        "Sensitive application code needs explicit per-request confirmation"
+      ],
+      "stack": [
+        "Python",
+        "Flask",
+        "Durable scheduling",
+        "Intent gate"
+      ],
+      "detail": {
+        "intro": "Vretil is the sub-mind that does the boring things: finding a file, writing one, putting it somewhere sensible, and remembering to mention it on Thursday. It runs through the conversational model that is already loaded rather than bringing its own, which on a single-GPU machine is the difference between a feature and a model swap.",
+        "sections": [
+          {
+            "h": "Flat beats tidy",
+            "p": "New files are classified against a registry of existing categories, and anything genuinely new gets a folder at the top level — never nested. Deep hierarchies look organised for about a month and then nobody can find anything. Flat and searchable survives contact with actual use."
+          },
+          {
+            "h": "The gate is what makes it free",
+            "p": "A lightweight intent check runs before anything reaches a model, so a normal conversation never pays for the filesystem feature. Only a request that actually looks like one goes further — and when it does, new content is resolved against what already exists, appending to a log or overwriting a correction as the case warrants, rather than dropping a near-duplicate beside it."
+          },
+          {
+            "h": "Two one-line bugs worth the mention",
+            "p": "Both surfaced only on real hardware and both were a single line. The panel was missing from the clickable list during an orb collapse, so it stopped taking clicks at exactly the wrong moment; and the resize handles sat outside the registered click-through region, so they looked draggable and were not. Neither shows up in code review. They show up when somebody actually clicks the thing. <a href=\"https://github.com/Kuro701/project-cloe/blob/main/docs/VRETIL.md\" rel=\"noopener\">Write-up on GitHub</a>."
+          }
+        ],
+        "facts": [
+          [
+            "Interface",
+            "Book panel — chat left, contents right"
+          ],
+          [
+            "Reminders",
+            "One-off, recurring, weekday-scoped; survive restart"
+          ],
+          [
+            "Model",
+            "Shares the resident conversational model"
+          ],
+          [
+            "Part of",
+            "Cloe — skill 2 of 4"
+          ]
+        ]
+      },
+      "repo": "https://github.com/Kuro701/project-cloe"
+    },
+    {
+      "slug": "metatron",
+      "name": "Metatron",
+      "tag": "Cloe sub-mind · 3D prop forge",
+      "status": "in use",
+      "img": "/assets/img/proj-metatron.webp",
+      "link": null,
+      "what": "A local image-to-3D forge. Feed it one reference photo, get back a textured mesh.",
+      "does": [
+        "Runs Hunyuan3D locally on a single consumer GPU",
+        "Schedules its own VRAM so a 12GB card can host the forge and a language model without either dying",
+        "Job queue, live forge log, in-browser preview of the result",
+        "Polygon budget honoured end to end — ask for 100k faces and you get 100k",
+        "Four status lights are real probes against the running process, not assumed state"
+      ],
+      "stack": [
+        "Python",
+        "CUDA",
+        "Hunyuan3D",
+        "Local web UI"
+      ],
+      "detail": {
+        "intro": "Image-to-3D generation usually means uploading your reference to somebody else's GPU and waiting. Metatron runs the whole pipeline on one machine — background removal, generation, texture painting — and gives it a control room: a queue you can watch, a log that says what stage it is at, and a viewer to orbit the result before you keep it.",
+        "sections": [
+          {
+            "h": "The hard part was memory, not modelling",
+            "p": "A 12GB card cannot hold a 3D diffusion engine (~8.5GB resident) and a language model (~7–8GB) at once. The ordering turned out to be the whole bug: VRAM has to be clear *before* the engine starts loading, not while. Getting that wrong meant twelve-minute warm-ups with both models resident and the machine frozen solid — no crash, no log, nothing to read afterwards. A keepalive thread quietly reloading the 7GB brain every 60 seconds made it worse. Threads now check ownership of the card before re-warming, and a 535-sample flight-recorder run held the language model at zero VRAM for 18 unbroken minutes through a full engine boot and forge cycle — against about 50 seconds before the fix."
+          },
+          {
+            "h": "Built to be watched",
+            "p": "Every forge reports elapsed time and current stage — removing background, generating, texturing — so a seven-minute job is legible rather than a spinner. Failures name what died and when.",
+            "bullets": [
+              "Queue with retry and discard per job",
+              "Per-job elapsed time and stage",
+              "In-browser mesh preview before approval",
+              "Output straight to GLB, ready for Blender"
+            ]
+          },
+          {
+            "h": "Freezes leave no evidence, so I built some",
+            "p": "A hard freeze writes almost nothing to the Windows event log, which makes it the worst kind of bug: it costs an hour and tells you nothing. So Metatron grew its own forensics — a flight recorder that samples lazily when idle and every two seconds under load, a session seal that can tell a process that died from one that was killed, and a root-cause ranker that reports its own confidence, from hardware-confirmed down to no-data. <a href=\"https://github.com/Kuro701/project-cloe/blob/main/docs/METATRON.md\" rel=\"noopener\">The write-up is on GitHub</a>."
+          }
+        ],
+        "facts": [
+          [
+            "Runs on",
+            "One local GPU, no cloud"
+          ],
+          [
+            "Engine",
+            "Hunyuan3D"
+          ],
+          [
+            "Typical job",
+            "5–8 minutes"
+          ],
+          [
+            "Output",
+            "Textured GLB, up to 100k tris"
+          ],
+          [
+            "Part of",
+            "Cloe — skill 3 of 4"
+          ]
+        ]
+      },
+      "repo": "https://github.com/Kuro701/project-cloe"
+    },
+    {
+      "slug": "jophiel",
+      "name": "Jophiel",
+      "tag": "Cloe sub-mind · image engine",
+      "status": "in use",
+      "img": "/assets/img/proj-jophiel.webp",
+      "link": null,
+      "what": "Local image generation and editing, on the same 12GB card everything else is already fighting over.",
+      "does": [
+        "Text to image with FLUX.1 [schnell] on a self-hosted ComfyUI — no API, no per-image cost",
+        "Text-instructed editing of an existing image with Qwen-Image-Edit",
+        "Quantised GGUF build chosen to fit the VRAM budget beside the rest of Cloe",
+        "Explicit engine on/off rather than a resident model holding the card hostage",
+        "Two modes that look different on purpose, so you always know which one you are in"
+      ],
+      "stack": [
+        "Python",
+        "ComfyUI",
+        "FLUX.1 [schnell]",
+        "Qwen-Image-Edit",
+        "CUDA"
+      ],
+      "detail": {
+        "intro": "Jophiel is the fourth sub-mind and the second heavy engine, which is what made it the awkward one to add: the card was already spoken for. Generation and editing are one skill in two modes — Quill makes a picture, Eye changes one — and an image can be thrown from either to the other.",
+        "sections": [
+          {
+            "h": "Two modes, told apart by how they move",
+            "p": "Both modes share a layout — showcase image, filmstrip history, prompt bar — so the only thing separating them could have been a word in the header. Instead they have different visual languages: soft ink-bloom motion for generation, a slowly rotating iris and scan-line for editing. You know which mode you are in before you have read anything."
+          },
+          {
+            "h": "The engine that would not die",
+            "p": "The first build stopped the wrapper process and reported the engine off. It was not off — the real engine was still resident and still holding VRAM, which on a shared 12GB card is the whole problem wearing a disguise. The fix was Metatron's: kill the process tree, not the parent. Verified by actually restarting and watching the memory come back, because the bug's entire nature was reporting success while failing. <a href=\"https://github.com/Kuro701/project-cloe/blob/main/docs/JOPHIEL.md\" rel=\"noopener\">Write-up on GitHub</a>."
+          }
+        ],
+        "facts": [
+          [
+            "Generation",
+            "FLUX.1 [schnell], quantised GGUF"
+          ],
+          [
+            "Editing",
+            "Qwen-Image-Edit"
+          ],
+          [
+            "Host",
+            "Self-hosted ComfyUI, fully local"
+          ],
+          [
+            "Status",
+            "Generation live end to end; edit mode in progress"
+          ],
+          [
+            "Part of",
+            "Cloe — skill 4 of 4"
+          ]
         ]
       },
       "repo": "https://github.com/Kuro701/project-cloe"
