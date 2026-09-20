@@ -1,29 +1,62 @@
 {
- "_comment": "Add a product = one entry. buy = the external checkout URL.",
- "products": [
-  {
-   "slug": "gift-basket",
-   "name": "Aesthetic Gift Basket",
-   "price": "$10",
-   "short": "Cursed decor prop pack. Wholesome gift basket, absolutely unhinged contents.",
-   "long": "A decorative gift basket for VRChat worlds and avatars, filled with things nobody would actually gift. Built for PC and Quest, delivered as a unitypackage you drop straight into your project.",
-   "specs": [
-    [
-     "Platforms",
-     "PC and Quest"
-    ],
-    [
-     "Format",
-     "Unity package"
-    ],
-    [
-     "Contents",
-     "Basket plus contents as separate prefabs"
-    ]
-   ],
-   "img": null,
-   "buy": "https://rajcu.gumroad.com",
-   "buy2": null
-  }
- ]
+  "_comment": "Add a product = one entry. buy = the external checkout URL.",
+  "products": [
+    {
+      "slug": "crescent-rose",
+      "name": "Crescent Rose",
+      "price": "$10",
+      "short": "Three forms. One prop. Animated Scythe, Gun and compact Pack modes for your PCVR avatar.",
+      "long": "A transforming VRChat avatar prop with connected mechanical animations, lower-back storage and right-hand deployment. Includes VRCFury integration, mode icons, a visibility toggle and setup instructions. Requires a compatible humanoid avatar, VRChat SDK and VRCFury installed separately. Fit the pack and hand alignment to your avatar in Unity. Personal avatar use only; no redistribution or resale. Avatar not included.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Modes",
+          "Scythe / Gun / Pack + visibility toggle"
+        ],
+        [
+          "Format",
+          "Unity package + setup guide"
+        ],
+        [
+          "Requires",
+          "VRChat SDK, VRCFury and a compatible humanoid avatar"
+        ],
+        [
+          "License",
+          "Personal avatar use; no redistribution or resale"
+        ]
+      ],
+      "img": "/assets/img/crescent-rose-poster.jpg",
+      "video": "/assets/video/crescent-rose-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/crescent-rose-pcvr",
+      "buy2": null
+    },
+    {
+      "slug": "gift-basket",
+      "name": "Aesthetic Gift Basket",
+      "price": "$10",
+      "short": "Cursed decor prop pack. Wholesome gift basket, absolutely unhinged contents.",
+      "long": "A decorative gift basket for VRChat worlds and avatars, filled with things nobody would actually gift. Built for PC and Quest, delivered as a unitypackage you drop straight into your project.",
+      "specs": [
+        [
+          "Platforms",
+          "PC and Quest"
+        ],
+        [
+          "Format",
+          "Unity package"
+        ],
+        [
+          "Contents",
+          "Basket plus contents as separate prefabs"
+        ]
+      ],
+      "img": "/assets/img/gift-basket-cover.png",
+      "buy": "https://rajcu.gumroad.com/l/Aesthetic-gift-basket",
+      "buy2": null
+    }
+  ]
 }

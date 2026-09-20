@@ -1,12 +1,13 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Assets — Kuro Labs</title>
-<meta name="description" content="VRChat props and decor packs for PC and Quest.">
+<meta name="description" content="VRChat props and decor packs. Check each product for platform compatibility.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Pirata+One&display=swap" rel="stylesheet">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
 <link rel="stylesheet" href="/assets/style.css">
+<style>.card__image{width:100%;aspect-ratio:16/10;object-fit:contain;background:#09090b;display:block;margin:0 0 22px}.sheet__shot{display:block;min-height:0}.sheet__shot img,.sheet__shot video{display:block;width:100%;max-height:48vh;object-fit:contain;background:#09090b}.sheet__panel{max-height:88vh;overflow:auto}.card:focus-visible{outline:2px solid rgb(var(--ember));outline-offset:-2px}</style>
 </head><body>
 <header class="bar"><div class="wrap">
   <a class="barbrand" href="/"><img src="/assets/img/emblem.webp" alt="" width="440" height="641"><span>Kuro Labs</span></a>
@@ -16,15 +17,13 @@
 <main class="wrap">
   <p class="eyebrow">For sale</p>
   <h1 class="pagetitle">Assets</h1>
-  <p class="lede">VRChat props and decor, built for PC and Quest. Click one to read what
-     is in it; buying happens on Gumroad.</p>
-  <div class="cards" id="grid"></div>
-  <div class="todo"><b>To finish</b> — product images, the Jinxxy link, and the
-     "Aestetic" &rarr; "Aesthetic" title fix on both platforms.</div>
+  <p class="lede">VRChat props and decor. Compatibility varies by product. Explore the details below; checkout is handled by Gumroad.</p>
+  <div class="cards" id="grid" aria-live="polite"></div>
+
 </main>
 
 <div class="sheet" id="sheet" hidden>
-  <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sheetName">
+  <div class="sheet__panel sheet__panel--wide" role="dialog" aria-modal="true" aria-labelledby="sheetName">
     <button class="sheet__x" aria-label="Close">&times;</button>
     <div class="sheet__shot" id="sheetShot"></div>
     <h2 id="sheetName"></h2>
@@ -36,33 +35,39 @@
   </div>
 </div>
 <script>
-let DATA=[];
+let DATA=[],previousFocus;
 const sheet=document.getElementById('sheet');
-fetch('/shop/products.json').then(r=>r.json()).then(d=>{
+const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+fetch('/shop/products.json').then(r=>{if(!r.ok)throw new Error('Product request failed');return r.json()}).then(d=>{
   DATA=d.products;
   document.getElementById('grid').innerHTML=DATA.map((p,i)=>`
-    <button class="card" data-i="${i}">
-      <span class="num">${p.price}</span>
-      <h3>${p.name}</h3><p>${p.short}</p>
+    <button class="card" data-i="${i}" aria-haspopup="dialog">
+      ${p.img?`<img class="card__image" src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}" loading="lazy">`:''}
+      <span class="num">${escapeHtml(p.price)}</span>
+      <h3>${escapeHtml(p.name)}</h3><p>${escapeHtml(p.short)}</p>
       <span class="go">Details →</span>
     </button>`).join('');
   document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>openSheet(+b.dataset.i));
-});
+}).catch(()=>{document.getElementById('grid').textContent='Products could not be loaded. Please refresh the page.'});
 function openSheet(i){
-  const p=DATA[i];
-  document.getElementById('sheetShot').innerHTML=p.img?`<img src="${p.img}" alt="">`:'<span>no image yet</span>';
+  const p=DATA[i];previousFocus=document.activeElement;
+  const shot=document.getElementById('sheetShot');shot.replaceChildren();
+  if(p.video){const video=document.createElement('video');video.src=p.video;video.poster=p.img;video.controls=true;video.playsInline=true;video.muted=true;video.loop=true;video.preload='metadata';video.setAttribute('aria-label',p.name+' transformation showcase');shot.append(video)}
+  else if(p.img){const img=document.createElement('img');img.src=p.img;img.alt=p.name;shot.append(img)}
   document.getElementById('sheetName').textContent=p.name;
   document.getElementById('sheetPrice').textContent=p.price;
   document.getElementById('sheetLong').textContent=p.long;
-  document.getElementById('sheetSpecs').innerHTML=p.specs.map(s=>`<tr><th>${s[0]}</th><td>${s[1]}</td></tr>`).join('');
-  document.getElementById('sheetBuy').innerHTML=
-    `<a class="btn primary" href="${p.buy}" rel="noopener">Head to buy</a>`+
-    (p.buy2?`<a class="btn" href="${p.buy2}" rel="noopener">Jinxxy</a>`:'');
-  sheet.hidden=false; document.body.style.overflow='hidden';
+  document.getElementById('sheetSpecs').innerHTML=p.specs.map(s=>`<tr><th>${escapeHtml(s[0])}</th><td>${escapeHtml(s[1])}</td></tr>`).join('');
+  document.getElementById('sheetBuy').innerHTML=`<a class="btn primary" href="${escapeHtml(p.buy)}" rel="noopener">Buy on Gumroad</a>`+(p.buy2?`<a class="btn" href="${escapeHtml(p.buy2)}" rel="noopener">Jinxxy</a>`:'');
+  sheet.hidden=false;document.body.style.overflow='hidden';sheet.querySelector('.sheet__panel').scrollTop=0;sheet.querySelector('.sheet__x').focus();
 }
-function closeSheet(){ sheet.hidden=true; document.body.style.overflow='' }
-sheet.onclick=e=>{ if(e.target===sheet||e.target.classList.contains('sheet__x')) closeSheet() };
-addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet() });
+function closeSheet(){sheet.querySelectorAll('video').forEach(v=>v.pause());sheet.hidden=true;document.body.style.overflow='';previousFocus?.focus()}
+sheet.onclick=e=>{if(e.target===sheet||e.target.classList.contains('sheet__x'))closeSheet()};
+addEventListener('keydown',e=>{
+ if(sheet.hidden)return;
+ if(e.key==='Escape')closeSheet();
+ if(e.key==='Tab'){const items=sheet.querySelectorAll('button,a[href],video[controls]');const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+});
 </script><footer class="site"><div class="wrap">
   <span>© <span id="y"></span> Kuro Labs</span>
   <nav><a href="/games/">Games</a><a href="/projects/">Projects</a><a href="/shop/">Shop</a><a href="/contact/">Contact</a></nav>
