@@ -1,55 +1,29 @@
-# kurolabs.net
+# Kuro Labs
 
-Static site. No build step, no framework, no dependencies — plain HTML and one
-stylesheet. Deployed to Cloudflare Pages.
+Static website with the approved black/red design, seven main pages, product/project details and browser games.
 
-## Adding a game
+## Preview
 
-1. Drop the game in `games/<slug>/` (an `index.html` and whatever it needs), or
-   leave it hosted elsewhere and just point `url` at it.
-2. Add an entry to `games/games.json`:
+Serve `public/` with a local HTTP server and open its localhost address. HTML pages and navigation work without JavaScript; the mobile menu and legacy project query links use `public/assets/site.js`.
 
-```json
-{
-  "slug": "my-game",
-  "title": "My Game",
-  "blurb": "One or two sentences.",
-  "url": "/games/my-game/",
-  "status": "live",
-  "players": "2–8",
-  "language": "English",
-  "thumb": null
-}
+## Update content
+
+Edit the catalogs in `public/shop/products.json`, `public/projects/projects.json`, or `public/games/games.json`. Then regenerate the HTML using Node.js:
+
+```powershell
+Set-Location -LiteralPath 'D:\Cowork\kuro-labs'
+node .\site\build-site.cjs
+if ($LASTEXITCODE -ne 0) { throw 'Website generation failed.' }
 ```
 
-That's the whole job. `games/index.html` renders itself from the manifest, so the
-list never goes stale and no page needs editing. `status` is `live` or `wip`;
-`wip` entries render greyed out with an "In development" badge and are not
-clickable.
+Commit the catalog edits and generated pages together. Changing a catalog alone does not update the generated HTML. See `site/README.md` for the source map. Game applications are independent and are not changed by generation.
 
-## Re-skinning
+## Design
 
-Six lines at the top of `assets/style.css` — three accent colours and three
-greys. Every colour on the site resolves from those tokens; no raw hex lives in
-a page. Same principle as the card game's theme block.
+Styles: `public/assets/techno.css`. Main layouts: `site/pages.cjs`. Shared document shell, product/project details and 404: `site/build-site.cjs`. Existing media files are reused. The old stylesheet is retained for existing consumers.
 
-## Placeholders
+## Deployment
 
-Anything unfinished is wrapped in `<div class="todo">` and renders as a visible
-orange dashed box. Nothing draft is styled to look finished. Delete the block
-when the real content lands — and grep for `todo` before any launch.
+`wrangler.jsonc` configures the Cloudflare `kuro-labs` static-assets Worker to serve `public/`. Generated files are committed, so no build command is needed at hosting time. The Git remote is `https://github.com/Kuro701/kuro-labs.git`, branch `main`.
 
-## Deploying
-
-Cloudflare Pages, connected to this repo, no build command, output directory is
-the repo root. Custom domain `kurolabs.net`.
-
-Local preview: `python -m http.server 8000` then http://localhost:8000 —
-needed because the games list is fetched, and `fetch` does not work on `file://`.
-
-## Notes
-
-- Fonts come from Google Fonts (Cinzel for display). Everything else is a system
-  font stack, so the page is readable before the webfont lands.
-- `main` must be qualified as `main.wrap` for vertical padding — `.wrap` is a
-  class and beats a bare element selector in the cascade. This already bit once.
+Kuro runs pushes/deployments. Whether a Git push triggers Cloudflare deployment has not been independently verified. Verify the live site after publishing before reporting a deployment complete.
