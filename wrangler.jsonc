@@ -1,9 +1,13 @@
 {
-  // Static site — no Worker script, Cloudflare just serves the files in public/.
+  // Mostly a static site — the Worker only handles /api/sales-count and
+  // hands everything else to the ASSETS binding, so normal page serving is
+  // unchanged.
   "name": "kuro-labs",
   "compatibility_date": "2026-08-24",
+  "main": "site/worker.js",
   "assets": {
     "directory": "./public/",
+    "binding": "ASSETS",
     // /about/ and /about both resolve to /about/index.html
     "html_handling": "auto-trailing-slash",
     // serve our own themed 404 instead of Cloudflare's default

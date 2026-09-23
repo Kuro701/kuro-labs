@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dungeon of Serenity — Menu Logic Test Harness (NOT the final menu)</title>
+<style>
+  :root{ --coal:#070506; --crypt:#100a0b; --ash:#e6dedb; --dust:#8e8280; --blood:175,47,44; --ember:214,48,40; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; min-height:100vh; background:var(--coal); color:var(--ash);
+    font-family:ui-sans-serif,system-ui,sans-serif; display:flex; align-items:center;
+    justify-content:center; padding:32px; }
+  .warn{ position:fixed; top:0; left:0; right:0; background:#3a1414; color:#ffd9d5;
+    text-align:center; font-size:.8rem; padding:8px; border-bottom:1px solid rgba(var(--ember),.6); }
+  .panel{ width:360px; margin-top:34px; background:var(--crypt); border:1px solid rgba(var(--blood),.4);
+    border-radius:10px; padding:24px; }
+  h1{ font-size:1rem; margin:0 0 4px; letter-spacing:.02em; }
+  .sub{ color:var(--dust); font-size:.78rem; margin:0 0 20px; line-height:1.5; }
+  button{ width:100%; padding:12px; margin-bottom:10px; border-radius:6px; font-size:.95rem;
+    cursor:pointer; border:1px solid rgba(var(--blood),.5); background:var(--coal); color:var(--dust); }
+  button.glow{ background:linear-gradient(180deg, rgba(var(--ember),.9), rgba(var(--ember),.6));
+    color:#fff; border-color:rgb(var(--ember)); box-shadow:0 0 18px rgba(var(--ember),.55);
+    font-weight:600; }
+  button:disabled{ opacity:.45; cursor:not-allowed; }
+  .codeRow{ display:flex; gap:8px; margin-top:6px; }
+  .codeRow input{ flex:1; padding:10px; border-radius:6px; border:1px solid rgba(var(--blood),.4);
+    background:var(--coal); color:var(--ash); font-size:.9rem; }
+  .codeRow button{ width:auto; padding:10px 14px; margin-bottom:0; }
+  .msg{ margin-top:12px; font-size:.82rem; line-height:1.5; padding:10px 12px; border-radius:6px; display:none; }
+  .msg.error{ display:block; background:#2a1210; color:#ffb3ab; border:1px solid rgba(var(--ember),.6); }
+  .msg.success{ display:block; background:#132a16; color:#b7f0bd; border:1px solid rgba(70,200,90,.5); }
+  .msg a{ color:#fff; text-decoration:underline; }
+  .state{ margin-top:18px; padding-top:14px; border-top:1px solid rgba(var(--blood),.3);
+    font-size:.72rem; color:var(--dust); }
+  .state code{ color:var(--ash); }
+  .devRow{ margin-top:10px; display:flex; gap:8px; }
+  .devRow button{ font-size:.72rem; padding:6px 8px; margin-bottom:0; background:transparent;
+    border-style:dashed; color:var(--dust); }
+</style>
+</head>
+<body>
+<div class="warn">Logic test harness only — NOT the real menu design. Kuro's ship/planet art goes in a separate pass once generated.</div>
+
+<div class="panel">
+  <h1>DUNGEON OF SERENITY — main menu (logic only)</h1>
+  <p class="sub">Layout matches the real spec: New Game above Play, recovery-code box under Play.
+    Whichever button is lit is the primary action for this browser's current state.</p>
+
+  <button id="btnNewGame">New Game</button>
+  <button id="btnPlay">Play</button>
+
+  <div class="codeRow">
+    <input id="codeInput" placeholder="Enter recovery code" autocomplete="off">
+    <button id="btnRecover">Recover</button>
+  </div>
+  <div id="msg" class="msg"></div>
+
+  <div class="state">
+    Menu state: <code id="stateDump">-</code>
+    <div class="devRow">
+      <button id="btnClear">dev: clear save (simulate new browser)</button>
+      <button id="btnFillValid">dev: fill a valid test code</button>
+    </div>
+  </div>
+</div>
+
+<script src="menu-logic.js"></script>
+<script>
+'use strict';
+const btnNewGame = document.getElementById('btnNewGame');
+const btnPlay = document.getElementById('btnPlay');
+const btnRecover = document.getElementById('btnRecover');
+const codeInput = document.getElementById('codeInput');
+const msgEl = document.getElementById('msg');
+const stateDump = document.getElementById('stateDump');
+const btnClear = document.getElementById('btnClear');
+const btnFillValid = document.getElementById('btnFillValid');
+
+function showMessage(kind, html){
+  msgEl.className = 'msg ' + kind;
+  msgEl.innerHTML = html;
+}
+function clearMessage(){
+  msgEl.className = 'msg';
+  msgEl.innerHTML = '';
+}
+
+function render(){
+  const s = window.DOS_MENU.getMenuState();
+  btnNewGame.classList.toggle('glow', s.newGameGlows);
+  btnPlay.classList.toggle('glow', s.playGlows);
+  btnPlay.disabled = !s.playGlows;
+  stateDump.textContent = JSON.stringify(s);
+}
+
+btnNewGame.addEventListener('click', () => {
+  window.DOS_MENU.startNewGame();
+  clearMessage();
+  render();
+});
+
+btnPlay.addEventListener('click', () => {
+  const s = window.DOS_MENU.getMenuState();
+  if (!s.playGlows) return; // inert until a save exists, matches spec
+  showMessage('success', 'Would enter the ship now with save: <code>' + JSON.stringify(s.save) + '</code>');
+});
+
+btnRecover.addEventListener('click', () => {
+  const code = codeInput.value;
+  const result = window.DOS_MENU.tryRecoverCode(code);
+  if (result.ok){
+    showMessage('success', 'Save recovered — Play is ready.');
+  } else {
+    showMessage('error',
+      'That code doesn\'t match any saved data. Please contact me on ' +
+      '<a href="' + window.DOS_MENU.DOS_DISCORD_URL + '" target="_blank" rel="noopener">Discord</a> so I can sort it out.');
+  }
+  render();
+});
+
+btnClear.addEventListener('click', () => {
+  window.DOS_MENU.clearActiveSave();
+  clearMessage();
+  render();
+});
+btnFillValid.addEventListener('click', () => {
+  codeInput.value = window.DOS_MENU._debug_seedValidCode;
+});
+
+render();
+</script>
+</body>
+</html>
