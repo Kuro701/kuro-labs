@@ -155,6 +155,8 @@
   .grid button.s-spring{background:#dcfbee;border-color:#7fe0b6;box-shadow:0 4px 0 #7fe0b6}
   .grid button.s-summer{background:#fff1cf;border-color:#ffd166;box-shadow:0 4px 0 #ffd166}
   .grid button.s-autumn{background:#ffe6d3;border-color:#ffab72;box-shadow:0 4px 0 #ffab72}
+  .grid button{cursor:default}
+  .grid button:hover,.grid button:active{filter:none;transform:none}
   .legend{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px;font-size:.9rem;font-weight:600}
   .legend span{padding:3px 12px;border-radius:99px;border:2px solid}
   .legend .s-winter{background:#e3f4ff;border-color:#8fd0fb}.legend .s-spring{background:#dcfbee;border-color:#7fe0b6}
@@ -293,37 +295,9 @@ function beep(ok){
     o.start(t); o.stop(t+.3);
   }catch(e){}
 }
-function pickVoice(){
-  try{
-    const voices = speechSynthesis.getVoices();
-    if(!voices || !voices.length) return null;
-    const score = v => {
-      const lang = (v.lang||'').toLowerCase(), name = (v.name||'').toLowerCase();
-      let s = 0;
-      if(/^en-gb/.test(lang)) s += 100;
-      else if(/^en/.test(lang)) s += 40;
-      else return -1000; // not English — never pick it
-      if(/natural|neural|online|premium|enhanced|google/.test(name)) s += 50;
-      if(/desktop|compact|espeak|mobile/.test(name)) s -= 30;
-      if(v.localService===false) s += 5; // cloud voices are usually higher quality
-      return s;
-    };
-    let best = null, bestScore = -Infinity;
-    voices.forEach(v=>{ const s = score(v); if(s>bestScore){ bestScore=s; best=v; } });
-    return bestScore > -1000 ? best : null;
-  }catch(e){ return null; }
-}
-function say(text){
-  try{
-    if(!('speechSynthesis' in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    const v = pickVoice();
-    u.lang = v ? v.lang : 'en-GB';
-    u.rate = .9;
-    if(v) u.voice = v;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
-  }catch(e){}
-}
+/* Spoken word-playback was removed — the browser's built-in text-to-speech
+   mispronounces too many words (e.g. reads "tennis" as "tenis") and we don't
+   have real recorded audio files yet. Re-add this once real audio exists. */
 
 /* ---------- QUESTION BUILDERS ---------- */
 function ordDistractors(n){
@@ -800,7 +774,7 @@ function home(){
     </div>
     <div class="menu">
       ${introButtons}
-      <button class="m1" id="learn">1. Môj život — Uč sa<small>Radové číslovky a mesiace. Klikni na kartičku a vypočuj si ju!</small></button>
+      <button class="m1" id="learn">1. Môj život — Uč sa<small>Radové číslovky a mesiace na farebných kartičkách.</small></button>
       <button class="m2" id="l1">1. Môj život: ${LEVELS[1].name}<small>Od 1st po 12th a mesiace</small></button>
       <button class="m3" id="l2">1. Môj život: ${LEVELS[2].name}<small>Od 1st po 31st, pravopis a dátumy</small></button>
       <button class="m4" id="l3">1. Môj život: ${LEVELS[3].name}<small>Hlavne písanie. Len pre odvážnych hráčov!</small></button>
@@ -824,7 +798,7 @@ function home(){
 
 function unitLearn(id){
   const u = UNITS[id], V = VOCAB[id];
-  const cards = V.map(v => `<button data-say="${esc(v.en)}"><span class="w">${esc(v.en)}</span><span class="c">${esc(v.sk)}</span></button>`).join('');
+  const cards = V.map(v => `<button><span class="w">${esc(v.en)}</span><span class="c">${esc(v.sk)}</span></button>`).join('');
   const st = unitStats(id);
   app.innerHTML = `
     ${header()}
@@ -839,7 +813,6 @@ function unitLearn(id){
   bindHeader();
   $('#back').onclick = home;
   $('#go').onclick = () => startUnit(id);
-  app.querySelectorAll('.grid button').forEach(b => b.onclick = () => say(b.dataset.say));
 }
 
 function parentGate(){
@@ -887,7 +860,7 @@ function learn(tab){
   if(tab==='ord'){
     let cards = '';
     for(let n=1;n<=31;n++){
-      cards += `<button data-say="${esc(ord(n))}"><span class="n">${num(n)}</span><span class="w">${ord(n)}</span>${settings.skHints?`<span class="c">${SK_ORD[n]}</span>`:''}</button>`;
+      cards += `<button><span class="n">${num(n)}</span><span class="w">${ord(n)}</span>${settings.skHints?`<span class="c">${SK_ORD[n]}</span>`:''}</button>`;
     }
     body = `
       <div class="tip"><b>Pravopisné pasce</b>
@@ -903,7 +876,7 @@ function learn(tab){
   } else {
     let cards = '';
     MONTHS.forEach((m,i)=>{
-      cards += `<button class="s-${SEASON[i]}" data-say="${m}"><span class="n">${num(i+1)}</span><span class="w">${m}</span><span class="c">${ABBR[i]}${settings.skHints?' · '+SK_MON[i]:''}</span></button>`;
+      cards += `<button class="s-${SEASON[i]}"><span class="n">${num(i+1)}</span><span class="w">${m}</span><span class="c">${ABBR[i]}${settings.skHints?' · '+SK_MON[i]:''}</span></button>`;
     });
     body = `
       <div class="tip"><b>Dobré vedieť</b>
@@ -931,7 +904,6 @@ function learn(tab){
   $('#t1').onclick = () => learn('ord');
   $('#t2').onclick = () => learn('mon');
   $('#go1').onclick = () => start(1);
-  app.querySelectorAll('.grid button').forEach(b => b.onclick = () => say(b.dataset.say));
 }
 
 function start(level, questions){
@@ -1045,10 +1017,8 @@ function answer(q, given, btn){
   fb.innerHTML = `<div class="fbwrap">${mascot(ok?'cheer':'oops',64)}<div><b>${ok?pick(PRAISE):pick(OOPS)}</b>${capNote}<br>${q.explain}</div></div>
     ${plushHtml}${lostHtml}
     <div class="row">
-      <button class="ghost small" id="hear">Vypočuť</button>
       <button class="small" id="next">${last?'Zobraziť výsledky':'Ďalej'}</button>
     </div>`;
-  $('#hear').onclick = () => say(q.say);
   $('#next').onclick = next;
   $('#next').focus();
   $('#live').textContent = ok ? 'Správne' : 'Nie celkom. Správna odpoveď je ' + q.answer;
