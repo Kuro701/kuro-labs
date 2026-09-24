@@ -756,13 +756,15 @@ function bindHeader(){
 const CHAPTER_COLORS = ['cA','cB','cC','cD','cE','cF'];
 function home(){
   const hello = settings.name ? `Ahoj ${esc(settings.name)}!` : 'Ahoj!';
-  const chapterIds = Object.keys(UNITS);
-  const chapterButtons = chapterIds.map((id,i)=>{
+  const chapterIds = Object.keys(UNITS); // ['0','2','3','4','5','6'], in book order
+  const chapterBtn = (id,i) => {
     const u = UNITS[id], st = unitStats(id), cls = CHAPTER_COLORS[i%CHAPTER_COLORS.length];
     const prog = st ? ` · doteraz ${st.r}/${st.t} (${st.pct}%)` : '';
     return `<button class="${cls}" data-learn="${id}">${u.icon} ${esc(u.title)} — Uč sa<small>${esc(u.blurb)}</small></button>
       <button class="${cls}" data-start="${id}">${u.icon} ${esc(u.title)}: Štart<small>16 otázok${prog}</small></button>`;
-  }).join('\n');
+  };
+  const introButtons = chapterBtn('0', 0);
+  const laterButtons = chapterIds.filter(id=>id!=='0').map((id,i)=>chapterBtn(id, i+1)).join('\n');
   app.innerHTML = `
     ${header()}
     <h1>Star Quest</h1>
@@ -776,12 +778,13 @@ function home(){
       <input id="nm" class="name" maxlength="20" value="${esc(settings.name)}" placeholder="Napíš svoje meno">
     </div>
     <div class="menu">
+      ${introButtons}
       <button class="m1" id="learn">1. Môj život — Uč sa<small>Radové číslovky a mesiace. Klikni na kartičku a vypočuj si ju!</small></button>
       <button class="m2" id="l1">1. Môj život: ${LEVELS[1].name}<small>Od 1st po 12th a mesiace</small></button>
       <button class="m3" id="l2">1. Môj život: ${LEVELS[2].name}<small>Od 1st po 31st, pravopis a dátumy</small></button>
       <button class="m4" id="l3">1. Môj život: ${LEVELS[3].name}<small>Hlavne písanie. Len pre odvážnych hráčov!</small></button>
       <button class="m5" id="l4">1. Môj život: ${LEVELS[4].name}<small>Všetko naraz, aj zákerné otázky!</small></button>
-      ${chapterButtons}
+      ${laterButtons}
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov nazbieraných</small></button>
       <button class="ghost" id="parent">👪 Pre rodičov<small>Prehľad výsledkov (chránené PIN-om)</small></button>
     </div>`;
