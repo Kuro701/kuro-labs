@@ -14,6 +14,17 @@
    "community": "Mytheder"
   },
   {
+   "slug": "ordinals-and-months",
+   "title": "Star Quest: Ordinals & Months",
+   "blurb": "A colourful space adventure that teaches ordinal numbers and the months of the year. Made for kids, easiest to open right from a tablet.",
+   "url": "/games/ordinals-and-months/",
+   "status": "live",
+   "players": "1",
+   "language": "English",
+   "thumb": null,
+   "art": "STAR QUEST"
+  },
+  {
    "slug": "monkey-paw",
    "title": "Monkey Paw",
    "blurb": "One player makes a wish. Everyone else writes the catch that makes them regret it. Free text, no deck, nothing ever runs out.",
@@ -21,7 +32,8 @@
    "status": "wip",
    "players": "3–10",
    "language": "Czech / English",
-   "thumb": null
+   "thumb": null,
+   "art": "MAKE A WISH."
   },
   {
    "slug": "dungeon-of-serenity",
@@ -31,7 +43,8 @@
    "status": "wip",
    "players": "1",
    "language": "English",
-   "thumb": null
+   "thumb": null,
+   "art": "DESCEND."
   }
  ]
 }
