@@ -72,7 +72,19 @@
   .menu .m2{background:linear-gradient(180deg,#5fe3b0,#1fbf7a);box-shadow:0 6px 0 #14935a}
   .menu .m3{background:linear-gradient(180deg,#6cc6ff,#3a8dff);box-shadow:0 6px 0 #2565cc}
   .menu .m4{background:linear-gradient(180deg,#ff8cc4,#ff4f9a);box-shadow:0 6px 0 #d02f78}
+  .menu .m5{background:linear-gradient(180deg,#b092ff,#7c3aed);box-shadow:0 6px 0 #5b21b6}
   .menu button.ghost{background:#fff;color:#8b5cf6;box-shadow:0 5px 0 var(--line);align-items:center}
+  .worldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:10px 0 20px}
+  .worldtile{color:var(--ink);padding:16px;border-radius:24px;border:3px solid;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}
+  .worldtile .n{font-size:1.8rem}
+  .worldtile .w{font-size:1.05rem;font-weight:700}
+  .worldtile .c{font-size:.82rem;color:var(--muted);font-weight:500}
+  .worldtile:nth-child(6n+1){background:#ffe6f2;border-color:#ff9ccc;box-shadow:0 5px 0 #ff9ccc}
+  .worldtile:nth-child(6n+2){background:#e3f3ff;border-color:#8fd0fb;box-shadow:0 5px 0 #8fd0fb}
+  .worldtile:nth-child(6n+3){background:#dcfbee;border-color:#7fe0b6;box-shadow:0 5px 0 #7fe0b6}
+  .worldtile:nth-child(6n+4){background:#fff1cf;border-color:#ffd166;box-shadow:0 5px 0 #ffd166}
+  .worldtile:nth-child(6n+5){background:#ece4ff;border-color:#b9a0ff;box-shadow:0 5px 0 #b9a0ff}
+  .worldtile:nth-child(6n){background:#ffe8d8;border-color:#ffb27d;box-shadow:0 5px 0 #ffb27d}
   .name{
     font:inherit;font-size:1.1rem;padding:10px 16px;border:3px solid var(--line);border-radius:999px;width:100%;max-width:340px;color:var(--ink);background:#fff;
   }
@@ -232,19 +244,44 @@ const PLUSHIES = [
   {e:'🧸', name:'Medvedík'}, {e:'🐰', name:'Zajko'}, {e:'🦊', name:'Líška'},
   {e:'🐼', name:'Pandička'}, {e:'🦄', name:'Jednorožec'}, {e:'🐱', name:'Mačička'},
   {e:'🐶', name:'Psík'}, {e:'🐨', name:'Koalka'}, {e:'🦁', name:'Levík'},
-  {e:'🐯', name:'Tigrík'}, {e:'🐸', name:'Žabka'}, {e:'🐷', name:'Prasiatko'}
+  {e:'🐯', name:'Tigrík'}, {e:'🐸', name:'Žabka'}, {e:'🐷', name:'Prasiatko'},
+  {e:'🐵', name:'Opička'}, {e:'🐔', name:'Sliepočka'}, {e:'🐧', name:'Tučniak'},
+  {e:'🦉', name:'Sovička'}, {e:'🐺', name:'Vlčiak'}, {e:'🦝', name:'Mýval'},
+  {e:'🦔', name:'Ježko'}, {e:'🐹', name:'Škrečok'}, {e:'🐭', name:'Myška'},
+  {e:'🦋', name:'Motýlik'}, {e:'🐢', name:'Korytnačka'}, {e:'🐳', name:'Veľrybka'},
+  {e:'🐬', name:'Delfínik'}, {e:'🦩', name:'Plameniak'}, {e:'🦥', name:'Lenivec'},
+  {e:'🐝', name:'Včielka'}, {e:'🐙', name:'Chobotnička'}, {e:'🦒', name:'Žirafka'}
 ];
 function loadCollection(){
   try{
     const raw = localStorage.getItem('sq_collection');
-    if(raw){ const c = JSON.parse(raw); if(c && Array.isArray(c.owned)) return c; }
+    if(raw){ const c = JSON.parse(raw); if(c && Array.isArray(c.owned)) return { owned:c.owned, totalCorrect:c.totalCorrect||0, sinceAward:c.sinceAward||0, totalWrong:c.totalWrong||0, totalLost:c.totalLost||0 }; }
   }catch(e){}
-  return { owned:[], totalCorrect:0 };
+  return { owned:[], totalCorrect:0, sinceAward:0, totalWrong:0, totalLost:0 };
 }
 function saveCollection(){
   try{ localStorage.setItem('sq_collection', JSON.stringify(collection)); }catch(e){}
 }
 let collection = loadCollection();
+
+/* ---------- HISTORY (for the parent dashboard) ---------- */
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem('sq_history');
+    if(raw){ const h = JSON.parse(raw); if(Array.isArray(h)) return h; }
+  }catch(e){}
+  return [];
+}
+function saveHistory(){
+  try{ localStorage.setItem('sq_history', JSON.stringify(history.slice(-200))); }catch(e){}
+}
+let history = loadHistory();
+function pushHistory(unitId, q, given, ok){
+  history.push({ ts: Date.now(), u: unitId, q: String(q.html).replace(/<[^>]+>/g,'').slice(0,90), given: String(given).slice(0,40), ans: String(q.answer).slice(0,40), ok });
+  if(history.length>200) history = history.slice(-200);
+  saveHistory();
+}
+const PARENT_PIN = '1234'; // just a kid-deterrent, not real security
 
 /* ---------- SOUND & SPEECH ---------- */
 let audioCtx = null;
@@ -356,24 +393,306 @@ const BUILD = {
     const dd = []; cand.forEach(x=>{ if(x!==correct && !dd.includes(x)) dd.push(x); });
     return choiceQ(`Vo Veľkej Británii sa najprv píše <u>deň</u>. Ako povieme <b>${d}/${m}</b>?`, correct, dd.slice(0,3),
       { say: correct, explain:`${d}/${m} sa po anglicky povie <b>${correct}</b> (teda ${num(d)} ${M}). Vo Veľkej Británii sa najprv píše deň, v USA najprv mesiac.` });
+  },
+  dateReverse(){
+    const d = rnd(1,28), m = rnd(1,12);
+    const M = MONTHS[m-1];
+    const phrase = `the ${ord(d)} of ${M}`;
+    const correct = `${d}/${m}`;
+    const cand = [`${d<28?d+1:d-1}/${m}`, `${d}/${wrap(m+1,12)}`, `${d>1?d-1:d+2}/${m}`, `${d}/${wrap(m-1,12)}`];
+    const dd = []; cand.forEach(x=>{ if(x!==correct && !dd.includes(x)) dd.push(x); });
+    return choiceQ(`Ktorý dátum znamená <b>${phrase}</b>?`, correct, dd.slice(0,3),
+      { say: phrase, explain:`<b>${phrase}</b> zapíšeme ako <b>${correct}</b> (deň/mesiac). Vo Veľkej Británii sa najprv píše deň.` });
+  },
+  season(){
+    const m = rnd(1,12);
+    const s = SEASON[m-1];
+    const skNames = {winter:'zima', spring:'jar', summer:'leto', autumn:'jeseň'};
+    const opts = ['winter','spring','summer','autumn'];
+    const d = shuffle(opts.filter(x=>x!==s)).slice(0,3);
+    return choiceQ(`Aké je ročné obdobie mesiaca <b>${MONTHS[m-1]}</b>?`, s, d,
+      { say: s, explain:`<b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}) patrí do obdobia <b>${s}</b> (po slovensky ${skNames[s]}).` });
+  },
+  beforeOrd(max){
+    const n = rnd(2,max);
+    const b = n-1;
+    return choiceQ(`Čo je hneď pred <b>${ord(n)}</b>?`, ord(b), ordDistractors(b),
+      { say: ord(b), explain:`Pred <b>${ord(n)}</b> je <b>${ord(b)}</b> (${num(b)}, po slovensky ${SK_ORD[b]}). ${ordTip(b)}` });
+  },
+  spellTrap(max){
+    const pool = []; for(let n=1;n<=max;n++){ if(ord(n)!==card(n)+'th') pool.push(n); }
+    const n = pool.length ? pick(pool) : rnd(1,max);
+    const c = ord(n), wrong = card(n)+'th';
+    let opts = [c, wrong];
+    ordDistractors(n).forEach(x=>{ if(opts.length<4 && !opts.includes(x)) opts.push(x); });
+    while(opts.length<4){ const x = ord(rnd(1,max)); if(!opts.includes(x)) opts.push(x); }
+    return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Ako sa <b>správne</b> píše <b>${num(n)}</b>?`,
+      options: shuffle(opts.slice(0,4)), answer:c,
+      say:c, explain:`Správne je <b>${c}</b>, nie „${wrong}“! ${ordTip(n)}` };
+  },
+  monthSpellTrap(){
+    const traps = {'February':'Febuary','August':'Augest','September':'Septembr','November':'Novembr','December':'Decembr'};
+    const keys = Object.keys(traps);
+    const m = pick(keys), wrong = traps[m];
+    let opts = [m, wrong];
+    shuffle(MONTHS.filter(x=>x!==m)).slice(0,2).forEach(x=>{ if(opts.length<4) opts.push(x); });
+    return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Ako sa <b>správne</b> píše po anglicky mesiac <b>${SK_MON[MONTHS.indexOf(m)]}</b>?`,
+      options: shuffle(opts.slice(0,4)), answer:m,
+      say:m, explain:`Správne je <b>${m}</b>, nie „${wrong}“! Tento mesiac sa často píše nesprávne.` };
   }
 };
 
 const LEVELS = {
-  1:{ name:'Úroveň 1 – Začiatočník', max:12, types:['ordToWord','wordToOrd','numToMonth','monthToNum','czMonth','nextMonth','typeOrd'] },
-  2:{ name:'Úroveň 2 – Objaviteľ', max:31, types:['ordToWord','wordToOrd','typeOrd','sequence','czMonth','typeMonth','nextMonth','date'] },
-  3:{ name:'Úroveň 3 – Šampión', max:31, types:['typeOrd','typeMonth','date','sequence','typeOrd','ordToWord','monthToNum','date'] }
+  1:{ name:'Úroveň 1 – Začiatočník', max:12, types:['ordToWord','wordToOrd','numToMonth','monthToNum','czMonth','nextMonth','typeOrd','season'] },
+  2:{ name:'Úroveň 2 – Objaviteľ', max:31, types:['ordToWord','wordToOrd','typeOrd','sequence','beforeOrd','czMonth','typeMonth','nextMonth','date','season','spellTrap','monthSpellTrap'] },
+  3:{ name:'Úroveň 3 – Šampión', max:31, types:['typeOrd','typeMonth','date','dateReverse','sequence','beforeOrd','ordToWord','monthToNum','season','spellTrap','monthSpellTrap'] },
+  4:{ name:'Úroveň 4 – Majster', max:31, types:['typeOrd','typeMonth','date','dateReverse','sequence','beforeOrd','czMonth','monthToNum','wordToOrd','season','nextMonth','spellTrap','monthSpellTrap'] }
 };
 function makeRound(level){
   const L = LEVELS[level], qs = [], seen = new Set();
   let guard = 0;
-  while(qs.length<10 && guard++<200){
+  while(qs.length<20 && guard++<400){
     const q = BUILD[pick(L.types)](L.max);
     if(seen.has(q.html)) continue;
     seen.add(q.html); qs.push(q);
   }
   return qs;
 }
+
+/* ==========================================================
+   CHAPTERS 0, 2–6 — built from the real school textbook
+   (Project 2, 4th Edition). Chapter 1 above stays untouched.
+   ========================================================== */
+
+const UNITS = {
+  0:{ title:'0. Úvod', blurb:'Slovesá can a have got, športy a aktivity', icon:'⚽',
+      tip:'Sloveso <b>can</b> (vedieť / môcť) sa nemení podľa osoby: I can, she can, they can. Zápor je <b>can\'t</b>. Sloveso <b>have got</b> sa ale mení: I/you/we/they majú <b>have got</b>, no he/she/it má <b>has got</b>.' },
+  2:{ title:'2. Zvieratá', blurb:'Prítomný priebehový čas a divé zvieratá', icon:'🦁',
+      tip:'Prítomný priebehový čas (present continuous) opisuje, čo sa deje <b>práve teraz</b>: is/are + sloveso s príponou -ing. Pozor na zdvojenie spoluhlásky: run → running, swim → swimming.' },
+  3:{ title:'3. Prázdniny', blurb:'Minulý čas a dovolenkové slovíčka', icon:'🏖️',
+      tip:'Veľa slovies má v minulom čase <b>nepravidelný</b> tvar — nepridáva sa -ed! Napríklad break → broke, take → took, get → got. Tieto tvary sa treba naučiť naspamäť.' },
+  4:{ title:'4. Jedlo', blurb:'Počítateľné a nepočítateľné podstatné mená', icon:'🍎',
+      tip:'Veci, ktoré sa dajú počítať (an egg, two eggs), používajú <b>a/an</b> a otázku <b>how many</b>. Veci, ktoré sa nedajú počítať (rice, milk), používajú <b>some</b> a otázku <b>how much</b>.' },
+  5:{ title:'5. Svet', blurb:'Porovnávanie a počasie', icon:'🌍',
+      tip:'Krátke prídavné mená pridávajú <b>-er</b> (hot → hotter, dry → drier). Dlhšie prídavné mená (2 a viac slabík) používajú <b>more</b>: beautiful → more beautiful.' },
+  6:{ title:'6. Zábava', blurb:'Going to, have to a televízia', icon:'🎬',
+      tip:'<b>Going to</b> používame na plány do budúcnosti: I\'m going to watch TV. <b>Have to</b> / <b>has to</b> znamená povinnosť — musieť niečo urobiť.' }
+};
+
+const VOCAB = {
+  0:[ {en:'swimming',sk:'plávanie'}, {en:'table tennis',sk:'stolný tenis'}, {en:'weight training',sk:'posilňovanie'},
+      {en:'badminton',sk:'bedminton'}, {en:'basketball',sk:'basketbal'}, {en:'fitness classes',sk:'fitness cvičenia'},
+      {en:'volleyball',sk:'volejbal'}, {en:'karate',sk:'karate'}, {en:'tennis',sk:'tenis'}, {en:'yoga',sk:'jóga'},
+      {en:"children's club",sk:'detský klub'}, {en:'football',sk:'futbal'} ],
+  2:[ {en:'tiger',sk:'tiger'}, {en:'kangaroo',sk:'klokan'}, {en:'bat',sk:'netopier'}, {en:'crocodile',sk:'krokodíl'},
+      {en:'monkey',sk:'opica'}, {en:'giraffe',sk:'žirafa'}, {en:'eagle',sk:'orol'}, {en:'insect',sk:'hmyz'},
+      {en:'shark',sk:'žralok'}, {en:'hippopotamus',sk:'hroch'}, {en:'zebra',sk:'zebra'}, {en:'camel',sk:'ťava'},
+      {en:'dolphin',sk:'delfín'}, {en:'frog',sk:'žaba'},
+      {en:'cow',sk:'krava'}, {en:'pig',sk:'prasa'}, {en:'horse',sk:'kôň'}, {en:'sheep',sk:'ovca'},
+      {en:'goat',sk:'koza'}, {en:'chicken',sk:'sliepka'}, {en:'duck',sk:'kačica'}, {en:'donkey',sk:'somár'} ],
+  3:[ {en:'on holiday',sk:'na dovolenke'}, {en:'at a wedding',sk:'na svadbe'}, {en:'in the garden',sk:'v záhrade'},
+      {en:'at work',sk:'v práci'}, {en:'on the beach',sk:'na pláži'}, {en:'in bed',sk:'v posteli'},
+      {en:'at a theme park',sk:'v zábavnom parku'}, {en:'at home',sk:'doma'} ],
+  4:[ {en:'chicken',sk:'kurča'}, {en:'lamb',sk:'jahňacina'}, {en:'pork',sk:'bravčové'}, {en:'beef',sk:'hovädzie'},
+      {en:'tuna',sk:'tuniak'}, {en:'salmon',sk:'losos'}, {en:'satsumas',sk:'mandarínky'}, {en:'grapes',sk:'hrozno'},
+      {en:'bananas',sk:'banány'}, {en:'tomatoes',sk:'paradajky'}, {en:'beans',sk:'fazuľa'}, {en:'lettuce',sk:'šalát'},
+      {en:'pasta',sk:'cestoviny'}, {en:'cheese',sk:'syr'}, {en:'rice',sk:'ryža'}, {en:'eggs',sk:'vajcia'},
+      {en:'orange juice',sk:'pomarančový džús'}, {en:'tea',sk:'čaj'}, {en:'coffee',sk:'káva'}, {en:'lemonade',sk:'limonáda'},
+      {en:'water',sk:'voda'}, {en:'bread',sk:'chlieb'}, {en:'cabbage',sk:'kapusta'}, {en:'ham',sk:'šunka'},
+      {en:'milk',sk:'mlieko'}, {en:'sausages',sk:'klobásy'}, {en:'sugar',sk:'cukor'}, {en:'carrots',sk:'mrkva'},
+      {en:'cream',sk:'smotana'}, {en:'salt',sk:'soľ'}, {en:'wine',sk:'víno'}, {en:'lemons',sk:'citróny'},
+      {en:'butter',sk:'maslo'}, {en:'pepper',sk:'korenie'}, {en:'onions',sk:'cibuľa'}, {en:'potatoes',sk:'zemiaky'},
+      {en:'mushrooms',sk:'huby'}, {en:'yoghurt',sk:'jogurt'} ],
+  5:[ {en:'mountain',sk:'hora'}, {en:'valley',sk:'údolie'}, {en:'lake',sk:'jazero'}, {en:'cliff',sk:'útes'},
+      {en:'island',sk:'ostrov'}, {en:'tunnel',sk:'tunel'}, {en:'canal',sk:'kanál'}, {en:'skyscraper',sk:'mrakodrap'},
+      {en:'power station',sk:'elektráreň'}, {en:'field',sk:'pole'}, {en:'harbour',sk:'prístav'}, {en:'motorway',sk:'diaľnica'},
+      {en:'river',sk:'rieka'}, {en:'sea',sk:'more'}, {en:'hill',sk:'kopec'}, {en:'bridge',sk:'most'},
+      {en:'forest',sk:'les'}, {en:'beach',sk:'pláž'},
+      {en:"it's hot",sk:'je horúco'}, {en:"it's warm",sk:'je teplo'}, {en:"it's cool",sk:'je chladno'},
+      {en:"it's cold",sk:'je zima'}, {en:"it's raining",sk:'prší'}, {en:"it's sunny",sk:'je slnečno'},
+      {en:"it's cloudy",sk:'je oblačno'}, {en:"it's windy",sk:'je veterno'}, {en:"it's snowing",sk:'sneží'},
+      {en:"it's freezing",sk:'mrzne'}, {en:"it's foggy",sk:'je hmlisto'} ],
+  6:[ {en:'quiz show',sk:'kvízová relácia'}, {en:'soap opera',sk:'telenovela'}, {en:'cartoon',sk:'kreslený seriál'},
+      {en:'police drama',sk:'policajný seriál'}, {en:'documentary',sk:'dokument'}, {en:'the news',sk:'správy'},
+      {en:'reality show',sk:'reality šou'}, {en:'comedy programme',sk:'komediálna relácia'},
+      {en:'nature programme',sk:'relácia o prírode'}, {en:'sports programme',sk:'športová relácia'}, {en:'chat show',sk:'talk show'},
+      {en:'thriller',sk:'triler'}, {en:'horror film',sk:'horor'}, {en:'sci-fi film',sk:'sci-fi film'},
+      {en:'musical',sk:'muzikál'}, {en:'romcom',sk:'romantická komédia'}, {en:'fantasy film',sk:'fantasy film'},
+      {en:'adventure film',sk:'dobrodružný film'}, {en:'comedy film',sk:'komédia'}, {en:'western',sk:'western'},
+      {en:'animated film',sk:'animovaný film'} ]
+};
+
+function vocabChoice(unitId){
+  const V = VOCAB[unitId], it = pick(V);
+  const d = shuffle(V.filter(x=>x!==it)).slice(0,3).map(x=>x.en);
+  return choiceQ(`Ako sa po anglicky povie <b>${esc(it.sk)}</b>?`, it.en, d,
+    { say: it.en, explain:`<b>${esc(it.sk)}</b> sa po anglicky povie <b>${esc(it.en)}</b>.` });
+}
+function vocabType(unitId){
+  const V = VOCAB[unitId], it = pick(V);
+  return { kind:'type', html:`Napíš po anglicky: <b>${esc(it.sk)}</b>`, answer: it.en, placeholder:'po anglicky',
+    say: it.en, explain:`<b>${esc(it.sk)}</b> sa píše <b>${esc(it.en)}</b>.` };
+}
+
+/* --- Chapter 0: can / have got --- */
+const U0_NAMES = ['Jake','Emma','Polly','Henry','Conor','Laura'];
+const U0_ABIL = [['play the guitar','hrať na gitare'],['play the piano','hrať na klavíri'],['swim','plávať'],
+  ['ride a bike','jazdiť na bicykli'],['speak French','hovoriť po francúzsky'],['play football','hrať futbal']];
+function u0Grammar(){
+  const n = pick(U0_NAMES), a = pick(U0_ABIL), yes = Math.random()<.5;
+  const sk = `${n} ${yes?'vie':'nevie'} ${a[1]}.`;
+  const correct = yes ? 'can' : "can't";
+  return choiceQ(`${sk}<br>Doplň: <b>${n} ___ ${a[0]}.</b>`, correct, ['can',"can't",'could','cans'].filter(x=>x!==correct).slice(0,3),
+    { say: `${n} ${correct} ${a[0]}`, explain:`${yes?'Vie':'Nevie'} znamená <b>${correct}</b>. Can sa nemení podľa osoby — vždy len can alebo can't.` });
+}
+function u0Trap(){
+  const third = Math.random()<.5;
+  const subj = third ? pick(['He','She','It','Laura','Oscar']) : pick(['I','You','We','They','Jake and Emma']);
+  const correct = third ? 'has' : 'have';
+  const wrong = third ? 'have' : 'has';
+  const opts = shuffle([correct, wrong, 'haves', 'having']).slice(0,4);
+  return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! <b>${subj} ___ got a bike.</b> Čo je správne?`,
+    options: opts.includes(correct)?opts:[correct,...opts.slice(0,3)], answer:correct,
+    say:`${subj} ${correct} got a bike`, explain:`Pri <b>${subj}</b> je správne <b>${correct} got</b>. He/She/It používa <b>has got</b>, ostatné osoby <b>have got</b>.` };
+}
+
+/* --- Chapter 2: present continuous --- */
+const U2_VERBS = [['swim','plávať','swimming'],['run','bežať','running'],['fly','lietať','flying'],
+  ['climb','liezť','climbing'],['drink','piť','drinking'],['jump','skákať','jumping'],['eat','jesť','eating'],['sleep','spať','sleeping']];
+const U2_ANIMALS = ['tiger','kangaroo','monkey','giraffe','shark','zebra','camel','dolphin','frog'];
+function u2Grammar(){
+  const v = pick(U2_VERBS), an = pick(U2_ANIMALS);
+  const wrongForms = shuffle(U2_VERBS.filter(x=>x!==v)).slice(0,3).map(x=>x[2]);
+  return choiceQ(`The ${an} is ___ (${v[1]}) right now.`, v[2], wrongForms,
+    { say:`The ${an} is ${v[2]}`, explain:`${v[0]} → <b>${v[2]}</b> v prítomnom priebehovom čase (teraz práve ${v[1]}).` });
+}
+const U2_TRAP = { swim:'swimming', run:'running' };
+const U2_TRAP_WRONG = { swim:'swiming', run:'runing' };
+function u2Trap(){
+  const v = pick(Object.keys(U2_TRAP));
+  const correct = U2_TRAP[v], wrong = U2_TRAP_WRONG[v];
+  const filler = shuffle(U2_VERBS.map(x=>x[2]).filter(x=>x!==correct)).slice(0,2);
+  return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Ako sa <b>správne</b> píše <b>${v}</b> + ing?`,
+    options: shuffle([correct, wrong, ...filler]), answer: correct,
+    say: correct, explain:`Správne je <b>${correct}</b>, nie „${wrong}“! Keď slovo končí na jednu krátku samohlásku a spoluhlásku, spoluhláska sa <b>zdvojí</b>.` };
+}
+
+/* --- Chapter 3: past simple (irregular) --- */
+const U3_IRREG = { leave:['left','nechať / odísť'], forget:['forgot','zabudnúť'], break:['broke','zlomiť'],
+  steal:['stole','ukradnúť'], 'fall over':['fell over','spadnúť'], bite:['bit','hrýzť'], lose:['lost','stratiť'],
+  feel:['felt','cítiť sa'], take:['took','vziať'], get:['got','dostať'] };
+const U3_TRAP_WRONG = { leave:'leaved', forget:'forgeted', break:'breaked', steal:'stealed', 'fall over':'falled over',
+  bite:'bited', lose:'losed', feel:'feeled', take:'taked', get:'getted' };
+function u3Grammar(){
+  const verbs = Object.keys(U3_IRREG);
+  const v = pick(verbs), correct = U3_IRREG[v][0], sk = U3_IRREG[v][1];
+  const d = shuffle(verbs.filter(x=>x!==v)).slice(0,3).map(x=>U3_IRREG[x][0]);
+  return choiceQ(`Aký je minulý čas (past simple) slovesa <b>to ${v}</b> (${sk})?`, correct, d,
+    { say: correct, explain:`to ${v} → <b>${correct}</b>. Je to nepravidelné sloveso, tvar sa treba naučiť naspamäť.` });
+}
+function u3Trap(){
+  const verbs = Object.keys(U3_IRREG);
+  const v = pick(verbs), correct = U3_IRREG[v][0], wrong = U3_TRAP_WRONG[v];
+  const filler = shuffle(verbs.filter(x=>x!==v)).slice(0,2).map(x=>U3_IRREG[x][0]);
+  return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Aký je <b>správny</b> minulý čas slovesa <b>to ${v}</b>?`,
+    options: shuffle([correct, wrong, ...filler]), answer: correct,
+    say: correct, explain:`Správne je <b>${correct}</b>, nie „${wrong}“! to ${v} je nepravidelné sloveso — nepridáva sa -ed.` };
+}
+
+/* --- Chapter 4: countable / uncountable --- */
+const U4_COUNTABLE = [['an egg','vajce'],['a sausage','klobása'],['a tomato','paradajka'],['a banana','banán'],
+  ['a carrot','mrkva'],['an onion','cibuľa'],['a potato','zemiak'],['a mushroom','huba'],['a lemon','citrón']];
+const U4_UNCOUNTABLE = [['rice','ryža'],['cheese','syr'],['milk','mlieko'],['water','voda'],['bread','chlieb'],
+  ['butter','maslo'],['sugar','cukor'],['salt','soľ'],['pepper','korenie'],['wine','víno'],['tea','čaj'],['coffee','káva'],['pasta','cestoviny']];
+function u4Grammar(){
+  const countable = Math.random()<.5;
+  const it = countable ? pick(U4_COUNTABLE) : pick(U4_UNCOUNTABLE);
+  const word = countable ? it[0].replace(/^(a|an) /,'')+'s' : it[0];
+  const correct = countable ? 'How many' : 'How much';
+  return choiceQ(`___ ${word} have you got? (${it[1]})`, correct, ['How much','How many','How old','How long'].filter(x=>x!==correct).slice(0,3),
+    { say: correct+' '+word, explain:`<b>${word}</b> (${it[1]}) je ${countable?'počítateľné, preto sa pýtame <b>How many</b>':'nepočítateľné, preto sa pýtame <b>How much</b>'}.` });
+}
+function u4Trap(){
+  const countable = Math.random()<.5;
+  if(countable){
+    const it = pick(U4_COUNTABLE);
+    const [article, noun] = it[0].split(' ');
+    const wrong = article==='an' ? 'a '+noun : 'an '+noun;
+    return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Ktorý člen je správny? ___ ${noun} (${it[1]})`,
+      options: shuffle([it[0], wrong, 'some '+noun, 'any '+noun]), answer: it[0],
+      say: it[0], explain:`Správne je <b>${it[0]}</b>! Člen <b>an</b> sa používa pred slovom, ktoré začína samohláskou (a, e, i, o, u).` };
+  } else {
+    const it = pick(U4_UNCOUNTABLE);
+    return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Čo je správne? ___ ${it[0]} (${it[1]})`,
+      options: shuffle(['some '+it[0], 'a '+it[0], 'many '+it[0], 'an '+it[0]]), answer: 'some '+it[0],
+      say: 'some '+it[0], explain:`Správne je <b>some ${it[0]}</b>! Nepočítateľné podstatné mená nemajú člen a/an, používame <b>some</b>.` };
+  }
+}
+
+/* --- Chapter 5: comparatives --- */
+const U5_ADJ = { hot:['hotter','hoter','horúci'], big:['bigger','biger','veľký'], nice:['nicer','niceer','pekný'],
+  dry:['drier','dryer','suchý'], happy:['happier','happyer','šťastný'], sunny:['sunnier','sunnyer','slnečný'],
+  wet:['wetter','weter','mokrý'], crowded:['more crowded','crowdeder','preplnený'],
+  beautiful:['more beautiful','beautifuller','krásny'], expensive:['more expensive','expensiver','drahý'] };
+const U5_HOW = { mountain:'high', lake:'wide', river:'long', valley:'deep' };
+function u5Grammar(){
+  const place = pick(Object.keys(U5_HOW)), correct = U5_HOW[place];
+  return choiceQ(`___ is that ${place}?`, correct, Object.values(U5_HOW).filter(x=>x!==correct),
+    { say:`How ${correct} is that ${place}`, explain:`Pri ${place==='mountain'?'hore':place==='lake'?'jazere':place==='river'?'rieke':'údolí'} sa pýtame <b>How ${correct}</b>.` });
+}
+function u5Trap(){
+  const keys = Object.keys(U5_ADJ);
+  const adj = pick(keys), [correct, wrong] = U5_ADJ[adj];
+  const filler = shuffle(keys.filter(x=>x!==adj)).slice(0,2).map(x=>U5_ADJ[x][0]);
+  return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! Aký je <b>správny</b> tvar 2. stupňa (comparative) slova <b>${adj}</b> (${U5_ADJ[adj][2]})?`,
+    options: shuffle([correct, wrong, ...filler]), answer: correct,
+    say: correct, explain:`Správne je <b>${correct}</b>, nie „${wrong}“!` };
+}
+
+/* --- Chapter 6: going to / have to --- */
+const U6_PLANS = [['watch TV','pozerať telku'],['play football','hrať futbal'],['visit grandma','navštíviť babku'],['do homework','robiť domáce úlohy'],['watch a film','pozerať film']];
+function u6Grammar(){
+  const n = pick(U0_NAMES), p = pick(U6_PLANS);
+  const correct = 'is going to '+p[0];
+  return choiceQ(`Zajtra ${n} ${p[1]}. Doplň: <b>Tomorrow ${n} ___ .</b>`, correct, [p[0], p[0]+'s', 'was going to '+p[0]],
+    { say:`${n} ${correct}`, explain:`Pre plány do budúcnosti používame <b>is/am/are going to</b> + sloveso: <b>${correct}</b>.` });
+}
+function u6Trap(){
+  const third = Math.random()<.5;
+  const subj = third ? pick(['He','She','Laura','Oscar']) : pick(['I','You','We','They']);
+  const correct = third ? 'has to' : 'have to';
+  const wrong = third ? 'have to' : 'has to';
+  return { kind:'choice', html:`⚠️ Pozor, zákerná otázka! <b>${subj} ___ get up early tomorrow.</b> Čo je správne?`,
+    options: shuffle([correct, wrong, 'having to', "hasn't to"]), answer: correct,
+    say:`${subj} ${correct} get up early`, explain:`Pri <b>${subj}</b> je správne <b>${correct}</b>. He/She/It používa <b>has to</b>, ostatné osoby <b>have to</b>.` };
+}
+
+const UNIT_BUILD = {
+  0:{ vocab:()=>vocabChoice(0), word:()=>vocabType(0), grammar:u0Grammar, trap:u0Trap },
+  2:{ vocab:()=>vocabChoice(2), word:()=>vocabType(2), grammar:u2Grammar, trap:u2Trap },
+  3:{ vocab:()=>vocabChoice(3), word:()=>vocabType(3), grammar:u3Grammar, trap:u3Trap },
+  4:{ vocab:()=>vocabChoice(4), word:()=>vocabType(4), grammar:u4Grammar, trap:u4Trap },
+  5:{ vocab:()=>vocabChoice(5), word:()=>vocabType(5), grammar:u5Grammar, trap:u5Trap },
+  6:{ vocab:()=>vocabChoice(6), word:()=>vocabType(6), grammar:u6Grammar, trap:u6Trap }
+};
+function makeUnitRound(id){
+  const gens = UNIT_BUILD[id], keys = Object.keys(gens);
+  const qs = [], seen = new Set();
+  let guard = 0;
+  while(qs.length<16 && guard++<300){
+    const q = gens[pick(keys)]();
+    if(seen.has(q.html)) continue;
+    seen.add(q.html); qs.push(q);
+  }
+  return qs;
+}
+function unitStats(id){
+  const rows = history.filter(h=>String(h.u)===String(id));
+  if(!rows.length) return null;
+  const r = rows.filter(h=>h.ok).length, t = rows.length;
+  return { r, t, pct: Math.round(r/t*100) };
+}
+function unitLabel(id){ return id==1 ? '1. Môj život' : (UNITS[id]?UNITS[id].title:('Kapitola '+id)); }
 
 /* ---------- LOOK & FEEL ---------- */
 function mascot(mood, size){
@@ -441,24 +760,36 @@ function bindHeader(){
 
 function home(){
   const hello = settings.name ? `Ahoj ${esc(settings.name)}!` : 'Ahoj!';
+  const tiles = Object.keys(UNITS).map(id=>{
+    const u = UNITS[id], st = unitStats(id);
+    const prog = st ? `<span class="c">${st.r}/${st.t} (${st.pct}%)</span>` : `<span class="c">Ešte nehrané</span>`;
+    return `<button class="worldtile" data-u="${id}"><span class="n">${u.icon}</span><span class="w">${esc(u.title)}</span>${prog}</button>`;
+  }).join('');
   app.innerHTML = `
     ${header()}
     <h1>Star Quest</h1>
-    <p class="muted" style="margin-top:0"><b>Radové číslovky a mesiace</b> v britskej angličtine</p>
+    <p class="muted" style="margin-top:0"><b>Angličtina podľa učebnice</b> — kapitola za kapitolou</p>
     <div class="hero">
       ${mascot('cheer',96)}
-      <div class="bubble">${hello} Som Stella. Poď sa so mnou naučiť <b>first, second, third…</b> a anglické názvy mesiacov!</div>
+      <div class="bubble">${hello} Som Stella. Vyber si kapitolu a poďme sa učiť anglicky!</div>
     </div>
     <div class="card">
       <label for="nm"><b>Ako sa voláš?</b> (nemusíš to vyplniť)</label><br>
       <input id="nm" class="name" maxlength="20" value="${esc(settings.name)}" placeholder="Napíš svoje meno">
     </div>
     <div class="menu">
-      <button class="m1" id="learn">Uč sa<small>Farebné kartičky. Klikni na kartičku a vypočuj si ju!</small></button>
-      <button class="m2" id="l1">Hraj: ${LEVELS[1].name}<small>Od 1st po 12th a mesiace</small></button>
-      <button class="m3" id="l2">Hraj: ${LEVELS[2].name}<small>Od 1st po 31st, pravopis a dátumy</small></button>
-      <button class="m4" id="l3">Hraj: ${LEVELS[3].name}<small>Hlavne písanie. Len pre odvážnych hráčov!</small></button>
+      <button class="m1" id="learn">1. Môj život — Uč sa<small>Radové číslovky a mesiace. Klikni na kartičku a vypočuj si ju!</small></button>
+      <button class="m2" id="l1">1. Môj život: ${LEVELS[1].name}<small>Od 1st po 12th a mesiace</small></button>
+      <button class="m3" id="l2">1. Môj život: ${LEVELS[2].name}<small>Od 1st po 31st, pravopis a dátumy</small></button>
+      <button class="m4" id="l3">1. Môj život: ${LEVELS[3].name}<small>Hlavne písanie. Len pre odvážnych hráčov!</small></button>
+      <button class="m5" id="l4">1. Môj život: ${LEVELS[4].name}<small>Všetko naraz, aj zákerné otázky!</small></button>
+    </div>
+    <h2 style="margin-top:24px">Ďalšie kapitoly</h2>
+    <p class="muted" style="margin-top:0">Podľa učebnice Project 2</p>
+    <div class="worldgrid">${tiles}</div>
+    <div class="menu" style="margin-top:14px">
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov nazbieraných</small></button>
+      <button class="ghost" id="parent">👪 Pre rodičov<small>Prehľad výsledkov (chránené PIN-om)</small></button>
     </div>`;
   bindHeader();
   const nm = $('#nm'); nm.oninput = () => { settings.name = nm.value.trim(); };
@@ -466,7 +797,70 @@ function home(){
   $('#l1').onclick = () => start(1);
   $('#l2').onclick = () => start(2);
   $('#l3').onclick = () => start(3);
+  $('#l4').onclick = () => start(4);
   $('#coll').onclick = collectionScreen;
+  $('#parent').onclick = parentGate;
+  app.querySelectorAll('.worldtile').forEach(b => b.onclick = () => unitHome(+b.dataset.u));
+}
+
+function unitHome(id){
+  const u = UNITS[id], V = VOCAB[id];
+  const cards = V.map(v => `<button data-say="${esc(v.en)}"><span class="w">${esc(v.en)}</span><span class="c">${esc(v.sk)}</span></button>`).join('');
+  const st = unitStats(id);
+  app.innerHTML = `
+    ${header()}
+    <div class="top"><h2>${u.icon} ${esc(u.title)}</h2><button class="ghost small" id="back">← Domov</button></div>
+    <p class="muted">${esc(u.blurb)}</p>
+    <div class="tip"><b>Gramatika</b><p style="margin:.4em 0 0">${u.tip}</p></div>
+    <div class="grid">${cards}</div>
+    <div class="card" style="text-align:center">
+      <b>Pripravená hrať?</b>${st?`<br><span class="muted">Doteraz: ${st.r}/${st.t} správne (${st.pct}%)</span>`:''}<br>
+      <button id="go" style="margin-top:10px">Štart — ${esc(u.title)}</button>
+    </div>`;
+  bindHeader();
+  $('#back').onclick = home;
+  $('#go').onclick = () => startUnit(id);
+  app.querySelectorAll('.grid button').forEach(b => b.onclick = () => say(b.dataset.say));
+}
+
+function parentGate(){
+  app.innerHTML = `
+    ${header()}
+    <div class="top"><h2>👪 Pre rodičov</h2><button class="ghost small" id="back">← Domov</button></div>
+    <div class="card">
+      <p>Zadaj rodičovský PIN, aby si videl/a prehľad výsledkov — čo dcéra vie a kde robí chyby.</p>
+      <div class="typebox"><input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN"><button id="go">Zobraziť</button></div>
+      <p class="muted" id="err" style="display:none;color:var(--bad);margin-top:8px">Nesprávny PIN.</p>
+    </div>`;
+  bindHeader();
+  $('#back').onclick = home;
+  const tryGo = () => { if($('#pin').value === PARENT_PIN) parentDashboard(); else { $('#err').style.display='block'; $('#pin').value=''; $('#pin').focus(); } };
+  $('#go').onclick = tryGo;
+  $('#pin').focus();
+  $('#pin').onkeydown = e => { if(e.key==='Enter') tryGo(); };
+}
+
+function parentDashboard(){
+  const order = [1,0,2,3,4,5,6];
+  const rows = order.map(id=>{
+    const st = unitStats(id);
+    const name = unitLabel(id);
+    if(!st) return `<div class="mistake">${esc(name)} — <span class="muted">ešte nehrané</span></div>`;
+    return `<div class="mistake">${esc(name)} — <b>${st.r}/${st.t}</b> správne (${st.pct}%)</div>`;
+  }).join('');
+  const recent = history.slice(-30).reverse().filter(h=>!h.ok).slice(0,15).map(h=>{
+    const d = new Date(h.ts);
+    const when = d.toLocaleDateString('sk-SK')+' '+d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="mistake"><span class="muted">${esc(when)} · ${esc(unitLabel(h.u))}</span><br>${esc(h.q)}<br>Odpovedala: <b style="color:var(--bad)">${esc(h.given)||'(nič)'}</b> · Správne: <b style="color:var(--good)">${esc(h.ans)}</b></div>`;
+  }).join('') || '<p class="muted">Zatiaľ žiadne zaznamenané chyby.</p>';
+  app.innerHTML = `
+    ${header()}
+    <div class="top"><h2>👪 Rodičovský prehľad</h2><button class="ghost small" id="back">← Domov</button></div>
+    <div class="card"><h2 style="margin-top:0">Úspešnosť podľa kapitol</h2>${rows}</div>
+    <div class="card"><h2 style="margin-top:0">Posledné chyby</h2>${recent}</div>
+    <div class="card" style="text-align:center"><span class="muted">Plyšákov v zbierke: ${collection.owned.length}/${PLUSHIES.length} · Správnych odpovedí spolu: ${collection.totalCorrect} · Nesprávnych: ${collection.totalWrong||0} · Stratených plyšákov: ${collection.totalLost||0}</span></div>`;
+  bindHeader();
+  $('#back').onclick = home;
 }
 
 function learn(tab){
@@ -522,7 +916,11 @@ function learn(tab){
 }
 
 function start(level, questions){
-  S = { level, qs: questions || makeRound(level), i:0, score:0, streak:0, best:0, right:0, wrong:[], done:false };
+  S = { unitId:1, level, levelName: LEVELS[level].name, qs: questions || makeRound(level), i:0, score:0, streak:0, best:0, right:0, wrong:[], missStreak:0, done:false };
+  question();
+}
+function startUnit(id, questions){
+  S = { unitId:id, levelName: UNITS[id].title, qs: questions || makeUnitRound(id), i:0, score:0, streak:0, best:0, right:0, wrong:[], missStreak:0, done:false };
   question();
 }
 
@@ -540,7 +938,7 @@ function question(){
   }
   app.innerHTML = `
     ${header()}
-    <div class="top"><h2>${LEVELS[S.level].name}</h2><button class="ghost small" id="quit">Skončiť</button></div>
+    <div class="top"><h2>${esc(S.levelName)}</h2><button class="ghost small" id="quit">Skončiť</button></div>
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${S.qs.length}" aria-valuenow="${S.i}"><i style="width:${Math.max(pct,4)}%"></i></div>
     <div class="stats"><span>Otázka ${S.i+1} / ${S.qs.length}</span><span>Skóre ${S.score}</span><span>Séria ${S.streak}</span><span>🧸 ${collection.owned.length}/${PLUSHIES.length}</span></div>
     <div class="card">
@@ -571,18 +969,35 @@ function answer(q, given, btn){
     ok = norm(given) === norm(q.answer);
     if(ok && q.month && String(given).trim()[0] !== q.answer[0]) capNote = ' Super! Nabudúce použi veľké písmeno: <b>'+esc(q.answer)+'</b>.';
   }
-  let newPlush = null;
+  let newPlush = null, lostPlush = null;
   if(ok){
     S.score += 10 + Math.min(S.streak,5)*2; S.streak++; S.right++; S.best = Math.max(S.best,S.streak);
+    S.missStreak = 0;
     collection.totalCorrect++;
-    if(collection.totalCorrect % 3 === 0 && collection.owned.length < PLUSHIES.length){
+    collection.sinceAward++;
+    if(collection.owned.length < PLUSHIES.length && collection.sinceAward>=3 && Math.random()<0.3){
       const avail = PLUSHIES.map((_,i)=>i).filter(i=>!collection.owned.includes(i));
       const idx = pick(avail);
       collection.owned.push(idx);
+      collection.sinceAward = 0;
       newPlush = PLUSHIES[idx];
     }
     saveCollection();
-  } else { S.streak = 0; if(!S.wrong.includes(q)) S.wrong.push(q); }
+  } else {
+    S.streak = 0; if(!S.wrong.includes(q)) S.wrong.push(q);
+    S.missStreak = (S.missStreak||0) + 1;
+    collection.totalWrong = (collection.totalWrong||0) + 1;
+    if(S.missStreak>=3 && collection.owned.length>0){
+      const idx = pick(collection.owned.slice());
+      collection.owned = collection.owned.filter(i=>i!==idx);
+      collection.sinceAward = 0;
+      collection.totalLost = (collection.totalLost||0) + 1;
+      S.missStreak = 0;
+      lostPlush = PLUSHIES[idx];
+    }
+    saveCollection();
+  }
+  pushHistory(S.unitId, q, given, ok);
   beep(ok);
   if(ok) burst(newPlush ? 70 : (S.streak>=3 ? 40 : 22));
 
@@ -601,10 +1016,15 @@ function answer(q, given, btn){
       <b>Nová plyšová kamarátka: ${esc(newPlush.name)}!</b><br>
       <span class="muted">Zbierka: ${collection.owned.length} / ${PLUSHIES.length}</span>
     </div>` : '';
+  const lostHtml = lostPlush ? `<div class="card" style="margin-top:14px;text-align:center;background:linear-gradient(180deg,#ffe0d9,#fff0ea);border:3px dashed #ff7a59">
+      <div style="font-size:3rem;line-height:1;opacity:.5">${lostPlush.e}</div>
+      <b>Jaj, ${esc(lostPlush.name)} ti odbehla!</b><br>
+      <span class="muted">Tri chyby za sebou stoja plyšáka. Premýšľaj, nehádaj! Zbierka: ${collection.owned.length} / ${PLUSHIES.length}</span>
+    </div>` : '';
   const fb = $('#fb');
   fb.className = 'feedback show ' + (ok?'ok':'no');
   fb.innerHTML = `<div class="fbwrap">${mascot(ok?'cheer':'oops',64)}<div><b>${ok?pick(PRAISE):pick(OOPS)}</b>${capNote}<br>${q.explain}</div></div>
-    ${plushHtml}
+    ${plushHtml}${lostHtml}
     <div class="row">
       <button class="ghost small" id="hear">Vypočuť</button>
       <button class="small" id="next">${last?'Zobraziť výsledky':'Ďalej'}</button>
@@ -642,17 +1062,17 @@ function results(){
     </div>
     ${S.wrong.length ? `<div class="card"><h2>Poďme si precvičiť tieto</h2>${mistakes}</div>` : ''}
     <div class="menu">
-      <button class="m2" id="again">Hrať znova<small>Nové otázky, rovnaká úroveň</small></button>
+      <button class="m2" id="again">Hrať znova<small>Nové otázky, rovnaká kapitola</small></button>
       ${S.wrong.length ? `<button class="m1" id="prac">Precvičiť chyby<small>Skús si ${S.wrong.length} ${S.wrong.length===1?'ťažkú otázku':(S.wrong.length<5?'ťažké otázky':'ťažkých otázok')} znova</small></button>` : ''}
-      ${S.level<3 ? `<button class="m4" id="up">Skús ${LEVELS[S.level+1].name}<small>O trochu ťažšie</small></button>` : ''}
+      ${(S.unitId===1 && S.level<4) ? `<button class="m4" id="up">Skús ${LEVELS[S.level+1].name}<small>O trochu ťažšie</small></button>` : ''}
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov</small></button>
       <button class="ghost" id="hm">Domov</button>
     </div>`;
   bindHeader();
   if(stars>=2) burst(70);
-  const lv = S.level, wr = S.wrong.slice();
-  $('#again').onclick = () => start(lv);
-  if($('#prac')) $('#prac').onclick = () => start(lv, shuffle(wr).map(q=>Object.assign({}, q, {answered:false})));
+  const isU1 = S.unitId===1, lv = S.level, uid = S.unitId, wr = S.wrong.slice();
+  $('#again').onclick = () => isU1 ? start(lv) : startUnit(uid);
+  if($('#prac')) $('#prac').onclick = () => { const q = shuffle(wr).map(q=>Object.assign({}, q, {answered:false})); isU1 ? start(lv, q) : startUnit(uid, q); };
   if($('#up')) $('#up').onclick = () => start(lv+1);
   $('#coll').onclick = collectionScreen;
   $('#hm').onclick = home;
