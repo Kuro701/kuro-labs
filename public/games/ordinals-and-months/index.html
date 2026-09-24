@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="sk">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -643,7 +643,7 @@ function results(){
     ${S.wrong.length ? `<div class="card"><h2>Poďme si precvičiť tieto</h2>${mistakes}</div>` : ''}
     <div class="menu">
       <button class="m2" id="again">Hrať znova<small>Nové otázky, rovnaká úroveň</small></button>
-      ${S.wrong.length ? `<button class="m1" id="prac">Precvičiť chyby<small>Skús si ${S.wrong.length} ťažk${S.wrong.length>1?'é':'ú'} otáz${S.wrong.length>1?'ky':'ku'} znova</small></button>` : ''}
+      ${S.wrong.length ? `<button class="m1" id="prac">Precvičiť chyby<small>Skús si ${S.wrong.length} ${S.wrong.length===1?'ťažkú otázku':(S.wrong.length<5?'ťažké otázky':'ťažkých otázok')} znova</small></button>` : ''}
       ${S.level<3 ? `<button class="m4" id="up">Skús ${LEVELS[S.level+1].name}<small>O trochu ťažšie</small></button>` : ''}
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov</small></button>
       <button class="ghost" id="hm">Domov</button>
