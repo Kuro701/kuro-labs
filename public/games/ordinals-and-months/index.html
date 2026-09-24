@@ -74,17 +74,12 @@
   .menu .m4{background:linear-gradient(180deg,#ff8cc4,#ff4f9a);box-shadow:0 6px 0 #d02f78}
   .menu .m5{background:linear-gradient(180deg,#b092ff,#7c3aed);box-shadow:0 6px 0 #5b21b6}
   .menu button.ghost{background:#fff;color:#8b5cf6;box-shadow:0 5px 0 var(--line);align-items:center}
-  .worldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:10px 0 20px}
-  .worldtile{color:var(--ink);padding:16px;border-radius:24px;border:3px solid;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}
-  .worldtile .n{font-size:1.8rem}
-  .worldtile .w{font-size:1.05rem;font-weight:700}
-  .worldtile .c{font-size:.82rem;color:var(--muted);font-weight:500}
-  .worldtile:nth-child(6n+1){background:#ffe6f2;border-color:#ff9ccc;box-shadow:0 5px 0 #ff9ccc}
-  .worldtile:nth-child(6n+2){background:#e3f3ff;border-color:#8fd0fb;box-shadow:0 5px 0 #8fd0fb}
-  .worldtile:nth-child(6n+3){background:#dcfbee;border-color:#7fe0b6;box-shadow:0 5px 0 #7fe0b6}
-  .worldtile:nth-child(6n+4){background:#fff1cf;border-color:#ffd166;box-shadow:0 5px 0 #ffd166}
-  .worldtile:nth-child(6n+5){background:#ece4ff;border-color:#b9a0ff;box-shadow:0 5px 0 #b9a0ff}
-  .worldtile:nth-child(6n){background:#ffe8d8;border-color:#ffb27d;box-shadow:0 5px 0 #ffb27d}
+  .menu .cA{background:linear-gradient(180deg,#ff9ccc,#ff5fa8);box-shadow:0 6px 0 #d0397a}
+  .menu .cB{background:linear-gradient(180deg,#8fd0fb,#33a9f5);box-shadow:0 6px 0 #1f7fc4}
+  .menu .cC{background:linear-gradient(180deg,#7fe0b6,#22c58b);box-shadow:0 6px 0 #159463}
+  .menu .cD{background:linear-gradient(180deg,#ffd166,#ffb81f);box-shadow:0 6px 0 #d98f0a}
+  .menu .cE{background:linear-gradient(180deg,#b9a0ff,#8b5cf6);box-shadow:0 6px 0 #6a3fd6}
+  .menu .cF{background:linear-gradient(180deg,#ffb27d,#ff8a3d);box-shadow:0 6px 0 #d9661a}
   .name{
     font:inherit;font-size:1.1rem;padding:10px 16px;border:3px solid var(--line);border-radius:999px;width:100%;max-width:340px;color:var(--ink);background:#fff;
   }
@@ -758,13 +753,16 @@ function bindHeader(){
   if(sn) sn.onchange = () => { settings.sound = sn.checked; };
 }
 
+const CHAPTER_COLORS = ['cA','cB','cC','cD','cE','cF'];
 function home(){
   const hello = settings.name ? `Ahoj ${esc(settings.name)}!` : 'Ahoj!';
-  const tiles = Object.keys(UNITS).map(id=>{
-    const u = UNITS[id], st = unitStats(id);
-    const prog = st ? `<span class="c">${st.r}/${st.t} (${st.pct}%)</span>` : `<span class="c">Ešte nehrané</span>`;
-    return `<button class="worldtile" data-u="${id}"><span class="n">${u.icon}</span><span class="w">${esc(u.title)}</span>${prog}</button>`;
-  }).join('');
+  const chapterIds = Object.keys(UNITS);
+  const chapterButtons = chapterIds.map((id,i)=>{
+    const u = UNITS[id], st = unitStats(id), cls = CHAPTER_COLORS[i%CHAPTER_COLORS.length];
+    const prog = st ? ` · doteraz ${st.r}/${st.t} (${st.pct}%)` : '';
+    return `<button class="${cls}" data-learn="${id}">${u.icon} ${esc(u.title)} — Uč sa<small>${esc(u.blurb)}</small></button>
+      <button class="${cls}" data-start="${id}">${u.icon} ${esc(u.title)}: Štart<small>16 otázok${prog}</small></button>`;
+  }).join('\n');
   app.innerHTML = `
     ${header()}
     <h1>Star Quest</h1>
@@ -783,11 +781,7 @@ function home(){
       <button class="m3" id="l2">1. Môj život: ${LEVELS[2].name}<small>Od 1st po 31st, pravopis a dátumy</small></button>
       <button class="m4" id="l3">1. Môj život: ${LEVELS[3].name}<small>Hlavne písanie. Len pre odvážnych hráčov!</small></button>
       <button class="m5" id="l4">1. Môj život: ${LEVELS[4].name}<small>Všetko naraz, aj zákerné otázky!</small></button>
-    </div>
-    <h2 style="margin-top:24px">Ďalšie kapitoly</h2>
-    <p class="muted" style="margin-top:0">Podľa učebnice Project 2</p>
-    <div class="worldgrid">${tiles}</div>
-    <div class="menu" style="margin-top:14px">
+      ${chapterButtons}
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov nazbieraných</small></button>
       <button class="ghost" id="parent">👪 Pre rodičov<small>Prehľad výsledkov (chránené PIN-om)</small></button>
     </div>`;
@@ -800,10 +794,11 @@ function home(){
   $('#l4').onclick = () => start(4);
   $('#coll').onclick = collectionScreen;
   $('#parent').onclick = parentGate;
-  app.querySelectorAll('.worldtile').forEach(b => b.onclick = () => unitHome(+b.dataset.u));
+  app.querySelectorAll('[data-learn]').forEach(b => b.onclick = () => unitLearn(+b.dataset.learn));
+  app.querySelectorAll('[data-start]').forEach(b => b.onclick = () => startUnit(+b.dataset.start));
 }
 
-function unitHome(id){
+function unitLearn(id){
   const u = UNITS[id], V = VOCAB[id];
   const cards = V.map(v => `<button data-say="${esc(v.en)}"><span class="w">${esc(v.en)}</span><span class="c">${esc(v.sk)}</span></button>`).join('');
   const st = unitStats(id);
