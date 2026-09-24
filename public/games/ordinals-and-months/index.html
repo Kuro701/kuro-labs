@@ -288,7 +288,7 @@ function choiceQ(html, correct, distractors, extra){
 const BUILD = {
   ordToWord(max){
     const n = rnd(1,max);
-    return choiceQ(`Which word matches <b>${num(n)}</b>?`, ord(n), ordDistractors(n),
+    return choiceQ(`Ktoré slovo sedí k <b>${num(n)}</b>?`, ord(n), ordDistractors(n),
       { say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (po slovensky ${SK_ORD[n]}). ${ordTip(n)}` });
   },
   wordToOrd(max){
@@ -297,50 +297,50 @@ const BUILD = {
     const correct = num(n), d = [];
     pool.forEach(x=>{ if(x!==correct && !d.includes(x)) d.push(x); });
     while(d.length<3){ const x = num(rnd(1,max)); if(x!==correct && !d.includes(x)) d.push(x); }
-    return choiceQ(`Which number matches <b>${ord(n)}</b>?`, correct, d.slice(0,3),
+    return choiceQ(`Ktoré číslo sedí k <b>${ord(n)}</b>?`, correct, d.slice(0,3),
       { say: ord(n), explain:`<b>${ord(n)}</b> (${SK_ORD[n]}) sa píše <b>${num(n)}</b>. Radová číslovka v angličtine končí na st, nd, rd alebo th.` });
   },
   typeOrd(max){
     const n = rnd(1,max);
-    return { kind:'type', html:`Write it in words: <b>${num(n)}</b>`, answer: ord(n), placeholder:'e.g. fourth',
+    return { kind:'type', html:`Napíš to slovom: <b>${num(n)}</b>`, answer: ord(n), placeholder:'napr. fourth',
       say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (po slovensky ${SK_ORD[n]}). ${ordTip(n)}` };
   },
   sequence(max){
     const top = Math.max(4,max);
     const n = rnd(1,top-3);
     const a = n+3;
-    return choiceQ(`What comes next?<br><b>${ord(n)}, ${ord(n+1)}, ${ord(n+2)}, …</b>`, ord(a), ordDistractors(a),
+    return choiceQ(`Čo je ďalej?<br><b>${ord(n)}, ${ord(n+1)}, ${ord(n+2)}, …</b>`, ord(a), ordDistractors(a),
       { say: ord(a), explain:`Ďalšia radová číslovka je <b>${ord(a)}</b> (${num(a)}, po slovensky ${SK_ORD[a]}). ${ordTip(a)}` });
   },
   numToMonth(){
     const m = rnd(1,12);
     const d = shuffle(MONTHS.filter((_,i)=>i!==m-1)).slice(0,3);
-    return choiceQ(`Which month is the <b>${num(m)}</b> month of the year?`, MONTHS[m-1], d,
+    return choiceQ(`Ktorý mesiac je <b>${num(m)}</b> mesiacom v roku?`, MONTHS[m-1], d,
       { say: MONTHS[m-1], explain:`<b>${ord(m)}</b> mesiac v roku je <b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}). Mesiace sa v angličtine vždy píšu s veľkým začiatočným písmenom.` });
   },
   monthToNum(){
     const m = rnd(1,12);
     const pool = [num(wrap(m+1,12)), num(wrap(m-1,12)), num(wrap(m+2,12)), num(wrap(m-2,12)), num(wrap(m+3,12))];
     const d = pool.filter((x,i)=>x!==num(m) && pool.indexOf(x)===i).slice(0,3);
-    return choiceQ(`<b>${MONTHS[m-1]}</b> is which month of the year?`, num(m), d,
+    return choiceQ(`<b>${MONTHS[m-1]}</b> je ktorý mesiac v roku?`, num(m), d,
       { say: MONTHS[m-1]+', the '+ord(m)+' month', explain:`<b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}) je <b>${ord(m)}</b> mesiac v roku (${num(m)}).` });
   },
   czMonth(){
     const m = rnd(1,12);
     const d = shuffle(MONTHS.filter((_,i)=>i!==m-1)).slice(0,3);
-    return choiceQ(`Which English month is <b>${SK_MON[m-1]}</b>?`, MONTHS[m-1], d,
+    return choiceQ(`Ako sa po anglicky povie <b>${SK_MON[m-1]}</b>?`, MONTHS[m-1], d,
       { say: MONTHS[m-1], explain:`${SK_MON[m-1]} sa po anglicky povie <b>${MONTHS[m-1]}</b>. Je to <b>${ord(m)}</b> mesiac v roku.` });
   },
   typeMonth(){
     const m = rnd(1,12);
-    return { kind:'type', month:true, html:`Spell the month: <b>${SK_MON[m-1]}</b>`, answer: MONTHS[m-1], placeholder:'in English',
+    return { kind:'type', month:true, html:`Napíš mesiac po anglicky: <b>${SK_MON[m-1]}</b>`, answer: MONTHS[m-1], placeholder:'po anglicky',
       say: MONTHS[m-1], explain:`${SK_MON[m-1]} sa po anglicky píše <b>${MONTHS[m-1]}</b>. Nezabudni na veľké začiatočné písmeno!` };
   },
   nextMonth(){
     const m = rnd(1,12), after = Math.random()<.5;
     const t = wrap(after ? m+1 : m-1, 12);
     const d = shuffle(MONTHS.filter((_,i)=>i!==t-1)).slice(0,3);
-    return choiceQ(`Which month comes <b>${after?'after':'before'}</b> ${MONTHS[m-1]}?`, MONTHS[t-1], d,
+    return choiceQ(`Ktorý mesiac je <b>${after?'po':'pred'}</b> mesiacom ${MONTHS[m-1]}?`, MONTHS[t-1], d,
       { say: MONTHS[t-1], explain:`Mesiac ${after?'po':'pred'} ${MONTHS[m-1]} (${SK_MON[m-1]}) je <b>${MONTHS[t-1]}</b> (${SK_MON[t-1]}).` });
   },
   date(){
@@ -354,15 +354,15 @@ const BUILD = {
       `the ${ord(d>1?d-1:d+2)} of ${M}`
     ];
     const dd = []; cand.forEach(x=>{ if(x!==correct && !dd.includes(x)) dd.push(x); });
-    return choiceQ(`In Britain the <u>day</u> comes first. How do we say <b>${d}/${m}</b>?`, correct, dd.slice(0,3),
+    return choiceQ(`Vo Veľkej Británii sa najprv píše <u>deň</u>. Ako povieme <b>${d}/${m}</b>?`, correct, dd.slice(0,3),
       { say: correct, explain:`${d}/${m} sa po anglicky povie <b>${correct}</b> (teda ${num(d)} ${M}). Vo Veľkej Británii sa najprv píše deň, v USA najprv mesiac.` });
   }
 };
 
 const LEVELS = {
-  1:{ name:'Level 1 – Starter', max:12, types:['ordToWord','wordToOrd','numToMonth','monthToNum','czMonth','nextMonth','typeOrd'] },
-  2:{ name:'Level 2 – Explorer', max:31, types:['ordToWord','wordToOrd','typeOrd','sequence','czMonth','typeMonth','nextMonth','date'] },
-  3:{ name:'Level 3 – Champion', max:31, types:['typeOrd','typeMonth','date','sequence','typeOrd','ordToWord','monthToNum','date'] }
+  1:{ name:'Úroveň 1 – Začiatočník', max:12, types:['ordToWord','wordToOrd','numToMonth','monthToNum','czMonth','nextMonth','typeOrd'] },
+  2:{ name:'Úroveň 2 – Objaviteľ', max:31, types:['ordToWord','wordToOrd','typeOrd','sequence','czMonth','typeMonth','nextMonth','date'] },
+  3:{ name:'Úroveň 3 – Šampión', max:31, types:['typeOrd','typeMonth','date','sequence','typeOrd','ordToWord','monthToNum','date'] }
 };
 function makeRound(level){
   const L = LEVELS[level], qs = [], seen = new Set();
@@ -391,8 +391,8 @@ function mascot(mood, size){
     ${mouth}
   </svg>`;
 }
-const PRAISE = ['Yay! ★','Super! ★','Brilliant! ★','Perfect! ★','You got it! ★','Amazing! ★'];
-const OOPS = ['Oops, nearly!','Good try!','Not quite, but you can do it!','Almost!'];
+const PRAISE = ['Hurá! ★','Super! ★','Skvelé! ★','Perfektné! ★','Dokázala si to! ★','Úžasné! ★'];
+const OOPS = ['Jaj, skoro!','Dobrý pokus!','Ešte nie celkom, ale zvládneš to!','Skoro!'];
 const SEASON = ['winter','winter','spring','spring','spring','summer','summer','summer','autumn','autumn','autumn','winter'];
 const COLS = ['#ff5fa8','#8b5cf6','#33a9f5','#22c58b','#ffb81f','#ff8a3d'];
 
@@ -428,8 +428,8 @@ let S = null; // current game state
 function header(){
   return `<div class="top">
     <div class="switch">
-      <label><input type="checkbox" id="sk" ${settings.skHints?'checked':''}> Slovak hints</label>
-      <label><input type="checkbox" id="snd" ${settings.sound?'checked':''}> Sound</label>
+      <label><input type="checkbox" id="sk" ${settings.skHints?'checked':''}> Slovenské nápovedy</label>
+      <label><input type="checkbox" id="snd" ${settings.sound?'checked':''}> Zvuk</label>
     </div>
   </div>`;
 }
@@ -440,24 +440,24 @@ function bindHeader(){
 }
 
 function home(){
-  const hello = settings.name ? `Hi ${esc(settings.name)}!` : 'Hi there!';
+  const hello = settings.name ? `Ahoj ${esc(settings.name)}!` : 'Ahoj!';
   app.innerHTML = `
     ${header()}
     <h1>Star Quest</h1>
-    <p class="muted" style="margin-top:0"><b>Ordinal numbers &amp; months</b> in British English</p>
+    <p class="muted" style="margin-top:0"><b>Radové číslovky a mesiace</b> v britskej angličtine</p>
     <div class="hero">
       ${mascot('cheer',96)}
-      <div class="bubble">${hello} I'm Stella. Let's learn <b>first, second, third…</b> and the <b>months</b> of the year together!</div>
+      <div class="bubble">${hello} Som Stella. Poď sa so mnou naučiť <b>first, second, third…</b> a anglické názvy mesiacov!</div>
     </div>
     <div class="card">
-      <label for="nm"><b>What's your name?</b> (you can skip this)</label><br>
-      <input id="nm" class="name" maxlength="20" value="${esc(settings.name)}" placeholder="Type your name">
+      <label for="nm"><b>Ako sa voláš?</b> (nemusíš to vyplniť)</label><br>
+      <input id="nm" class="name" maxlength="20" value="${esc(settings.name)}" placeholder="Napíš svoje meno">
     </div>
     <div class="menu">
-      <button class="m1" id="learn">Learn first<small>Colourful cards. Tap a card to hear it!</small></button>
-      <button class="m2" id="l1">Play: ${LEVELS[1].name}<small>1st to 12th and the months</small></button>
-      <button class="m3" id="l2">Play: ${LEVELS[2].name}<small>1st to 31st, spelling and dates</small></button>
-      <button class="m4" id="l3">Play: ${LEVELS[3].name}<small>Mostly typing. Only for brave players!</small></button>
+      <button class="m1" id="learn">Uč sa<small>Farebné kartičky. Klikni na kartičku a vypočuj si ju!</small></button>
+      <button class="m2" id="l1">Hraj: ${LEVELS[1].name}<small>Od 1st po 12th a mesiace</small></button>
+      <button class="m3" id="l2">Hraj: ${LEVELS[2].name}<small>Od 1st po 31st, pravopis a dátumy</small></button>
+      <button class="m4" id="l3">Hraj: ${LEVELS[3].name}<small>Hlavne písanie. Len pre odvážnych hráčov!</small></button>
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov nazbieraných</small></button>
     </div>`;
   bindHeader();
@@ -500,18 +500,18 @@ function learn(tab){
           <li>Zradný pravopis: Feb<b>r</b>uary, Au<b>g</b>ust, Sept<b>e</b>mber a Nov<b>e</b>mber.</li>
         </ul>
       </div>
-      <div class="legend"><span class="s-winter">winter</span><span class="s-spring">spring</span><span class="s-summer">summer</span><span class="s-autumn">autumn</span></div>
+      <div class="legend"><span class="s-winter">zima</span><span class="s-spring">jar</span><span class="s-summer">leto</span><span class="s-autumn">jeseň</span></div>
       <div class="grid">${cards}</div>`;
   }
   app.innerHTML = `
     ${header()}
-    <div class="top"><h2>Learn</h2><button class="ghost small" id="back">← Home</button></div>
+    <div class="top"><h2>Učenie</h2><button class="ghost small" id="back">← Domov</button></div>
     <div class="tabs">
-      <button class="${tab==='ord'?'active':''}" id="t1">Ordinal numbers</button>
-      <button class="${tab==='mon'?'active':''}" id="t2">Months</button>
+      <button class="${tab==='ord'?'active':''}" id="t1">Radové číslovky</button>
+      <button class="${tab==='mon'?'active':''}" id="t2">Mesiace</button>
     </div>
     ${body}
-    <div class="card"><b>Ready to play?</b> &nbsp; <button id="go1">Play Level 1</button></div>`;
+    <div class="card"><b>Pripravená hrať?</b> &nbsp; <button id="go1">Hraj Úroveň 1</button></div>`;
   bindHeader();
   $('#sk').onchange = e => { settings.skHints = e.target.checked; learn(tab); };
   $('#back').onclick = home;
@@ -535,14 +535,14 @@ function question(){
     input = `<div class="options">${q.options.map((o,i)=>`<button data-i="${i}">${esc(o)}</button>`).join('')}</div>`;
   } else {
     input = `<div class="typebox">
-      <input id="ans" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${esc(q.placeholder||'')}" aria-label="Your answer">
-      <button id="check">Check</button></div>`;
+      <input id="ans" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${esc(q.placeholder||'')}" aria-label="Tvoja odpoveď">
+      <button id="check">Skontroluj</button></div>`;
   }
   app.innerHTML = `
     ${header()}
-    <div class="top"><h2>${LEVELS[S.level].name}</h2><button class="ghost small" id="quit">Quit</button></div>
+    <div class="top"><h2>${LEVELS[S.level].name}</h2><button class="ghost small" id="quit">Skončiť</button></div>
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${S.qs.length}" aria-valuenow="${S.i}"><i style="width:${Math.max(pct,4)}%"></i></div>
-    <div class="stats"><span>Question ${S.i+1} / ${S.qs.length}</span><span>Score ${S.score}</span><span>Streak ${S.streak}</span><span>🧸 ${collection.owned.length}/${PLUSHIES.length}</span></div>
+    <div class="stats"><span>Otázka ${S.i+1} / ${S.qs.length}</span><span>Skóre ${S.score}</span><span>Séria ${S.streak}</span><span>🧸 ${collection.owned.length}/${PLUSHIES.length}</span></div>
     <div class="card">
       <div class="prompt">${q.html}</div>
       ${input}
@@ -606,13 +606,13 @@ function answer(q, given, btn){
   fb.innerHTML = `<div class="fbwrap">${mascot(ok?'cheer':'oops',64)}<div><b>${ok?pick(PRAISE):pick(OOPS)}</b>${capNote}<br>${q.explain}</div></div>
     ${plushHtml}
     <div class="row">
-      <button class="ghost small" id="hear">Listen</button>
-      <button class="small" id="next">${last?'See my results':'Next'}</button>
+      <button class="ghost small" id="hear">Vypočuť</button>
+      <button class="small" id="next">${last?'Zobraziť výsledky':'Ďalej'}</button>
     </div>`;
   $('#hear').onclick = () => say(q.say);
   $('#next').onclick = next;
   $('#next').focus();
-  $('#live').textContent = ok ? 'Correct' : 'Not quite. The answer is ' + q.answer;
+  $('#live').textContent = ok ? 'Správne' : 'Nie celkom. Správna odpoveď je ' + q.answer;
 }
 
 function next(){
@@ -624,29 +624,29 @@ function results(){
   const total = S.qs.length;
   const stars = S.right>=total-1 ? 3 : S.right>=Math.ceil(total*.7) ? 2 : S.right>=Math.ceil(total*.5) ? 1 : 0;
   const nm = settings.name ? ', ' + esc(settings.name) : '';
-  const msg = stars===3 ? `Brilliant${nm}! Almost perfect.` :
-              stars===2 ? `Well done${nm}! Keep practising.` :
-              stars===1 ? `Good try${nm}! Have another go.` :
-                          `Don't worry${nm}. Have a look at the Learn cards and try again.`;
-  const mistakes = S.wrong.map(q => `<div class="mistake">${q.html.replace(/<br>/g,' ')}<br>Answer: <b>${esc(q.answer)}</b></div>`).join('');
+  const msg = stars===3 ? `Skvelé${nm}! Skoro dokonalé.` :
+              stars===2 ? `Výborne${nm}! Pokračuj v cvičení.` :
+              stars===1 ? `Dobrý pokus${nm}! Skús to ešte raz.` :
+                          `Neboj sa${nm}. Pozri si kartičky v Učení a skús to znova.`;
+  const mistakes = S.wrong.map(q => `<div class="mistake">${q.html.replace(/<br>/g,' ')}<br>Odpoveď: <b>${esc(q.answer)}</b></div>`).join('');
   app.innerHTML = `
     ${header()}
-    <h1>Results</h1>
+    <h1>Výsledky</h1>
     <div class="card" style="text-align:center">
       ${mascot(stars>=2?'cheer':'happy',96)}
-      <div class="stars" aria-label="${stars} out of 3 stars">
+      <div class="stars" aria-label="${stars} z 3 hviezdičiek">
         ${[1,2,3].map(n=>`<span class="${n<=stars?'on':''}">★</span>`).join('')}
       </div>
-      <p><b>${S.right} / ${total}</b> correct · Score <b>${S.score}</b> · Best streak <b>${S.best}</b></p>
+      <p><b>${S.right} / ${total}</b> správne · Skóre <b>${S.score}</b> · Najlepšia séria <b>${S.best}</b></p>
       <p>${msg}</p>
     </div>
-    ${S.wrong.length ? `<div class="card"><h2>Let's practise these</h2>${mistakes}</div>` : ''}
+    ${S.wrong.length ? `<div class="card"><h2>Poďme si precvičiť tieto</h2>${mistakes}</div>` : ''}
     <div class="menu">
-      <button class="m2" id="again">Play again<small>New questions, same level</small></button>
-      ${S.wrong.length ? `<button class="m1" id="prac">Practise my mistakes<small>Try the ${S.wrong.length} tricky question${S.wrong.length>1?'s':''} again</small></button>` : ''}
-      ${S.level<3 ? `<button class="m4" id="up">Try ${LEVELS[S.level+1].name}<small>A bit harder</small></button>` : ''}
+      <button class="m2" id="again">Hrať znova<small>Nové otázky, rovnaká úroveň</small></button>
+      ${S.wrong.length ? `<button class="m1" id="prac">Precvičiť chyby<small>Skús si ${S.wrong.length} ťažk${S.wrong.length>1?'é':'ú'} otáz${S.wrong.length>1?'ky':'ku'} znova</small></button>` : ''}
+      ${S.level<3 ? `<button class="m4" id="up">Skús ${LEVELS[S.level+1].name}<small>O trochu ťažšie</small></button>` : ''}
       <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov</small></button>
-      <button class="ghost" id="hm">Home</button>
+      <button class="ghost" id="hm">Domov</button>
     </div>`;
   bindHeader();
   if(stars>=2) burst(70);
