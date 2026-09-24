@@ -85,7 +85,7 @@
   .bar>i::after{content:"★";position:absolute;right:-8px;top:-8px;font-size:20px;color:var(--sun);text-shadow:0 0 6px #fff}
   .stats{display:flex;gap:10px;font-weight:700;flex-wrap:wrap;margin:12px 0}
   .stats span{padding:5px 14px;border-radius:99px;background:#fff;box-shadow:0 3px 0 var(--line)}
-  .stats span:nth-child(1){color:#8b5cf6}.stats span:nth-child(2){color:#e0388a}.stats span:nth-child(3){color:#e07b00}
+  .stats span:nth-child(1){color:#8b5cf6}.stats span:nth-child(2){color:#e0388a}.stats span:nth-child(3){color:#e07b00}.stats span:nth-child(4){color:#a1591f}
 
   .prompt{font-size:clamp(1.3rem,4.8vw,1.8rem);font-weight:600;margin:4px 0 18px;line-height:1.4}
   .prompt b{
@@ -204,14 +204,14 @@ const SK_MON = ['január','február','marec','apríl','máj','jún','júl','augu
 function ordTip(n){
   const base = (n>20 && n%10) ? n%10 : n;
   let t;
-  if([1,2,3].includes(base)) t = 'first, second and third are special words. They do not end in -th.';
-  else if(base===5)  t = 'five becomes fifth (ve changes to f).';
-  else if(base===12) t = 'twelve becomes twelfth (ve changes to f).';
-  else if(base===8)  t = 'eight becomes eighth (only one t!).';
-  else if(base===9)  t = 'nine becomes ninth (the e disappears).';
-  else if(base===20 || base===30) t = 'twenty becomes twentieth and thirty becomes thirtieth (y changes to ie).';
-  else t = 'Most ordinals just add -th, for example four becomes fourth.';
-  if(n>20 && n%10) t += ' In numbers like '+ord(n)+', only the last part changes.';
+  if([1,2,3].includes(base)) t = 'Slová <b>first</b>, <b>second</b> a <b>third</b> sú výnimky. Nekončia na -th.';
+  else if(base===5)  t = 'Zo slova <b>five</b> sa stane <b>fifth</b> (ve sa zmení na f).';
+  else if(base===12) t = 'Zo slova <b>twelve</b> sa stane <b>twelfth</b> (ve sa zmení na f).';
+  else if(base===8)  t = 'Zo slova <b>eight</b> sa stane <b>eighth</b> (len jedno t!).';
+  else if(base===9)  t = 'Zo slova <b>nine</b> sa stane <b>ninth</b> (e zmizne).';
+  else if(base===20 || base===30) t = 'Zo slova <b>twenty</b> sa stane <b>twentieth</b> a z <b>thirty</b> sa stane <b>thirtieth</b> (y sa zmení na ie).';
+  else t = 'Väčšina radových čísloviek len pridá -th, napríklad <b>four</b> sa zmení na <b>fourth</b>.';
+  if(n>20 && n%10) t += ' Pri číslach ako '+ord(n)+' sa mení iba posledná časť.';
   return t;
 }
 
@@ -226,6 +226,25 @@ function norm(s){ return String(s).toLowerCase().replace(/[\s\-‑–]/g,''); }
 const wrap = (n,max) => ((n-1+max)%max)+1;
 
 let settings = { skHints:true, sound:true, name:'' };
+
+/* ---------- COLLECTION (reward system) ---------- */
+const PLUSHIES = [
+  {e:'🧸', name:'Medvedík'}, {e:'🐰', name:'Zajko'}, {e:'🦊', name:'Líška'},
+  {e:'🐼', name:'Pandička'}, {e:'🦄', name:'Jednorožec'}, {e:'🐱', name:'Mačička'},
+  {e:'🐶', name:'Psík'}, {e:'🐨', name:'Koalka'}, {e:'🦁', name:'Levík'},
+  {e:'🐯', name:'Tigrík'}, {e:'🐸', name:'Žabka'}, {e:'🐷', name:'Prasiatko'}
+];
+function loadCollection(){
+  try{
+    const raw = localStorage.getItem('sq_collection');
+    if(raw){ const c = JSON.parse(raw); if(c && Array.isArray(c.owned)) return c; }
+  }catch(e){}
+  return { owned:[], totalCorrect:0 };
+}
+function saveCollection(){
+  try{ localStorage.setItem('sq_collection', JSON.stringify(collection)); }catch(e){}
+}
+let collection = loadCollection();
 
 /* ---------- SOUND & SPEECH ---------- */
 let audioCtx = null;
@@ -270,7 +289,7 @@ const BUILD = {
   ordToWord(max){
     const n = rnd(1,max);
     return choiceQ(`Which word matches <b>${num(n)}</b>?`, ord(n), ordDistractors(n),
-      { say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (${SK_ORD[n]}). ${ordTip(n)}`, sk:`${ord(n)} = ${SK_ORD[n]}` });
+      { say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (po slovensky ${SK_ORD[n]}). ${ordTip(n)}` });
   },
   wordToOrd(max){
     const n = rnd(1,max);
@@ -279,50 +298,50 @@ const BUILD = {
     pool.forEach(x=>{ if(x!==correct && !d.includes(x)) d.push(x); });
     while(d.length<3){ const x = num(rnd(1,max)); if(x!==correct && !d.includes(x)) d.push(x); }
     return choiceQ(`Which number matches <b>${ord(n)}</b>?`, correct, d.slice(0,3),
-      { say: ord(n), explain:`<b>${ord(n)}</b> is written <b>${num(n)}</b>. An ordinal number ends with st, nd, rd or th.`, sk:`${ord(n)} = ${SK_ORD[n]}` });
+      { say: ord(n), explain:`<b>${ord(n)}</b> (${SK_ORD[n]}) sa píše <b>${num(n)}</b>. Radová číslovka v angličtine končí na st, nd, rd alebo th.` });
   },
   typeOrd(max){
     const n = rnd(1,max);
     return { kind:'type', html:`Write it in words: <b>${num(n)}</b>`, answer: ord(n), placeholder:'e.g. fourth',
-      say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (${SK_ORD[n]}). ${ordTip(n)}`, sk:`${ord(n)} = ${SK_ORD[n]}` };
+      say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (po slovensky ${SK_ORD[n]}). ${ordTip(n)}` };
   },
   sequence(max){
     const top = Math.max(4,max);
     const n = rnd(1,top-3);
     const a = n+3;
     return choiceQ(`What comes next?<br><b>${ord(n)}, ${ord(n+1)}, ${ord(n+2)}, …</b>`, ord(a), ordDistractors(a),
-      { say: ord(a), explain:`The next ordinal is <b>${ord(a)}</b> (${num(a)}). ${ordTip(a)}`, sk:`${ord(a)} = ${SK_ORD[a]}` });
+      { say: ord(a), explain:`Ďalšia radová číslovka je <b>${ord(a)}</b> (${num(a)}, po slovensky ${SK_ORD[a]}). ${ordTip(a)}` });
   },
   numToMonth(){
     const m = rnd(1,12);
     const d = shuffle(MONTHS.filter((_,i)=>i!==m-1)).slice(0,3);
     return choiceQ(`Which month is the <b>${num(m)}</b> month of the year?`, MONTHS[m-1], d,
-      { say: MONTHS[m-1], explain:`The ${ord(m)} month is <b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}). Months always start with a capital letter.`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` });
+      { say: MONTHS[m-1], explain:`<b>${ord(m)}</b> mesiac v roku je <b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}). Mesiace sa v angličtine vždy píšu s veľkým začiatočným písmenom.` });
   },
   monthToNum(){
     const m = rnd(1,12);
     const pool = [num(wrap(m+1,12)), num(wrap(m-1,12)), num(wrap(m+2,12)), num(wrap(m-2,12)), num(wrap(m+3,12))];
     const d = pool.filter((x,i)=>x!==num(m) && pool.indexOf(x)===i).slice(0,3);
     return choiceQ(`<b>${MONTHS[m-1]}</b> is which month of the year?`, num(m), d,
-      { say: MONTHS[m-1]+', the '+ord(m)+' month', explain:`<b>${MONTHS[m-1]}</b> is the <b>${ord(m)}</b> month (${num(m)}).`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` });
+      { say: MONTHS[m-1]+', the '+ord(m)+' month', explain:`<b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}) je <b>${ord(m)}</b> mesiac v roku (${num(m)}).` });
   },
   czMonth(){
     const m = rnd(1,12);
     const d = shuffle(MONTHS.filter((_,i)=>i!==m-1)).slice(0,3);
     return choiceQ(`Which English month is <b>${SK_MON[m-1]}</b>?`, MONTHS[m-1], d,
-      { say: MONTHS[m-1], explain:`${SK_MON[m-1]} = <b>${MONTHS[m-1]}</b>. It is the ${ord(m)} month.`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` });
+      { say: MONTHS[m-1], explain:`${SK_MON[m-1]} sa po anglicky povie <b>${MONTHS[m-1]}</b>. Je to <b>${ord(m)}</b> mesiac v roku.` });
   },
   typeMonth(){
     const m = rnd(1,12);
     return { kind:'type', month:true, html:`Spell the month: <b>${SK_MON[m-1]}</b>`, answer: MONTHS[m-1], placeholder:'in English',
-      say: MONTHS[m-1], explain:`${SK_MON[m-1]} = <b>${MONTHS[m-1]}</b>. Remember the capital letter!`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` };
+      say: MONTHS[m-1], explain:`${SK_MON[m-1]} sa po anglicky píše <b>${MONTHS[m-1]}</b>. Nezabudni na veľké začiatočné písmeno!` };
   },
   nextMonth(){
     const m = rnd(1,12), after = Math.random()<.5;
     const t = wrap(after ? m+1 : m-1, 12);
     const d = shuffle(MONTHS.filter((_,i)=>i!==t-1)).slice(0,3);
     return choiceQ(`Which month comes <b>${after?'after':'before'}</b> ${MONTHS[m-1]}?`, MONTHS[t-1], d,
-      { say: MONTHS[t-1], explain:`The month ${after?'after':'before'} ${MONTHS[m-1]} is <b>${MONTHS[t-1]}</b>.`, sk:`${MONTHS[t-1]} = ${SK_MON[t-1]}` });
+      { say: MONTHS[t-1], explain:`Mesiac ${after?'po':'pred'} ${MONTHS[m-1]} (${SK_MON[m-1]}) je <b>${MONTHS[t-1]}</b> (${SK_MON[t-1]}).` });
   },
   date(){
     const d = rnd(1,28), m = rnd(1,12);
@@ -336,8 +355,7 @@ const BUILD = {
     ];
     const dd = []; cand.forEach(x=>{ if(x!==correct && !dd.includes(x)) dd.push(x); });
     return choiceQ(`In Britain the <u>day</u> comes first. How do we say <b>${d}/${m}</b>?`, correct, dd.slice(0,3),
-      { say: correct, explain:`${d}/${m} is <b>${correct}</b> (${num(d)} ${M}). In the UK the day comes first, but in the USA the month comes first.`,
-        sk:`${ord(d)} = ${SK_ORD[d]}, ${M} = ${SK_MON[m-1]}` });
+      { say: correct, explain:`${d}/${m} sa po anglicky povie <b>${correct}</b> (teda ${num(d)} ${M}). Vo Veľkej Británii sa najprv píše deň, v USA najprv mesiac.` });
   }
 };
 
@@ -440,6 +458,7 @@ function home(){
       <button class="m2" id="l1">Play: ${LEVELS[1].name}<small>1st to 12th and the months</small></button>
       <button class="m3" id="l2">Play: ${LEVELS[2].name}<small>1st to 31st, spelling and dates</small></button>
       <button class="m4" id="l3">Play: ${LEVELS[3].name}<small>Mostly typing. Only for brave players!</small></button>
+      <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov nazbieraných</small></button>
     </div>`;
   bindHeader();
   const nm = $('#nm'); nm.oninput = () => { settings.name = nm.value.trim(); };
@@ -447,6 +466,7 @@ function home(){
   $('#l1').onclick = () => start(1);
   $('#l2').onclick = () => start(2);
   $('#l3').onclick = () => start(3);
+  $('#coll').onclick = collectionScreen;
 }
 
 function learn(tab){
@@ -457,13 +477,13 @@ function learn(tab){
       cards += `<button data-say="${esc(ord(n))}"><span class="n">${num(n)}</span><span class="w">${ord(n)}</span>${settings.skHints?`<span class="c">${SK_ORD[n]}</span>`:''}</button>`;
     }
     body = `
-      <div class="tip"><b>Spelling traps</b>
+      <div class="tip"><b>Pravopisné pasce</b>
         <ul>
-          <li>first, second, third are special (not “oneth”, “twoth”).</li>
-          <li>five → <b>fifth</b>, twelve → <b>twelfth</b> (ve changes to f).</li>
-          <li>eight → <b>eighth</b> (one t), nine → <b>ninth</b> (no e).</li>
-          <li>twenty → <b>twentieth</b>, thirty → <b>thirtieth</b> (y changes to ie).</li>
-          <li>twenty-one → <b>twenty-first</b>: only the last part changes.</li>
+          <li>first, second, third sú výnimky (nie „oneth“, „twoth“).</li>
+          <li>five → <b>fifth</b>, twelve → <b>twelfth</b> (ve sa mení na f).</li>
+          <li>eight → <b>eighth</b> (len jedno t), nine → <b>ninth</b> (bez e).</li>
+          <li>twenty → <b>twentieth</b>, thirty → <b>thirtieth</b> (y sa mení na ie).</li>
+          <li>twenty-one → <b>twenty-first</b>: mení sa iba posledná časť.</li>
         </ul>
       </div>
       <div class="grid ords">${cards}</div>`;
@@ -473,11 +493,11 @@ function learn(tab){
       cards += `<button class="s-${SEASON[i]}" data-say="${m}"><span class="n">${num(i+1)}</span><span class="w">${m}</span><span class="c">${ABBR[i]}${settings.skHints?' · '+SK_MON[i]:''}</span></button>`;
     });
     body = `
-      <div class="tip"><b>Good to know</b>
+      <div class="tip"><b>Dobré vedieť</b>
         <ul>
-          <li>Months always start with a <b>capital letter</b>: March, not march.</li>
-          <li>In Britain the <b>day comes first</b>: 3/4 means <b>3rd April</b>. We say “the third of April”.</li>
-          <li>Tricky spelling: Feb<b>r</b>uary, Au<b>g</b>ust, Sept<b>e</b>mber and Nov<b>e</b>mber.</li>
+          <li>Mesiace sa v angličtine vždy píšu s <b>veľkým písmenom</b>: March, nie march.</li>
+          <li>Vo Veľkej Británii sa <b>najprv píše deň</b>: 3/4 znamená <b>3rd April</b>. Povieme „the third of April“.</li>
+          <li>Zradný pravopis: Feb<b>r</b>uary, Au<b>g</b>ust, Sept<b>e</b>mber a Nov<b>e</b>mber.</li>
         </ul>
       </div>
       <div class="legend"><span class="s-winter">winter</span><span class="s-spring">spring</span><span class="s-summer">summer</span><span class="s-autumn">autumn</span></div>
@@ -522,7 +542,7 @@ function question(){
     ${header()}
     <div class="top"><h2>${LEVELS[S.level].name}</h2><button class="ghost small" id="quit">Quit</button></div>
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${S.qs.length}" aria-valuenow="${S.i}"><i style="width:${Math.max(pct,4)}%"></i></div>
-    <div class="stats"><span>Question ${S.i+1} / ${S.qs.length}</span><span>Score ${S.score}</span><span>Streak ${S.streak}</span></div>
+    <div class="stats"><span>Question ${S.i+1} / ${S.qs.length}</span><span>Score ${S.score}</span><span>Streak ${S.streak}</span><span>🧸 ${collection.owned.length}/${PLUSHIES.length}</span></div>
     <div class="card">
       <div class="prompt">${q.html}</div>
       ${input}
@@ -549,12 +569,22 @@ function answer(q, given, btn){
     ok = given === q.answer;
   } else {
     ok = norm(given) === norm(q.answer);
-    if(ok && q.month && String(given).trim()[0] !== q.answer[0]) capNote = ' Nice! Next time use a capital letter: <b>'+esc(q.answer)+'</b>.';
+    if(ok && q.month && String(given).trim()[0] !== q.answer[0]) capNote = ' Super! Nabudúce použi veľké písmeno: <b>'+esc(q.answer)+'</b>.';
   }
-  if(ok){ S.score += 10 + Math.min(S.streak,5)*2; S.streak++; S.right++; S.best = Math.max(S.best,S.streak); }
-  else  { S.streak = 0; if(!S.wrong.includes(q)) S.wrong.push(q); }
+  let newPlush = null;
+  if(ok){
+    S.score += 10 + Math.min(S.streak,5)*2; S.streak++; S.right++; S.best = Math.max(S.best,S.streak);
+    collection.totalCorrect++;
+    if(collection.totalCorrect % 3 === 0 && collection.owned.length < PLUSHIES.length){
+      const avail = PLUSHIES.map((_,i)=>i).filter(i=>!collection.owned.includes(i));
+      const idx = pick(avail);
+      collection.owned.push(idx);
+      newPlush = PLUSHIES[idx];
+    }
+    saveCollection();
+  } else { S.streak = 0; if(!S.wrong.includes(q)) S.wrong.push(q); }
   beep(ok);
-  if(ok) burst(S.streak>=3 ? 40 : 22);
+  if(ok) burst(newPlush ? 70 : (S.streak>=3 ? 40 : 22));
 
   if(q.kind==='choice'){
     app.querySelectorAll('.options button').forEach((b,i)=>{
@@ -566,10 +596,15 @@ function answer(q, given, btn){
     $('#ans').disabled = true; $('#check').disabled = true;
   }
   const last = S.i === S.qs.length-1;
+  const plushHtml = newPlush ? `<div class="card" style="margin-top:14px;text-align:center;background:linear-gradient(180deg,#fff6cf,#ffe6f2);border:3px dashed #ffb81f">
+      <div style="font-size:3rem;line-height:1">${newPlush.e}</div>
+      <b>Nová plyšová kamarátka: ${esc(newPlush.name)}!</b><br>
+      <span class="muted">Zbierka: ${collection.owned.length} / ${PLUSHIES.length}</span>
+    </div>` : '';
   const fb = $('#fb');
   fb.className = 'feedback show ' + (ok?'ok':'no');
-  fb.innerHTML = `<div class="fbwrap">${mascot(ok?'cheer':'oops',64)}<div><b>${ok?pick(PRAISE):pick(OOPS)}</b>${capNote}<br>${q.explain}
-    ${settings.skHints && q.sk ? `<br><span class="muted">SK: ${esc(q.sk)}</span>` : ''}</div></div>
+  fb.innerHTML = `<div class="fbwrap">${mascot(ok?'cheer':'oops',64)}<div><b>${ok?pick(PRAISE):pick(OOPS)}</b>${capNote}<br>${q.explain}</div></div>
+    ${plushHtml}
     <div class="row">
       <button class="ghost small" id="hear">Listen</button>
       <button class="small" id="next">${last?'See my results':'Next'}</button>
@@ -610,6 +645,7 @@ function results(){
       <button class="m2" id="again">Play again<small>New questions, same level</small></button>
       ${S.wrong.length ? `<button class="m1" id="prac">Practise my mistakes<small>Try the ${S.wrong.length} tricky question${S.wrong.length>1?'s':''} again</small></button>` : ''}
       ${S.level<3 ? `<button class="m4" id="up">Try ${LEVELS[S.level+1].name}<small>A bit harder</small></button>` : ''}
+      <button class="ghost" id="coll">🧸 Moja zbierka<small>${collection.owned.length} / ${PLUSHIES.length} plyšákov</small></button>
       <button class="ghost" id="hm">Home</button>
     </div>`;
   bindHeader();
@@ -618,7 +654,26 @@ function results(){
   $('#again').onclick = () => start(lv);
   if($('#prac')) $('#prac').onclick = () => start(lv, shuffle(wr).map(q=>Object.assign({}, q, {answered:false})));
   if($('#up')) $('#up').onclick = () => start(lv+1);
+  $('#coll').onclick = collectionScreen;
   $('#hm').onclick = home;
+}
+
+function collectionScreen(){
+  const total = PLUSHIES.length;
+  const items = PLUSHIES.map((p,i)=>{
+    const owned = collection.owned.includes(i);
+    return `<div class="card" style="text-align:center;padding:16px;margin:0${owned?'':';filter:grayscale(1);opacity:.4'}">
+      <div style="font-size:2.6rem;line-height:1">${owned?p.e:'❔'}</div>
+      <div style="font-weight:700;margin-top:6px;font-size:.95rem">${owned?esc(p.name):'???'}</div>
+    </div>`;
+  }).join('');
+  app.innerHTML = `
+    ${header()}
+    <div class="top"><h2>Moja zbierka plyšákov</h2><button class="ghost small" id="back">← Domov</button></div>
+    <p class="muted">Nazbierala si <b>${collection.owned.length} / ${total}</b> plyšových kamarátov. Za každé 3 správne odpovede získaš nového!</p>
+    <div class="grid">${items}</div>`;
+  bindHeader();
+  $('#back').onclick = home;
 }
 
 decorate();
