@@ -293,12 +293,33 @@ function beep(ok){
     o.start(t); o.stop(t+.3);
   }catch(e){}
 }
+function pickVoice(){
+  try{
+    const voices = speechSynthesis.getVoices();
+    if(!voices || !voices.length) return null;
+    const score = v => {
+      const lang = (v.lang||'').toLowerCase(), name = (v.name||'').toLowerCase();
+      let s = 0;
+      if(/^en-gb/.test(lang)) s += 100;
+      else if(/^en/.test(lang)) s += 40;
+      else return -1000; // not English — never pick it
+      if(/natural|neural|online|premium|enhanced|google/.test(name)) s += 50;
+      if(/desktop|compact|espeak|mobile/.test(name)) s -= 30;
+      if(v.localService===false) s += 5; // cloud voices are usually higher quality
+      return s;
+    };
+    let best = null, bestScore = -Infinity;
+    voices.forEach(v=>{ const s = score(v); if(s>bestScore){ bestScore=s; best=v; } });
+    return bestScore > -1000 ? best : null;
+  }catch(e){ return null; }
+}
 function say(text){
   try{
     if(!('speechSynthesis' in window)) return;
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-GB'; u.rate = .85;
-    const v = speechSynthesis.getVoices().find(v=>/en[-_]GB/i.test(v.lang));
+    const v = pickVoice();
+    u.lang = v ? v.lang : 'en-GB';
+    u.rate = .9;
     if(v) u.voice = v;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }catch(e){}
