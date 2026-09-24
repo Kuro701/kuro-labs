@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Star Quest: Ordinals &amp; Months</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#3a2a66; --muted:#7a6aa8;
+    --pink:#ff5fa8; --purple:#8b5cf6; --blue:#33a9f5; --mint:#22c58b; --sun:#ffb81f; --orange:#ff8a3d;
+    --line:#eadcff; --good:#1fbf7a; --good-l:#d9f8e9; --bad:#ff7a59; --bad-l:#ffe8e0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"Fredoka","Baloo 2","Nunito","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,#ffe3f1 0%,#ebe6ff 45%,#dcf5ff 100%) fixed;
+    min-height:100vh; padding:16px; position:relative; overflow-x:hidden;
+  }
+  #app{max-width:780px;margin:0 auto;position:relative;z-index:1}
+  .bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .bg span{position:absolute;opacity:.55;animation:floaty ease-in-out infinite alternate}
+  @keyframes floaty{from{transform:translateY(0) rotate(-8deg) scale(1)}to{transform:translateY(-22px) rotate(10deg) scale(1.12)}}
+  h1{
+    font-size:clamp(2rem,8vw,3.1rem);margin:.1em 0 .05em;line-height:1.05;font-weight:700;
+    background:linear-gradient(90deg,var(--pink),var(--orange),var(--sun),var(--mint),var(--blue),var(--purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  h2{font-size:1.4rem;margin:.2em 0 .4em;font-weight:700}
+  p{line-height:1.5;font-size:1.05rem}
+  .muted{color:var(--muted)}
+  .card{
+    background:rgba(255,255,255,.92);border:3px solid #fff;border-radius:28px;
+    padding:20px;margin:14px 0;box-shadow:0 10px 28px rgba(139,92,246,.18);
+  }
+  .top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .switch{display:flex;align-items:center;gap:14px;font-size:.95rem;color:var(--muted);flex-wrap:wrap}
+  .switch input{accent-color:var(--pink);width:18px;height:18px;vertical-align:-3px}
+
+  button{
+    font:inherit;cursor:pointer;border:0;color:#fff;font-weight:700;font-size:1.1rem;letter-spacing:.2px;
+    padding:12px 24px;border-radius:999px;
+    background:linear-gradient(180deg,#b092ff,#8b5cf6);box-shadow:0 5px 0 #6a3fd6;
+    transition:transform .08s,filter .15s;
+  }
+  button:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  button:active{transform:translateY(4px);box-shadow:0 1px 0 #6a3fd6}
+  button:focus-visible,input:focus-visible{outline:4px solid #ffd35a;outline-offset:2px}
+  button.ghost{background:#fff;color:#8b5cf6;box-shadow:0 4px 0 var(--line)}
+  button.small{padding:8px 16px;font-size:.95rem;box-shadow:0 4px 0 #6a3fd6}
+  button.ghost.small{box-shadow:0 4px 0 var(--line)}
+
+  .hero{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .bubble{
+    position:relative;background:#fff;border-radius:22px;padding:12px 18px;max-width:420px;
+    box-shadow:0 6px 18px rgba(255,95,168,.2);font-size:1.05rem;line-height:1.4;
+  }
+  .bubble::before{
+    content:"";position:absolute;left:-10px;top:50%;margin-top:-10px;border:10px solid transparent;
+    border-left:0;border-right-color:#fff;
+  }
+  .mascot{flex:none;filter:drop-shadow(0 6px 8px rgba(255,184,31,.5));animation:bob 2.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
+
+  .menu{display:grid;gap:14px;margin-top:14px}
+  .menu button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:16px 24px;border-radius:26px;font-size:1.2rem}
+  .menu button small{font-weight:500;opacity:.95;font-size:.9rem}
+  .menu .m1{background:linear-gradient(180deg,#ffd45a,#ff9f2e);box-shadow:0 6px 0 #d9781a}
+  .menu .m2{background:linear-gradient(180deg,#5fe3b0,#1fbf7a);box-shadow:0 6px 0 #14935a}
+  .menu .m3{background:linear-gradient(180deg,#6cc6ff,#3a8dff);box-shadow:0 6px 0 #2565cc}
+  .menu .m4{background:linear-gradient(180deg,#ff8cc4,#ff4f9a);box-shadow:0 6px 0 #d02f78}
+  .menu button.ghost{background:#fff;color:#8b5cf6;box-shadow:0 5px 0 var(--line);align-items:center}
+  .name{
+    font:inherit;font-size:1.1rem;padding:10px 16px;border:3px solid var(--line);border-radius:999px;width:100%;max-width:340px;color:var(--ink);background:#fff;
+  }
+
+  .bar{height:18px;background:#fff;border:3px solid #fff;border-radius:99px;box-shadow:inset 0 0 0 2px var(--line)}
+  .bar>i{
+    display:block;height:100%;width:0;transition:width .4s;border-radius:99px;position:relative;
+    background:linear-gradient(90deg,var(--pink),var(--orange),var(--sun),var(--mint),var(--blue),var(--purple));
+  }
+  .bar>i::after{content:"★";position:absolute;right:-8px;top:-8px;font-size:20px;color:var(--sun);text-shadow:0 0 6px #fff}
+  .stats{display:flex;gap:10px;font-weight:700;flex-wrap:wrap;margin:12px 0}
+  .stats span{padding:5px 14px;border-radius:99px;background:#fff;box-shadow:0 3px 0 var(--line)}
+  .stats span:nth-child(1){color:#8b5cf6}.stats span:nth-child(2){color:#e0388a}.stats span:nth-child(3){color:#e07b00}
+
+  .prompt{font-size:clamp(1.3rem,4.8vw,1.8rem);font-weight:600;margin:4px 0 18px;line-height:1.4}
+  .prompt b{
+    color:#fff;background:linear-gradient(180deg,#b092ff,#8b5cf6);padding:1px 12px;border-radius:14px;white-space:nowrap;
+    box-shadow:0 3px 0 #6a3fd6;
+  }
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:520px){.options{grid-template-columns:1fr}}
+  .options button{
+    color:var(--ink);font-size:1.2rem;padding:16px;border-radius:24px;border:3px solid;
+  }
+  .options button:nth-child(4n+1){background:#ffe6f2;border-color:#ff9ccc;box-shadow:0 5px 0 #ff9ccc}
+  .options button:nth-child(4n+2){background:#e3f3ff;border-color:#8fd0fb;box-shadow:0 5px 0 #8fd0fb}
+  .options button:nth-child(4n+3){background:#dcfbee;border-color:#7fe0b6;box-shadow:0 5px 0 #7fe0b6}
+  .options button:nth-child(4n){background:#fff1cf;border-color:#ffd166;box-shadow:0 5px 0 #ffd166}
+  .options button.correct{background:var(--good-l);border-color:var(--good);box-shadow:0 5px 0 var(--good);animation:pop .4s}
+  .options button.wrong{background:var(--bad-l);border-color:var(--bad);box-shadow:0 5px 0 var(--bad);animation:shake .4s}
+  .options button:disabled{cursor:default;filter:none;transform:none}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  .typebox{display:flex;gap:12px;flex-wrap:wrap}
+  .typebox input{
+    flex:1 1 220px;font:inherit;font-size:1.3rem;padding:12px 18px;border:3px solid #ffb3d9;border-radius:999px;background:#fff8fc;color:var(--ink);
+  }
+  .feedback{margin-top:18px;padding:14px 18px;border-radius:24px;display:none;line-height:1.5}
+  .feedback.show{display:block;animation:pop .35s}
+  .feedback.ok{background:var(--good-l);border:3px solid var(--good)}
+  .feedback.no{background:#fff0ea;border:3px solid var(--bad)}
+  .fbwrap{display:flex;gap:12px;align-items:center}
+  .fbwrap .mascot{animation:none}
+  .feedback .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+  .stars{font-size:3.4rem;letter-spacing:8px;color:#e6dcff}
+  .stars .on{color:var(--sun);text-shadow:0 0 12px #ffe08a;display:inline-block;animation:starpop .6s both}
+  .stars .on:nth-child(2){animation-delay:.2s}.stars .on:nth-child(3){animation-delay:.4s}
+  @keyframes starpop{0%{transform:scale(0) rotate(-90deg)}70%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+
+  .tabs{display:flex;gap:10px;margin:12px 0}
+  .tabs button.active{background:linear-gradient(180deg,#ff8cc4,#ff4f9a);box-shadow:0 5px 0 #d02f78}
+  .tabs button:not(.active){background:#fff;color:#8b5cf6;box-shadow:0 5px 0 var(--line)}
+  .tip{background:#fff6cf;border:3px dashed #ffd35a;border-radius:24px;padding:12px 18px;margin:12px 0}
+  .tip ul{margin:.4em 0 0;padding-left:1.2em}
+  .tip li{margin:.3em 0}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px}
+  .grid button{
+    color:var(--ink);padding:10px;border-radius:22px;border:3px solid;display:flex;flex-direction:column;gap:1px;align-items:center;
+  }
+  .grid button .n{font-size:1.5rem;color:#8b5cf6;font-weight:700}
+  .grid button .w{font-size:1.02rem;font-weight:600}
+  .grid button .c{font-size:.82rem;color:var(--muted);font-weight:500}
+  .grid.ords button:nth-child(6n+1){background:#ffe6f2;border-color:#ff9ccc;box-shadow:0 4px 0 #ff9ccc}
+  .grid.ords button:nth-child(6n+2){background:#fff1cf;border-color:#ffd166;box-shadow:0 4px 0 #ffd166}
+  .grid.ords button:nth-child(6n+3){background:#dcfbee;border-color:#7fe0b6;box-shadow:0 4px 0 #7fe0b6}
+  .grid.ords button:nth-child(6n+4){background:#e3f3ff;border-color:#8fd0fb;box-shadow:0 4px 0 #8fd0fb}
+  .grid.ords button:nth-child(6n+5){background:#ece4ff;border-color:#b9a0ff;box-shadow:0 4px 0 #b9a0ff}
+  .grid.ords button:nth-child(6n){background:#ffe8d8;border-color:#ffb27d;box-shadow:0 4px 0 #ffb27d}
+  .grid button.s-winter{background:#e3f4ff;border-color:#8fd0fb;box-shadow:0 4px 0 #8fd0fb}
+  .grid button.s-spring{background:#dcfbee;border-color:#7fe0b6;box-shadow:0 4px 0 #7fe0b6}
+  .grid button.s-summer{background:#fff1cf;border-color:#ffd166;box-shadow:0 4px 0 #ffd166}
+  .grid button.s-autumn{background:#ffe6d3;border-color:#ffab72;box-shadow:0 4px 0 #ffab72}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px;font-size:.9rem;font-weight:600}
+  .legend span{padding:3px 12px;border-radius:99px;border:2px solid}
+  .legend .s-winter{background:#e3f4ff;border-color:#8fd0fb}.legend .s-spring{background:#dcfbee;border-color:#7fe0b6}
+  .legend .s-summer{background:#fff1cf;border-color:#ffd166}.legend .s-autumn{background:#ffe6d3;border-color:#ffab72}
+
+  .mistake{padding:8px 0;border-top:2px dotted var(--line)}
+  .mistake:first-child{border-top:none}
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+  .confetti i{position:absolute;top:-16px;width:10px;height:15px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translate(var(--dx),108vh) rotate(var(--rot))}}
+  .sr{position:absolute;left:-9999px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg" id="bg" aria-hidden="true"></div>
+<div id="app"></div>
+<div id="live" class="sr" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ---------- DATA ---------- */
+const CARD = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve',
+  'thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+function card(n){
+  if(n<20) return CARD[n];
+  if(n===30) return 'thirty';
+  if(n<30) return 'twenty-'+CARD[n-20];
+  return 'thirty-'+CARD[n-30];
+}
+const IRR = {1:'first',2:'second',3:'third',5:'fifth',8:'eighth',9:'ninth',12:'twelfth'};
+function ord(n){
+  if(n<20) return IRR[n] || CARD[n]+'th';
+  if(n===20) return 'twentieth';
+  if(n===30) return 'thirtieth';
+  return (n<30 ? 'twenty-' : 'thirty-') + ord(n<30 ? n-20 : n-30);
+}
+function suf(n){
+  if(n%100>=11 && n%100<=13) return 'th';
+  return ({1:'st',2:'nd',3:'rd'})[n%10] || 'th';
+}
+function num(n){ return n+suf(n); }
+
+const SK_ORD = [null,'prvý','druhý','tretí','štvrtý','piaty','šiesty','siedmy','ôsmy','deviaty','desiaty',
+  'jedenásty','dvanásty','trinásty','štrnásty','pätnásty','šestnásty','sedemnásty','osemnásty','devätnásty',
+  'dvadsiaty','dvadsiaty prvý','dvadsiaty druhý','dvadsiaty tretí','dvadsiaty štvrtý','dvadsiaty piaty',
+  'dvadsiaty šiesty','dvadsiaty siedmy','dvadsiaty ôsmy','dvadsiaty deviaty','tridsiaty','tridsiaty prvý'];
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const ABBR   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
+const SK_MON = ['január','február','marec','apríl','máj','jún','júl','august','september','október','november','december'];
+
+function ordTip(n){
+  const base = (n>20 && n%10) ? n%10 : n;
+  let t;
+  if([1,2,3].includes(base)) t = 'first, second and third are special words. They do not end in -th.';
+  else if(base===5)  t = 'five becomes fifth (ve changes to f).';
+  else if(base===12) t = 'twelve becomes twelfth (ve changes to f).';
+  else if(base===8)  t = 'eight becomes eighth (only one t!).';
+  else if(base===9)  t = 'nine becomes ninth (the e disappears).';
+  else if(base===20 || base===30) t = 'twenty becomes twentieth and thirty becomes thirtieth (y changes to ie).';
+  else t = 'Most ordinals just add -th, for example four becomes fourth.';
+  if(n>20 && n%10) t += ' In numbers like '+ord(n)+', only the last part changes.';
+  return t;
+}
+
+/* ---------- SMALL HELPERS ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function norm(s){ return String(s).toLowerCase().replace(/[\s\-‑–]/g,''); }
+const wrap = (n,max) => ((n-1+max)%max)+1;
+
+let settings = { skHints:true, sound:true, name:'' };
+
+/* ---------- SOUND & SPEECH ---------- */
+let audioCtx = null;
+function beep(ok){
+  if(!settings.sound) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type='sine'; o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime;
+    if(ok){ o.frequency.setValueAtTime(660,t); o.frequency.setValueAtTime(880,t+.1); }
+    else  { o.frequency.setValueAtTime(220,t); o.frequency.setValueAtTime(180,t+.12); }
+    g.gain.setValueAtTime(.15,t); g.gain.exponentialRampToValueAtTime(.001,t+.3);
+    o.start(t); o.stop(t+.3);
+  }catch(e){}
+}
+function say(text){
+  try{
+    if(!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-GB'; u.rate = .85;
+    const v = speechSynthesis.getVoices().find(v=>/en[-_]GB/i.test(v.lang));
+    if(v) u.voice = v;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- QUESTION BUILDERS ---------- */
+function ordDistractors(n){
+  const c = ord(n);
+  const pool = [card(n), card(n)+'th', ord(n<31?n+1:n-1), ord(n>1?n-1:n+2), ord(n<30?n+2:n-2)];
+  const out = [];
+  pool.forEach(x=>{ if(x!==c && !out.includes(x)) out.push(x); });
+  return out.slice(0,3);
+}
+function choiceQ(html, correct, distractors, extra){
+  const options = shuffle([correct, ...distractors]);
+  return Object.assign({ kind:'choice', html, options, answer:correct }, extra);
+}
+
+const BUILD = {
+  ordToWord(max){
+    const n = rnd(1,max);
+    return choiceQ(`Which word matches <b>${num(n)}</b>?`, ord(n), ordDistractors(n),
+      { say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (${SK_ORD[n]}). ${ordTip(n)}`, sk:`${ord(n)} = ${SK_ORD[n]}` });
+  },
+  wordToOrd(max){
+    const n = rnd(1,max);
+    const pool = [String(n), num(n<max?n+1:n-1), num(n>1?n-1:n+2), num(n+10<=31?n+10:Math.max(1,n-10))];
+    const correct = num(n), d = [];
+    pool.forEach(x=>{ if(x!==correct && !d.includes(x)) d.push(x); });
+    while(d.length<3){ const x = num(rnd(1,max)); if(x!==correct && !d.includes(x)) d.push(x); }
+    return choiceQ(`Which number matches <b>${ord(n)}</b>?`, correct, d.slice(0,3),
+      { say: ord(n), explain:`<b>${ord(n)}</b> is written <b>${num(n)}</b>. An ordinal number ends with st, nd, rd or th.`, sk:`${ord(n)} = ${SK_ORD[n]}` });
+  },
+  typeOrd(max){
+    const n = rnd(1,max);
+    return { kind:'type', html:`Write it in words: <b>${num(n)}</b>`, answer: ord(n), placeholder:'e.g. fourth',
+      say: ord(n), explain:`${num(n)} = <b>${ord(n)}</b> (${SK_ORD[n]}). ${ordTip(n)}`, sk:`${ord(n)} = ${SK_ORD[n]}` };
+  },
+  sequence(max){
+    const top = Math.max(4,max);
+    const n = rnd(1,top-3);
+    const a = n+3;
+    return choiceQ(`What comes next?<br><b>${ord(n)}, ${ord(n+1)}, ${ord(n+2)}, …</b>`, ord(a), ordDistractors(a),
+      { say: ord(a), explain:`The next ordinal is <b>${ord(a)}</b> (${num(a)}). ${ordTip(a)}`, sk:`${ord(a)} = ${SK_ORD[a]}` });
+  },
+  numToMonth(){
+    const m = rnd(1,12);
+    const d = shuffle(MONTHS.filter((_,i)=>i!==m-1)).slice(0,3);
+    return choiceQ(`Which month is the <b>${num(m)}</b> month of the year?`, MONTHS[m-1], d,
+      { say: MONTHS[m-1], explain:`The ${ord(m)} month is <b>${MONTHS[m-1]}</b> (${SK_MON[m-1]}). Months always start with a capital letter.`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` });
+  },
+  monthToNum(){
+    const m = rnd(1,12);
+    const pool = [num(wrap(m+1,12)), num(wrap(m-1,12)), num(wrap(m+2,12)), num(wrap(m-2,12)), num(wrap(m+3,12))];
+    const d = pool.filter((x,i)=>x!==num(m) && pool.indexOf(x)===i).slice(0,3);
+    return choiceQ(`<b>${MONTHS[m-1]}</b> is which month of the year?`, num(m), d,
+      { say: MONTHS[m-1]+', the '+ord(m)+' month', explain:`<b>${MONTHS[m-1]}</b> is the <b>${ord(m)}</b> month (${num(m)}).`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` });
+  },
+  czMonth(){
+    const m = rnd(1,12);
+    const d = shuffle(MONTHS.filter((_,i)=>i!==m-1)).slice(0,3);
+    return choiceQ(`Which English month is <b>${SK_MON[m-1]}</b>?`, MONTHS[m-1], d,
+      { say: MONTHS[m-1], explain:`${SK_MON[m-1]} = <b>${MONTHS[m-1]}</b>. It is the ${ord(m)} month.`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` });
+  },
+  typeMonth(){
+    const m = rnd(1,12);
+    return { kind:'type', month:true, html:`Spell the month: <b>${SK_MON[m-1]}</b>`, answer: MONTHS[m-1], placeholder:'in English',
+      say: MONTHS[m-1], explain:`${SK_MON[m-1]} = <b>${MONTHS[m-1]}</b>. Remember the capital letter!`, sk:`${MONTHS[m-1]} = ${SK_MON[m-1]}` };
+  },
+  nextMonth(){
+    const m = rnd(1,12), after = Math.random()<.5;
+    const t = wrap(after ? m+1 : m-1, 12);
+    const d = shuffle(MONTHS.filter((_,i)=>i!==t-1)).slice(0,3);
+    return choiceQ(`Which month comes <b>${after?'after':'before'}</b> ${MONTHS[m-1]}?`, MONTHS[t-1], d,
+      { say: MONTHS[t-1], explain:`The month ${after?'after':'before'} ${MONTHS[m-1]} is <b>${MONTHS[t-1]}</b>.`, sk:`${MONTHS[t-1]} = ${SK_MON[t-1]}` });
+  },
+  date(){
+    const d = rnd(1,28), m = rnd(1,12);
+    const M = MONTHS[m-1];
+    const correct = `the ${ord(d)} of ${M}`;
+    const cand = [
+      `the ${ord(d<28?d+1:d-1)} of ${M}`,
+      `the ${ord(d)} of ${MONTHS[wrap(m+1,12)-1]}`,
+      `the ${card(d)} of ${M}`,
+      `the ${ord(d>1?d-1:d+2)} of ${M}`
+    ];
+    const dd = []; cand.forEach(x=>{ if(x!==correct && !dd.includes(x)) dd.push(x); });
+    return choiceQ(`In Britain the <u>day</u> comes first. How do we say <b>${d}/${m}</b>?`, correct, dd.slice(0,3),
+      { say: correct, explain:`${d}/${m} is <b>${correct}</b> (${num(d)} ${M}). In the UK the day comes first, but in the USA the month comes first.`,
+        sk:`${ord(d)} = ${SK_ORD[d]}, ${M} = ${SK_MON[m-1]}` });
+  }
+};
+
+const LEVELS = {
+  1:{ name:'Level 1 – Starter', max:12, types:['ordToWord','wordToOrd','numToMonth','monthToNum','czMonth','nextMonth','typeOrd'] },
+  2:{ name:'Level 2 – Explorer', max:31, types:['ordToWord','wordToOrd','typeOrd','sequence','czMonth','typeMonth','nextMonth','date'] },
+  3:{ name:'Level 3 – Champion', max:31, types:['typeOrd','typeMonth','date','sequence','typeOrd','ordToWord','monthToNum','date'] }
+};
+function makeRound(level){
+  const L = LEVELS[level], qs = [], seen = new Set();
+  let guard = 0;
+  while(qs.length<10 && guard++<200){
+    const q = BUILD[pick(L.types)](L.max);
+    if(seen.has(q.html)) continue;
+    seen.add(q.html); qs.push(q);
+  }
+  return qs;
+}
+
+/* ---------- LOOK & FEEL ---------- */
+function mascot(mood, size){
+  const mouth = mood==='oops' ? '<path d="M44 68 Q50 62 56 68" fill="none" stroke="#7a3b3b" stroke-width="2.6" stroke-linecap="round"/>'
+              : mood==='cheer' ? '<path d="M42 60 Q50 76 58 60 Z" fill="#c2415f" stroke="#7a3b3b" stroke-width="2" stroke-linejoin="round"/>'
+              : '<path d="M43 61 Q50 70 57 61" fill="none" stroke="#7a3b3b" stroke-width="2.6" stroke-linecap="round"/>';
+  const eyes = mood==='oops'
+    ? '<circle cx="41" cy="52" r="3.4" fill="#3a2a66"/><circle cx="59" cy="52" r="3.4" fill="#3a2a66"/><circle cx="42" cy="50.8" r="1.1" fill="#fff"/><circle cx="60" cy="50.8" r="1.1" fill="#fff"/><path d="M36 45 L46 47 M64 45 L54 47" stroke="#3a2a66" stroke-width="2" stroke-linecap="round"/>'
+    : '<circle cx="41" cy="52" r="3.6" fill="#3a2a66"/><circle cx="59" cy="52" r="3.6" fill="#3a2a66"/><circle cx="42.2" cy="50.7" r="1.2" fill="#fff"/><circle cx="60.2" cy="50.7" r="1.2" fill="#fff"/>';
+  return `<svg class="mascot" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">
+    <defs><linearGradient id="sg${size}${mood}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#ffb81f"/></linearGradient></defs>
+    <polygon points="50,5 62,36 96,38 70,60 79,93 50,74 21,93 30,60 4,38 38,36" fill="url(#sg${size}${mood})" stroke="#f59e0b" stroke-width="3" stroke-linejoin="round"/>
+    ${eyes}
+    <ellipse cx="32" cy="61" rx="6" ry="4" fill="#ff8fb8" opacity=".75"/><ellipse cx="68" cy="61" rx="6" ry="4" fill="#ff8fb8" opacity=".75"/>
+    ${mouth}
+  </svg>`;
+}
+const PRAISE = ['Yay! ★','Super! ★','Brilliant! ★','Perfect! ★','You got it! ★','Amazing! ★'];
+const OOPS = ['Oops, nearly!','Good try!','Not quite, but you can do it!','Almost!'];
+const SEASON = ['winter','winter','spring','spring','spring','summer','summer','summer','autumn','autumn','autumn','winter'];
+const COLS = ['#ff5fa8','#8b5cf6','#33a9f5','#22c58b','#ffb81f','#ff8a3d'];
+
+function decorate(){
+  const sym = ['✦','♥','✿','★','✧'];
+  let h = '';
+  for(let i=0;i<18;i++){
+    h += `<span style="left:${rnd(0,96)}%;top:${rnd(0,94)}%;font-size:${rnd(16,40)}px;color:${COLS[i%COLS.length]};animation-delay:-${(Math.random()*8).toFixed(1)}s;animation-duration:${rnd(6,12)}s">${sym[i%sym.length]}</span>`;
+  }
+  $('#bg').innerHTML = h;
+}
+function burst(n){
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = document.createElement('div'); box.className = 'confetti';
+  for(let i=0;i<n;i++){
+    const c = document.createElement('i');
+    c.style.left = rnd(3,97)+'%';
+    c.style.background = pick(COLS);
+    c.style.setProperty('--dx', rnd(-120,120)+'px');
+    c.style.setProperty('--rot', rnd(240,900)+'deg');
+    c.style.animationDuration = (1.2+Math.random()*1.2)+'s';
+    c.style.animationDelay = (Math.random()*.3)+'s';
+    if(i%3===0) c.style.borderRadius = '50%';
+    box.appendChild(c);
+  }
+  document.body.appendChild(box);
+  setTimeout(()=>box.remove(), 2900);
+}
+
+/* ---------- SCREENS ---------- */
+let S = null; // current game state
+
+function header(){
+  return `<div class="top">
+    <div class="switch">
+      <label><input type="checkbox" id="sk" ${settings.skHints?'checked':''}> Slovak hints</label>
+      <label><input type="checkbox" id="snd" ${settings.sound?'checked':''}> Sound</label>
+    </div>
+  </div>`;
+}
+function bindHeader(){
+  const sk = $('#sk'), sn = $('#snd');
+  if(sk) sk.onchange = () => { settings.skHints = sk.checked; };
+  if(sn) sn.onchange = () => { settings.sound = sn.checked; };
+}
+
+function home(){
+  const hello = settings.name ? `Hi ${esc(settings.name)}!` : 'Hi there!';
+  app.innerHTML = `
+    ${header()}
+    <h1>Star Quest</h1>
+    <p class="muted" style="margin-top:0"><b>Ordinal numbers &amp; months</b> in British English</p>
+    <div class="hero">
+      ${mascot('cheer',96)}
+      <div class="bubble">${hello} I'm Stella. Let's learn <b>first, second, third…</b> and the <b>months</b> of the year together!</div>
+    </div>
+    <div class="card">
+      <label for="nm"><b>What's your name?</b> (you can skip this)</label><br>
+      <input id="nm" class="name" maxlength="20" value="${esc(settings.name)}" placeholder="Type your name">
+    </div>
+    <div class="menu">
+      <button class="m1" id="learn">Learn first<small>Colourful cards. Tap a card to hear it!</small></button>
+      <button class="m2" id="l1">Play: ${LEVELS[1].name}<small>1st to 12th and the months</small></button>
+      <button class="m3" id="l2">Play: ${LEVELS[2].name}<small>1st to 31st, spelling and dates</small></button>
+      <button class="m4" id="l3">Play: ${LEVELS[3].name}<small>Mostly typing. Only for brave players!</small></button>
+    </div>`;
+  bindHeader();
+  const nm = $('#nm'); nm.oninput = () => { settings.name = nm.value.trim(); };
+  $('#learn').onclick = () => learn('ord');
+  $('#l1').onclick = () => start(1);
+  $('#l2').onclick = () => start(2);
+  $('#l3').onclick = () => start(3);
+}
+
+function learn(tab){
+  let body = '';
+  if(tab==='ord'){
+    let cards = '';
+    for(let n=1;n<=31;n++){
+      cards += `<button data-say="${esc(ord(n))}"><span class="n">${num(n)}</span><span class="w">${ord(n)}</span>${settings.skHints?`<span class="c">${SK_ORD[n]}</span>`:''}</button>`;
+    }
+    body = `
+      <div class="tip"><b>Spelling traps</b>
+        <ul>
+          <li>first, second, third are special (not “oneth”, “twoth”).</li>
+          <li>five → <b>fifth</b>, twelve → <b>twelfth</b> (ve changes to f).</li>
+          <li>eight → <b>eighth</b> (one t), nine → <b>ninth</b> (no e).</li>
+          <li>twenty → <b>twentieth</b>, thirty → <b>thirtieth</b> (y changes to ie).</li>
+          <li>twenty-one → <b>twenty-first</b>: only the last part changes.</li>
+        </ul>
+      </div>
+      <div class="grid ords">${cards}</div>`;
+  } else {
+    let cards = '';
+    MONTHS.forEach((m,i)=>{
+      cards += `<button class="s-${SEASON[i]}" data-say="${m}"><span class="n">${num(i+1)}</span><span class="w">${m}</span><span class="c">${ABBR[i]}${settings.skHints?' · '+SK_MON[i]:''}</span></button>`;
+    });
+    body = `
+      <div class="tip"><b>Good to know</b>
+        <ul>
+          <li>Months always start with a <b>capital letter</b>: March, not march.</li>
+          <li>In Britain the <b>day comes first</b>: 3/4 means <b>3rd April</b>. We say “the third of April”.</li>
+          <li>Tricky spelling: Feb<b>r</b>uary, Au<b>g</b>ust, Sept<b>e</b>mber and Nov<b>e</b>mber.</li>
+        </ul>
+      </div>
+      <div class="legend"><span class="s-winter">winter</span><span class="s-spring">spring</span><span class="s-summer">summer</span><span class="s-autumn">autumn</span></div>
+      <div class="grid">${cards}</div>`;
+  }
+  app.innerHTML = `
+    ${header()}
+    <div class="top"><h2>Learn</h2><button class="ghost small" id="back">← Home</button></div>
+    <div class="tabs">
+      <button class="${tab==='ord'?'active':''}" id="t1">Ordinal numbers</button>
+      <button class="${tab==='mon'?'active':''}" id="t2">Months</button>
+    </div>
+    ${body}
+    <div class="card"><b>Ready to play?</b> &nbsp; <button id="go1">Play Level 1</button></div>`;
+  bindHeader();
+  $('#sk').onchange = e => { settings.skHints = e.target.checked; learn(tab); };
+  $('#back').onclick = home;
+  $('#t1').onclick = () => learn('ord');
+  $('#t2').onclick = () => learn('mon');
+  $('#go1').onclick = () => start(1);
+  app.querySelectorAll('.grid button').forEach(b => b.onclick = () => say(b.dataset.say));
+}
+
+function start(level, questions){
+  S = { level, qs: questions || makeRound(level), i:0, score:0, streak:0, best:0, right:0, wrong:[], done:false };
+  question();
+}
+
+function question(){
+  const q = S.qs[S.i];
+  q.answered = false;
+  const pct = Math.round((S.i/S.qs.length)*100);
+  let input = '';
+  if(q.kind==='choice'){
+    input = `<div class="options">${q.options.map((o,i)=>`<button data-i="${i}">${esc(o)}</button>`).join('')}</div>`;
+  } else {
+    input = `<div class="typebox">
+      <input id="ans" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${esc(q.placeholder||'')}" aria-label="Your answer">
+      <button id="check">Check</button></div>`;
+  }
+  app.innerHTML = `
+    ${header()}
+    <div class="top"><h2>${LEVELS[S.level].name}</h2><button class="ghost small" id="quit">Quit</button></div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${S.qs.length}" aria-valuenow="${S.i}"><i style="width:${Math.max(pct,4)}%"></i></div>
+    <div class="stats"><span>Question ${S.i+1} / ${S.qs.length}</span><span>Score ${S.score}</span><span>Streak ${S.streak}</span></div>
+    <div class="card">
+      <div class="prompt">${q.html}</div>
+      ${input}
+      <div class="feedback" id="fb"></div>
+    </div>`;
+  bindHeader();
+  $('#quit').onclick = home;
+  if(q.kind==='choice'){
+    app.querySelectorAll('.options button').forEach(b => b.onclick = () => answer(q, q.options[+b.dataset.i], b));
+  } else {
+    const inp = $('#ans');
+    inp.focus();
+    inp.onkeydown = e => { if(e.key==='Enter'){ e.preventDefault(); if(!q.answered) answer(q, inp.value); } };
+    $('#check').onclick = () => { if(!q.answered) answer(q, inp.value); };
+  }
+}
+
+function answer(q, given, btn){
+  if(q.answered) return;
+  if(q.kind==='type' && !String(given).trim()) return;
+  q.answered = true;
+  let ok, capNote = '';
+  if(q.kind==='choice'){
+    ok = given === q.answer;
+  } else {
+    ok = norm(given) === norm(q.answer);
+    if(ok && q.month && String(given).trim()[0] !== q.answer[0]) capNote = ' Nice! Next time use a capital letter: <b>'+esc(q.answer)+'</b>.';
+  }
+  if(ok){ S.score += 10 + Math.min(S.streak,5)*2; S.streak++; S.right++; S.best = Math.max(S.best,S.streak); }
+  else  { S.streak = 0; if(!S.wrong.includes(q)) S.wrong.push(q); }
+  beep(ok);
+  if(ok) burst(S.streak>=3 ? 40 : 22);
+
+  if(q.kind==='choice'){
+    app.querySelectorAll('.options button').forEach((b,i)=>{
+      b.disabled = true;
+      if(q.options[i]===q.answer) b.classList.add('correct');
+      else if(b===btn) b.classList.add('wrong');
+    });
+  } else {
+    $('#ans').disabled = true; $('#check').disabled = true;
+  }
+  const last = S.i === S.qs.length-1;
+  const fb = $('#fb');
+  fb.className = 'feedback show ' + (ok?'ok':'no');
+  fb.innerHTML = `<div class="fbwrap">${mascot(ok?'cheer':'oops',64)}<div><b>${ok?pick(PRAISE):pick(OOPS)}</b>${capNote}<br>${q.explain}
+    ${settings.skHints && q.sk ? `<br><span class="muted">SK: ${esc(q.sk)}</span>` : ''}</div></div>
+    <div class="row">
+      <button class="ghost small" id="hear">Listen</button>
+      <button class="small" id="next">${last?'See my results':'Next'}</button>
+    </div>`;
+  $('#hear').onclick = () => say(q.say);
+  $('#next').onclick = next;
+  $('#next').focus();
+  $('#live').textContent = ok ? 'Correct' : 'Not quite. The answer is ' + q.answer;
+}
+
+function next(){
+  S.i++;
+  if(S.i >= S.qs.length) results(); else question();
+}
+
+function results(){
+  const total = S.qs.length;
+  const stars = S.right>=total-1 ? 3 : S.right>=Math.ceil(total*.7) ? 2 : S.right>=Math.ceil(total*.5) ? 1 : 0;
+  const nm = settings.name ? ', ' + esc(settings.name) : '';
+  const msg = stars===3 ? `Brilliant${nm}! Almost perfect.` :
+              stars===2 ? `Well done${nm}! Keep practising.` :
+              stars===1 ? `Good try${nm}! Have another go.` :
+                          `Don't worry${nm}. Have a look at the Learn cards and try again.`;
+  const mistakes = S.wrong.map(q => `<div class="mistake">${q.html.replace(/<br>/g,' ')}<br>Answer: <b>${esc(q.answer)}</b></div>`).join('');
+  app.innerHTML = `
+    ${header()}
+    <h1>Results</h1>
+    <div class="card" style="text-align:center">
+      ${mascot(stars>=2?'cheer':'happy',96)}
+      <div class="stars" aria-label="${stars} out of 3 stars">
+        ${[1,2,3].map(n=>`<span class="${n<=stars?'on':''}">★</span>`).join('')}
+      </div>
+      <p><b>${S.right} / ${total}</b> correct · Score <b>${S.score}</b> · Best streak <b>${S.best}</b></p>
+      <p>${msg}</p>
+    </div>
+    ${S.wrong.length ? `<div class="card"><h2>Let's practise these</h2>${mistakes}</div>` : ''}
+    <div class="menu">
+      <button class="m2" id="again">Play again<small>New questions, same level</small></button>
+      ${S.wrong.length ? `<button class="m1" id="prac">Practise my mistakes<small>Try the ${S.wrong.length} tricky question${S.wrong.length>1?'s':''} again</small></button>` : ''}
+      ${S.level<3 ? `<button class="m4" id="up">Try ${LEVELS[S.level+1].name}<small>A bit harder</small></button>` : ''}
+      <button class="ghost" id="hm">Home</button>
+    </div>`;
+  bindHeader();
+  if(stars>=2) burst(70);
+  const lv = S.level, wr = S.wrong.slice();
+  $('#again').onclick = () => start(lv);
+  if($('#prac')) $('#prac').onclick = () => start(lv, shuffle(wr).map(q=>Object.assign({}, q, {answered:false})));
+  if($('#up')) $('#up').onclick = () => start(lv+1);
+  $('#hm').onclick = home;
+}
+
+decorate();
+home();
+</script>
+</body>
+</html>
