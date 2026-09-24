@@ -11,7 +11,8 @@
    "language": "Czech",
    "thumb": null,
    "discord": "https://discord.gg/hJNFfvf8nA",
-   "community": "Mytheder"
+   "community": "Mytheder",
+   "img": "/assets/img/proj-mytheder.webp"
   },
   {
    "slug": "ordinals-and-months",
@@ -22,7 +23,8 @@
    "players": "1",
    "language": "English",
    "thumb": null,
-   "art": "STAR QUEST"
+   "art": "STAR QUEST",
+   "img": "/assets/img/proj-star-quest.webp"
   },
   {
    "slug": "monkey-paw",

@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'..'),publicDir=path.join(root,'public');
 const input=process.argv[2]?path.resolve(process.argv[2]):publicDir;
 const read=(p)=>JSON.parse(fs.readFileSync(path.join(input,p),'utf8').replace(/^\uFEFF/,''));
 const data={products:read('shop/products.json').products,projects:read('projects/projects.json').projects,games:read('games/games.json').games,images:{}};
-for(const p of [...data.products,...data.projects])if(p.img)data.images[p.img.split('/').pop()]=p.img;
+for(const p of [...data.products,...data.projects,...data.games])if(p.img)data.images[p.img.split('/').pop()]=p.img;
 data.images['emblem.webp']='/assets/img/emblem.webp';
 const {pages}=require('./pages.cjs')(data);
 const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
