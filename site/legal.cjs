@@ -14,7 +14,7 @@ const notOpen = what => cfg.ACCOUNTS_OPEN ? '' : `<p class="kl-callout"><strong>
 
 function rulesPage() {
   return `<div class="kl-wrap kl-legal">
-${head('Kuro Labs / Rules', 'Community rules.', `How we keep the games and rooms pleasant for everyone. Version ${cfg.RULES_VERSION}, ${niceDate(cfg.RULES_DATE)}.`)}
+${head('Kuro Labs / Rules', 'Rules and terms.', `How we keep the games and rooms pleasant for everyone, and the ground rules for using the site. Version ${cfg.RULES_VERSION}, ${niceDate(cfg.RULES_DATE)}.`)}
 ${notOpen('These rules already apply to online rooms, and they will apply to every account when accounts open. When you register, you agree to them and confirm that you are 18 or older.')}
 <section><h2>The short version</h2>
 <p>Be decent to other people, do not cheat, and remember that anyone who breaks these rules can be removed. That is all of it. The details are below so that nobody has to guess.</p></section>
@@ -35,6 +35,18 @@ ${notOpen('These rules already apply to online rooms, and they will apply to eve
 <p>Depending on what happened we may warn, rename, remove scores from, suspend or ban an account. If an account is banned we keep a one-way scrambled fingerprint of the login it used, so the same person cannot simply register again; the privacy note explains this. If you think we made a mistake, email ${mail} and we will look at it again.</p></section>
 <section><h2>Reporting a player</h2>
 <p>When accounts are open, every public username has a report button. In an online room the host can remove people from the lobby. For anything else, email ${mail} with the username or room code and what happened.</p></section>
+<section><h2>Using the site (terms)</h2>
+<p>Kuro Labs is a hobby project run by ${esc(cfg.OPERATOR)}. Please read this part too; it is short.</p>
+<ul>
+<li><strong>The games and the site are free and provided as they are.</strong> We try to keep them working and your progress safe, but we cannot promise that they will always be available, error-free, or that saves, scores or accounts will never be lost. Keep a note of anything you would be sad to lose.</li>
+<li><strong>We can change or stop things.</strong> We may change, pause or remove a game, a feature or the accounts system, and we will try to give notice when something that holds your data goes away.</li>
+<li><strong>Your account is yours to look after.</strong> Keep your password to yourself. What happens under your account is your responsibility, and if you think someone else got into it, change your password and log out on all devices in your account settings, or write to us.</li>
+<li><strong>What you type.</strong> Usernames and room nicknames must follow the rules above. You keep whatever rights you have in what you write, and you allow us to show it to other players for as long as it is needed to run the game (for example your username on a leaderboard).</li>
+<li><strong>Our work.</strong> The games, art, code and text on this site belong to Kuro Labs or its licensors. You may play and share links, but not copy the site or its games and pass them off as your own.</li>
+<li><strong>Liability.</strong> To the extent the law allows, we are not responsible for losses that come from using a free hobby site. Nothing here limits rights you have by law that cannot be limited, including for damage we cause on purpose or by gross negligence.</li>
+<li><strong>Law and complaints.</strong> Czech law applies, without taking away the consumer protection you have in your own country. If you are unhappy, write to ${mail} first. Consumers in the Czech Republic can also turn to the Czech Trade Inspection (<a href="https://adr.coi.cz/">Česká obchodní inspekce</a>) for out-of-court dispute resolution.</li>
+<li><strong>Purchases</strong> in the shop are handled by Gumroad under its own terms; these rules cover only the site and its games.</li>
+</ul></section>
 <section><h2>Changes</h2>
 <p>If these rules change in a way that matters, the version number above goes up, and everyone with an account is shown the new rules once and has to accept them before continuing.</p></section>
 <section><h2>Credits</h2>
@@ -67,6 +79,14 @@ ${notOpen('This section describes how they will work when they open.')}
 </ul>
 <p><strong>What we do not store:</strong> your password in readable form, your date of birth, your ID, or your IP address. To stop abuse we count how often a connection asks for a login code, using a one-way scrambled value that cannot be turned back into an address, and we delete it within two days.</p>
 <p><strong>Why we keep it.</strong> To run your account and your games: to let you log in, to remember your progress, to run online rooms, to show the leaderboard, and to keep the community safe under the <a href="/rules/">rules</a>. We use it for nothing else. There is no advertising, no tracking of what you do on other sites, and no selling or renting of data.</p></section>
+<section><h2>Why we may use your data</h2>
+<p>The law (GDPR) asks us to name the reason for each use. Ours are:</p>
+<ul>
+<li><strong>To provide what you asked for</strong>: your account, logging in, saving your progress, online rooms and leaderboards. Without this data we cannot run an account.</li>
+<li><strong>To keep the site safe and fair</strong> (our legitimate interest): the limits on login tries, reports and the moderation log, and the ban fingerprint. You can object to this at any time by writing to ${mail}.</li>
+<li><strong>Where the law requires it</strong>, for example to answer an authority or to report a data breach.</li>
+</ul>
+<p>Giving us data is your choice, and you can play as a guest without giving us any. We make no automated decisions about you and do not profile you.</p></section>
 <section><h2>Who else handles your data</h2>
 <p>We use a few services to run the site. They handle data only to do their job for us.</p>
 <ul>
@@ -78,7 +98,7 @@ ${notOpen('This section describes how they will work when they open.')}
 <p><strong>Data leaving the EU.</strong> Cloudflare, Resend and Discord are American companies, so your data may be processed in the United States. All three are certified under the EU-U.S. Data Privacy Framework, the agreement under which the EU allows personal data to be sent to certified US companies, and each also uses the EU's Standard Contractual Clauses (standard legal terms that bind them to EU-level protection) as a second safeguard. Cloudflare's and Resend's data-processing terms with us apply automatically when we use their services.</p>
 <p>We do not give your data to anyone else, except if the law makes us.</p></section>
 <section><h2>Cookies and browser storage</h2>
-<p>We use <strong>one cookie</strong>, which keeps you logged in (once accounts exist), plus short-lived cookies during a login. They are needed for the login to work, so, as Czech data-protection guidance allows for strictly necessary cookies, there is no cookie-consent banner. Games also save things in your browser's own storage, for the same reason: your progress, your sound setting, the name you last typed and, in an online room, your seat so you can rejoin after a dropped connection or a page reload. We use <strong>no</strong> analytics cookies and <strong>no</strong> advertising cookies. If that ever changes, we will ask for your consent first.</p></section>
+<p>We use <strong>one cookie</strong>, which keeps you logged in (once accounts exist), plus short-lived cookies during a login. If you choose email login, Cloudflare's bot check (Turnstile) loads from Cloudflare and may set or read its own security cookie; it exists only to stop bots and is not used for tracking. They are needed for the login to work, so, as Czech data-protection guidance allows for strictly necessary cookies, there is no cookie-consent banner. Games also save things in your browser's own storage, for the same reason: your progress, your sound setting, the name you last typed and, in an online room, your seat so you can rejoin after a dropped connection or a page reload. We use <strong>no</strong> analytics cookies and <strong>no</strong> advertising cookies. If that ever changes, we will ask for your consent first.</p></section>
 <section><h2>How long we keep things</h2>
 <ul>
 <li><strong>Your account and game data:</strong> until you delete your account, or until it has been unused for <strong>${R.INACTIVE_ACCOUNT_MONTHS} months</strong>. Before an unused account is deleted we email a warning ${R.INACTIVE_WARNING_DAYS} days ahead where we have an email address for it.</li>
@@ -101,7 +121,9 @@ ${notOpen('This section describes how they will work when they open.')}
 <section><h2>Who can use accounts</h2>
 <p>Accounts are for people <strong>18 or older</strong>. When you register you confirm this. If we find out an account belongs to someone under 18, we delete it. The kids' game on this site is guest-only and never collects personal data.</p></section>
 <section><h2>Your rights</h2>
-<p>Under EU data-protection law (GDPR) you have the right to see your data, correct it, delete it, take a copy, and object to how it is used. Most of that you can do yourself in your account settings; for anything else email ${mail} and we will answer within a month. If you think we have handled your data wrongly, you can complain to the Czech data-protection authority, the <a href="https://uoou.gov.cz/">Úřad pro ochranu osobních údajů</a>, or to the authority in your own country.</p></section>
+<p>Under EU data-protection law (GDPR) you have the right to see your data, correct it, delete it, take a copy, and object to how it is used. Most of that you can do yourself in your account settings; for anything else email ${mail} and we will answer within a month. If you write to us about your data, we may ask you to prove the account is yours (for example by logging in, or by answering from the email address on the account), because we will not hand data to someone who cannot show it is theirs. If you think we have handled your data wrongly, you can complain to the Czech data-protection authority, the <a href="https://uoou.gov.cz/">Úřad pro ochranu osobních údajů</a>, or to the authority in your own country.</p></section>
+<section><h2>If something goes wrong</h2>
+<p>If a security problem ever exposes your data in a way that puts you at risk, we will tell you and the data-protection authority as the law requires, and say what happened and what to do. Passwords are never stored in readable form, so a leaked database would not reveal them, but we would still ask people to change theirs.</p></section>
 <section><h2>Changes</h2>
 <p>If this note changes in a way that matters, we will tell logged-in users when they next visit, and the date and version at the top will change.</p></section>
 </div>`;

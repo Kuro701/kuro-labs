@@ -5,9 +5,9 @@
 module.exports = {
   // The rules people agree to when they register. Bump RULES_VERSION when the rules change in a way that matters:
   // every logged-in user is then asked to read and accept them again. The pages /rules/ and /privacy/ show these.
-  RULES_VERSION: 1,
-  RULES_DATE: '2026-09-26',
-  PRIVACY_VERSION: 2,
+  RULES_VERSION: 2,
+  RULES_DATE: '2026-09-27',
+  PRIVACY_VERSION: 3,
   PRIVACY_DATE: '2026-09-27',
 
   // Build-time switch for the wording of the legal pages: while false they say accounts are "not open yet".

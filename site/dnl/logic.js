@@ -9,6 +9,7 @@
  * which goes back to 'lobby' with the same people).
  */
 const E = require('../../public/games/dragons-and-ladders/engine.js');
+const Names = require('../accounts/usernames.js');      // the same bad-word filter and reserved names as usernames
 
 // Same alphabet as the Mytheder join codes (Crockford base32: no I, L, O, U).
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -65,13 +66,19 @@ function safeEqual(a, b) {
 const STRIP = new RegExp('[' + [[0x00, 0x1f], [0x7f, 0x9f], [0x200b, 0x200f], [0x2028, 0x202f], [0x2060, 0x206f], [0xfeff, 0xfeff]]
   .map(r => String.fromCharCode(r[0]) + '-' + String.fromCharCode(r[1])).join('') + ']', 'g');
 
-// Names: strip control / invisible / direction-override characters, collapse spaces, cap length, keep unique.
+// Names: run through the username filter (bad words, staff look-alikes), strip control / invisible / direction-override characters, collapse spaces, cap length, keep unique.
+// "f u c k": runs of single letters are joined before the check, so spacing a word out does not get it past the filter.
+function joinSingles(s) {
+  const out = [];
+  for (const t of s.split(' ')) { if (t.length === 1 && out.length && out[out.length - 1].single) out[out.length - 1].t += t; else out.push({ t, single: t.length === 1 }); }
+  return out.map(x => x.t).join(' ');
+}
 function sanitizeName(raw, taken, fallback) {
   let s = String(raw == null ? '' : raw).normalize('NFKC')
     .replace(STRIP, '')
     .replace(/\s+/g, ' ').trim();
   s = Array.from(s).slice(0, 16).join('').trim();
-  if (!s) s = fallback;
+  if (!s || Names.findBadTerm(s) || Names.findBadTerm(joinSingles(s)) || Names.isReserved(s)) s = fallback;      // slurs, and names that pretend to be staff or a bot, become the plain default
   const lower = new Set((taken || []).map(n => String(n).toLowerCase()));
   let name = s, i = 2;
   while (lower.has(name.toLowerCase())) name = Array.from(s).slice(0, 13).join('') + ' ' + (i++);

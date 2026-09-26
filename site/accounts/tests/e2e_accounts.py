@@ -76,8 +76,8 @@ async def main():
 
             # ---- legal pages ----
             pg = await new_page(browser, base, "/rules/", viewport={"width": 1100, "height": 900})
-            assert "Community rules" in await pg.inner_text("h1"); assert await pg.locator("ol.kl-rules li").count() == 10
-            assert "Version 1" in await pg.inner_text(".kl-page-head p"); assert "not open yet" in await pg.inner_text(".kl-callout")     # ACCOUNTS_OPEN is false in config.js until launch
+            assert "Rules and terms" in await pg.inner_text("h1"); assert await pg.locator("ol.kl-rules li").count() == 10
+            assert "Version 2" in await pg.inner_text(".kl-page-head p"); assert "not open yet" in await pg.inner_text(".kl-callout")     # ACCOUNTS_OPEN is false in config.js until launch
             await pg.screenshot(path=f"{OUT}/rules.png", full_page=True); ok("/rules/: ten rules, version shown, footer and header present")
             pg = await new_page(browser, base, "/privacy/", viewport={"width": 1100, "height": 900})
             txt = await pg.inner_text("main"); assert "Jiří Fikejs" in txt and "Kuro701@seznam.cz" in txt and "24 months" in txt and "18 or older" in txt

@@ -33,6 +33,13 @@ test('names: sanitised, capped, unique, never empty', () => {
   assert.equal(L.sanitizeName('   ', [], 'Player 3'), 'Player 3');
   assert.equal(L.sanitizeName(undefined, [], 'Player 1'), 'Player 1');
   assert.equal(L.sanitizeName('Ann', ['ann'], 'P'), 'Ann 2');
+  assert.equal(L.sanitizeName('fuck', [], 'Player 2'), 'Player 2');                       // same filter as usernames
+  assert.equal(L.sanitizeName('f u c k', [], 'Player 2'), 'Player 2');
+  assert.equal(L.sanitizeName('Admin', [], 'Player 2'), 'Player 2');                      // staff look-alikes
+  assert.equal(L.sanitizeName('Kuro Labs', [], 'Player 2'), 'Player 2');
+  assert.equal(L.sanitizeName('Bot 3', [], 'Player 2'), 'Player 2');                      // nobody pretends to be a bot
+  assert.equal(L.sanitizeName('Scunthorpe fan', [], 'P'), 'Scunthorpe fan');              // ordinary names are left alone
+  assert.equal(L.sanitizeName('Zuzka', [], 'P'), 'Zuzka');
   assert.equal(L.sanitizeName('Ann', ['Ann', 'Ann 2'], 'P'), 'Ann 3');
   assert.ok(L.sanitizeName('a'.repeat(16), ['a'.repeat(16)], 'P').length <= 16);
 });
