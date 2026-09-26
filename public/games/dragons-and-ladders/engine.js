@@ -79,7 +79,7 @@
     var ms = 700;                       // dice tumble
     if (out.stay) ms += 500;
     else ms += 150 * out.path.length;   // hops
-    if (out.jump) ms += out.jump.kind === 'ladder' ? 1000 : 1300;
+    if (out.jump) ms += out.jump.kind === 'ladder' ? 2400 : 3300;   // the climb / slide animations in index.html
     return ms + 300;                    // margin
   }
 

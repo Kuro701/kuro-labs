@@ -9,6 +9,14 @@
 //
 //   --fast    shorter server timers and pacing, so whole games run in seconds (used by the automated tests)
 //   GET /__dev/hibernate/CODE   simulate Cloudflare evicting the room object from memory (sockets stay connected)
+//
+// It also runs the ACCOUNTS backend (login, saves, admin) with an in-memory SQLite database and pretend Discord / email /
+// Turnstile, so the login button and the /account/ and /admin/ pages can be tried locally:
+//   --accounts off        leave accounts switched off (the login button stays hidden, like the live site before setup)
+//   --db file.sqlite      keep the accounts database in a file between runs
+//   Emails are printed here and listed at /__dev/mailbox. "Continue with Discord" opens a small pretend Discord page.
+//   /__dev/make-admin?u=NAME   makes a user an administrator      /__dev/bump-rules[?u=NAME]   makes everyone (or one user) re-accept the rules
+//   /__dev/cleanup             runs the nightly cleanup now       /__dev/age-sessions   makes every login look old ("confirm it is you")
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,6 +30,8 @@ const opt = (name, dflt) => { const i = args.indexOf('--' + name); return i >= 0
 const PORT = Number(opt('port', 8787));
 const ROOT = path.resolve(opt('root', path.join(here, '..', '..', 'public')));
 const FAST = args.includes('--fast');
+const ACCOUNTS_ON = opt('accounts', 'on') !== 'off';
+const DB_FILE = opt('db', '');
 
 /* ---------- 1. imitate the Cloudflare runtime ---------- */
 
@@ -73,6 +83,28 @@ if (FAST) {
 }
 const { DnlRoom } = await import(pathToFileURL(path.join(here, 'do.mjs')).href);
 const { handleDnl } = await import(pathToFileURL(path.join(here, 'routes.mjs')).href);
+const accounts = require('../accounts/accounts.js');
+const { D1Shim } = require('../accounts/tests/d1-shim.js');
+const mailbox = [];
+const accountsEnv = ACCOUNTS_ON ? {
+  DB: new D1Shim(DB_FILE || undefined),
+  DISCORD_CLIENT_ID: 'dev-discord', DISCORD_CLIENT_SECRET: 'dev-secret',
+  RESEND_API_KEY: 'dev-resend', TURNSTILE_SECRET: 'dev-turnstile-secret', TURNSTILE_SITEKEY: '1x00000000000000000000AA'   // Cloudflare's always-pass test key
+} : {};
+
+// Pretend Discord, Resend and Turnstile: everything the accounts code fetches from outside is answered here.
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (input, init = {}) => {
+  const url = String(input && input.url || input), j = (o, st = 200) => new NativeResponse(JSON.stringify(o), { status: st, headers: { 'content-type': 'application/json' } });
+  if (url.startsWith('https://challenges.cloudflare.com/turnstile/v0/siteverify')) return j({ success: true });
+  if (url === 'https://api.resend.com/emails') {
+    const b = JSON.parse(init.body); mailbox.push({ to: b.to[0], subject: b.subject, text: b.text, at: new Date().toISOString() });
+    console.log(`[dev mail] to ${b.to[0]}: ${b.subject}\n${b.text}\n`); return j({ id: 'dev' });
+  }
+  if (url === 'https://discord.com/api/oauth2/token') { const code = init.body.get('code'); return code && code.startsWith('dev-') ? j({ access_token: 'devtok-' + code.slice(4) }) : j({ error: 'invalid_grant' }, 400); }
+  if (url === 'https://discord.com/api/users/@me') return j({ id: String(init.headers.authorization).replace('Bearer devtok-', ''), username: 'dev' });
+  return realFetch(input, init);
+};
 
 /* ---------- 3. in-memory Durable Object namespace ---------- */
 class Storage {
@@ -177,9 +209,15 @@ function toRequest(req, body) {
   return new Request('http://' + (req.headers.host || 'localhost') + req.url, init);
 }
 async function sendResponse(res, r) {
-  res.writeHead(r.status, Object.fromEntries(r.headers));
+  const headers = {}; r.headers.forEach((v, k) => { if (k !== 'set-cookie') headers[k] = v; });
+  const cookies = r.headers.getSetCookie ? r.headers.getSetCookie() : []; if (cookies.length) headers['set-cookie'] = cookies;
+  res.writeHead(r.status, headers);
   res.end(Buffer.from(await r.arrayBuffer()));
 }
+const DISCORD_PAGE = (q) => `<!doctype html><meta charset="utf-8"><title>Pretend Discord</title><body style="font-family:system-ui;background:#1e1f22;color:#eee;max-width:420px;margin:60px auto;padding:0 16px">
+<h2>Pretend Discord (local test)</h2><p>Kuro Labs wants to know who you are (identify). Choose the Discord user id to log in as:</p>
+<form method="get" action="/api/auth/discord/callback"><input type="hidden" name="state" value="${q.state}"><input name="code" id="uid" value="dev-1000000000000001" style="width:100%;padding:8px">
+<p><button id="authorize" style="padding:10px 18px">Authorize</button> <a id="cancel" href="/api/auth/discord/callback?error=access_denied&state=${q.state}" style="color:#9cf">Cancel</a></p></form></body>`;
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -189,6 +227,22 @@ const server = http.createServer(async (req, res) => {
       if (!h) { res.writeHead(404); res.end('no such room'); return; }
       h.instance = null; h.boot(); await h.whenReady();
       res.writeHead(200); res.end('ok'); return;
+    }
+    if (url.pathname === '/__dev/mailbox') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(mailbox)); return; }
+    if (url.pathname === '/__dev/discord-authorize') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(DISCORD_PAGE(Object.fromEntries(url.searchParams))); return; }
+    if (accountsEnv.DB && url.pathname === '/__dev/make-admin') { await accountsEnv.DB.prepare('UPDATE users SET is_admin = 1 WHERE username_lower = ?').bind(String(url.searchParams.get('u') || '').toLowerCase()).run(); res.writeHead(200); res.end('ok'); return; }
+    if (accountsEnv.DB && url.pathname === '/__dev/bump-rules') { const u = url.searchParams.get('u'); await (u ? accountsEnv.DB.prepare('UPDATE users SET rules_version = 0 WHERE username_lower = ?').bind(u.toLowerCase()) : accountsEnv.DB.prepare('UPDATE users SET rules_version = 0')).run(); res.writeHead(200); res.end('ok'); return; }
+    if (accountsEnv.DB && url.pathname === '/__dev/age-sessions') { await accountsEnv.DB.prepare('UPDATE sessions SET last_auth_at = 0').run(); res.writeHead(200); res.end('ok'); return; }
+    if (accountsEnv.DB && url.pathname === '/__dev/cleanup') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(await accounts.runCleanup(accountsEnv))); return; }
+    if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/dnl/')) {
+      const chunks = []; for await (const c of req) chunks.push(c);
+      const request = toRequest(req, Buffer.concat(chunks)); request.headers.set('cf-connecting-ip', req.socket.remoteAddress || '');
+      const r = await accounts.handleAccounts(request, accountsEnv);
+      if (r && r.status === 302 && String(r.headers.get('location')).startsWith('https://discord.com/oauth2/authorize?')) {   // send "Continue with Discord" to the pretend page
+        const q = String(r.headers.get('location')).split('?')[1]; const h = new Headers(r.headers); h.set('location', '/__dev/discord-authorize?' + q);
+        return sendResponse(res, new NativeResponse(null, { status: 302, headers: h }));
+      }
+      return sendResponse(res, r || new NativeResponse(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } }));
     }
     if (url.pathname.startsWith('/api/dnl/')) {
       const chunks = []; for await (const c of req) chunks.push(c);

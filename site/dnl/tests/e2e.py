@@ -82,6 +82,33 @@ async def main():
             assert (await state(pg))["mode"] == "local"; ok("local: save and resume")
             await ctx.close()
 
+            # reduced motion: jumps use the plain glide instead of the climb / slide, and still land on the right square
+            rctx = await browser.new_context(viewport={"width": 1100, "height": 800}, reduced_motion="reduce"); await rctx.add_init_script(DICE)
+            rp = await rctx.new_page(); rp.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+            await rp.goto(GAME + "?debug=1")
+            await rp.select_option("#rows .row:nth-child(2) select", "h"); await rp.click("#go")
+            async def rready(): await wait_until(lambda: rp.is_enabled("#roll"), 15, what="roll enabled (reduced motion)")
+            await rready(); await rp.evaluate("DNL.S().players[0].pos=7; window.__q.push(1)"); await rp.click("#roll"); await asyncio.sleep(1.0); await rready()
+            assert (await state(rp))["pos"][0] == 33
+            await rp.evaluate("DNL.S().players[1].pos=44; window.__q.push(6)"); await rp.click("#roll"); await asyncio.sleep(1.5); await rready()
+            assert (await state(rp))["pos"][1] == 9; ok("local: with reduced motion the jumps still work (plain glide)")
+            await rctx.close()
+
+            # every ladder and dragon on the board plays its climb / slide and ends on the right square (fast timings, real code path)
+            actx = await browser.new_context(viewport={"width": 1100, "height": 800}); await actx.add_init_script(DICE)
+            ap = await actx.new_page(); ap.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+            await ap.goto(GAME + "?fast=1&debug=1")
+            await ap.select_option("#rows .row:nth-child(2) select", "h"); await ap.click("#go")
+            jumps = await ap.evaluate("DNL.E.JUMPS")
+            for j in jumps:
+                await wait_until(lambda: ap.is_enabled("#roll"), 15, what="roll enabled")
+                t = (await state(ap))["turn"]
+                await ap.evaluate(f"DNL.S().players[{t}].pos={j['from']-1}; window.__q.push(1)"); await ap.click("#roll"); await asyncio.sleep(0.25)
+                await wait_until(lambda: ap.is_enabled("#roll"), 15, what="after jump")
+                assert (await state(ap))["pos"][t] == j["to"], (j, await state(ap))
+            ok(f"local: all {len(jumps)} ladders and dragons animate and land on the right square")
+            await actx.close()
+
             # ---------- B. online: two browsers ----------
             va, vb = {"width": 1280, "height": 860}, {"width": 390, "height": 844}
             A = await new_page(browser, GAME + "?fast=1&debug=1", viewport=va)

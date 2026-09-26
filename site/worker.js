@@ -13,6 +13,9 @@
 import { handleDnl } from './dnl/routes.mjs';
 export { DnlRoom } from './dnl/do.mjs';
 
+// Accounts (login, saves, reports, admin) and their nightly cleanup: see site/accounts/README.md
+import accounts from './accounts/accounts.js';
+
 const CACHE_TTL_SECONDS = 600; // 10 min: feels live, doesn't hammer Gumroad's API
 
 export default {
@@ -24,11 +27,19 @@ export default {
       if (res) return res;
     }
 
+    const acc = await accounts.handleAccounts(request, env);
+    if (acc) return acc;
+
     if (url.pathname === '/api/sales-count') {
       return handleSalesCount(request, env, ctx);
     }
 
     return env.ASSETS.fetch(request);
+  },
+
+  // Runs on the cron trigger in wrangler.jsonc (nightly): removes expired rows and deletes long-unused accounts.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(accounts.runCleanup(env));
   },
 };
 

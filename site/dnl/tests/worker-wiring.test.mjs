@@ -19,7 +19,7 @@ globalThis.WebSocketRequestResponsePair = class {};
 
 // import a temporary copy of worker.js (same code, but as .mjs and with absolute import paths)
 let src = fs.readFileSync(path.join(siteDir, 'worker.js'), 'utf8');
-src = src.replace(/from '\.\/dnl\/([^']+)'/g, (m, f) => `from '${pathToFileURL(path.join(siteDir, 'dnl', f)).href}'`);
+src = src.replace(/from '\.\/(dnl|accounts)\/([^']+)'/g, (m, d, f) => `from '${pathToFileURL(path.join(siteDir, d, f)).href}'`);
 const tmp = path.join(os.tmpdir(), 'kl-worker-under-test-' + process.pid + '.mjs');
 fs.writeFileSync(tmp, src);
 const mod = await import(pathToFileURL(tmp).href);
@@ -50,5 +50,12 @@ await test('/api/sales-count is still answered by its own handler (not by the ro
   globalThis.caches = { default: { match: async () => undefined, put: async () => {} } };
   const r = await mod.default.fetch(new Request('https://kurolabs.net/api/sales-count'), { ASSETS: assets }, ctx);
   assert.equal(r.status, 500); assert.deepEqual(await r.json(), { ok: false, error: 'not configured' });   // no token in this test env
+});
+await test('accounts routes are wired: config answers "closed" without a database; the cron handler exists and is safe without one', async () => {
+  const r = await mod.default.fetch(new Request('https://kurolabs.net/api/auth/config'), { ASSETS: assets }, ctx);
+  assert.equal(r.status, 200); assert.deepEqual(await r.json(), { ok: true, enabled: false });
+  const me = await mod.default.fetch(new Request('https://kurolabs.net/api/me'), { ASSETS: assets }, ctx); assert.equal(me.status, 503);
+  const other = await mod.default.fetch(new Request('https://kurolabs.net/api/mentions'), { ASSETS: assets }, ctx); assert.equal(await other.text(), 'ASSET /api/mentions');
+  let waited; await mod.default.scheduled({}, { ASSETS: assets }, { waitUntil: p => { waited = p; } }); assert.deepEqual(await waited, { skipped: 'no database yet' });
 });
 console.log(`\n${n} wiring tests passed`);

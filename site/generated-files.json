@@ -15,5 +15,9 @@
   "public/projects/jophiel/index.html",
   "public/projects/mytheder/index.html",
   "public/projects/monkey-paw/index.html",
-  "public/404.html"
+  "public/404.html",
+  "public/rules/index.html",
+  "public/privacy/index.html",
+  "public/account/index.html",
+  "public/admin/index.html"
 ]

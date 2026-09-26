@@ -34,6 +34,7 @@ a{color:var(--gold2)}
 .tok svg{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .tok.active svg{filter:drop-shadow(0 0 5px var(--gold2)) drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .tok.off svg{opacity:.55}
+.flash{position:absolute;width:14%;aspect-ratio:1/1;border-radius:50%;pointer-events:none;z-index:5;opacity:0;transform:translate(-50%,-50%)}
 .startlabel{position:absolute;left:12%;top:106%;transform:translateY(-50%);font-size:clamp(9px,1.5vw,13px);
   letter-spacing:.14em;color:var(--gold2);background:rgba(8,14,16,.72);padding:2px 8px;border-radius:99px;pointer-events:none;z-index:2}
 /* debug overlay (?debug=1) */
@@ -289,6 +290,43 @@ function cellCenter(n){
   return { x:(col+.5)*10, y:(9-r+.5)*10 };
 }
 
+/* Where each dragon's body and each ladder really sit on the picture, in % of the grid (x, y).
+   Traced from board.webp by hand and checked on screen (?debug=1 draws them). Keyed by the jump's `from` square.
+   Dragons run head -> tail (the token is carried down the body); ladders run foot -> top (the token climbs rung by rung).
+   Purely for the animation: the rules never look at this, and a jump without an entry here just glides in a straight line. */
+const ART = {
+  98: [[30.2,10.1], [25.6,10.7], [23.3,13.3], [25.0,16.2], [29.1,18.2], [32.6,20.5], [34.0,23.7], [33.1,27.2], [30.2,30.1], [27.6,32.9], [27.0,36.4], [28.2,39.9], [31.1,42.2], [35.2,44.2], [37.3,46.8], [37.1,49.4], [35.2,51.4]],   // dragon head -> tail
+  88: [[72.1,18.5], [76.2,19.1], [79.7,20.8], [79.7,23.7], [76.7,25.7], [73.0,27.7], [71.2,30.6], [71.8,34.1], [74.4,36.7], [78.2,38.7], [80.8,41.0], [82.0,43.9], [81.1,46.8], [78.8,48.6], [77.0,50.9], [77.6,54.3]],   // dragon head -> tail
+  76: [[42.2,25.4], [48.0,8.3]],   // ladder foot -> top
+  69: [[84.4,38.4], [90.5,7.9]],   // ladder foot -> top
+  66: [[57.8,37.3], [54.1,38.2], [50.0,39.9], [50.3,43.4], [52.9,46.0], [56.7,48.3], [58.8,51.4], [59.2,54.9], [58.1,58.4], [55.2,61.6], [52.3,64.2], [50.9,67.1], [51.2,69.9], [52.9,72.3], [55.5,74.3], [57.3,76.9], [56.7,79.2]],   // dragon head -> tail
+  50: [[87.5,57.5], [91.9,58.4], [93.9,60.7], [92.7,64.2], [90.1,67.1], [88.7,69.9], [89.0,73.4], [90.7,76.9], [93.3,79.8], [95.3,82.7], [96.2,86.1], [95.6,89.6], [93.9,92.5], [91.3,93.9], [89.2,94.8], [89.1,97.7]],   // dragon head -> tail
+  38: [[19.9,69.0], [12.9,26.1]],   // ladder foot -> top
+  17: [[33.8,87.9], [39.2,66.9]],   // ladder foot -> top
+  8: [[69.0,96.4], [76.2,65.7]],   // ladder foot -> top
+};
+
+// smooth curve through the traced points (Catmull-Rom), as a list of [x, y]
+function spline(P, per = 10){
+  const Q = [P[0]].concat(P, [P[P.length-1]]), out = [];
+  for (let i = 1; i < Q.length - 2; i++) {
+    const p0 = Q[i-1], p1 = Q[i], p2 = Q[i+1], p3 = Q[i+2];
+    for (let k = 0; k < per; k++) {
+      const t = k/per, t2 = t*t, t3 = t2*t;
+      out.push([0,1].map(d => 0.5*((2*p1[d]) + (-p0[d]+p2[d])*t + (2*p0[d]-5*p1[d]+4*p2[d]-p3[d])*t2 + (-p0[d]+3*p1[d]-3*p2[d]+p3[d])*t3)));
+    }
+  }
+  out.push(P[P.length-1]); return out;
+}
+function measure(pts){ const c = [0]; for (let i = 1; i < pts.length; i++) c.push(c[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1])); return c; }
+function pointAt(pts, cum, f){                      // point a fraction f (0..1) of the way along the curve
+  const d = Math.max(0, Math.min(1, f)) * cum[cum.length-1]; let i = 1;
+  while (i < cum.length-1 && cum[i] < d) i++;
+  const seg = cum[i]-cum[i-1] || 1, u = (d-cum[i-1]) / seg;
+  return [pts[i-1][0] + (pts[i][0]-pts[i-1][0])*u, pts[i-1][1] + (pts[i][1]-pts[i-1][1])*u];
+}
+const GLOW = { red:'#ff5a2e', blue:'#4aa8ff', green:'#4dff8a', purple:'#c46bff' };
+
 /* ================= sound ================= */
 let AC = null, muted = FAST || store.get(MUTE_KEY) === '1';
 function ac(){
@@ -312,6 +350,9 @@ const sfx = {
   stay(){ tone(200,.15,'sine',.05,150); },
   win(){ [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.22,'triangle',.08,null,i*140)); },
   ping(){ tone(660,.12,'sine',.05); },
+  rung(k){ tone(380 + k*26, .05, 'triangle', .05); },
+  slide(){ tone(820, 1.5, 'sine', .05, 130); },
+  land(){ tone(170, .14, 'sine', .08, 90); },
 };
 
 /* ================= board build ================= */
@@ -330,6 +371,10 @@ if (qs.has('debug')) {
     l.setAttribute('stroke-linecap','round'); svg.appendChild(l);
     const dot = document.createElementNS(NS,'circle'); dot.setAttribute('cx',a.x); dot.setAttribute('cy',a.y); dot.setAttribute('r','1.6');
     dot.setAttribute('fill', j.kind==='ladder' ? '#00ff88' : '#ff3355'); svg.appendChild(dot);
+  }
+  for (const sq in ART) {
+    const pl = document.createElementNS(NS,'polyline'); pl.setAttribute('points', spline(ART[sq]).map(q => q.join(',')).join(' '));
+    pl.setAttribute('fill','none'); pl.setAttribute('stroke','#ffffff'); pl.setAttribute('stroke-width','.6'); pl.setAttribute('stroke-dasharray','1.2 .8'); svg.appendChild(pl);
   }
   grid.appendChild(svg);
 }
@@ -446,12 +491,12 @@ async function tumble(n){
   while (performance.now() - t0 < 700) { showDie(1 + Math.floor(Math.random()*6)); await sleep(70); }
   die.classList.remove('rolling'); showDie(n);
 }
-async function doJump(p, i, j, alive){
+// The old straight-line glide: used for reduced motion, when catching up on a backlog, and for any jump without traced art.
+async function glideJump(p, i, j, alive){
   const el = tokEls[i], a = cellCenter(j.from), b = cellCenter(j.to), ladder = j.kind === 'ladder';
   let frames;
   if (ladder) frames = [{ left:a.x+'%', top:a.y+'%' },{ left:b.x+'%', top:b.y+'%' }];
   else {
-    // dragon: a curved slide, bowed sideways
     const dx = b.x-a.x, dy = b.y-a.y, len = Math.hypot(dx,dy) || 1;
     const side = (a.x < 50 ? 1 : -1) * 14, cx = (a.x+b.x)/2 + (-dy/len)*side, cy = (a.y+b.y)/2 + (dx/len)*side;
     frames = [];
@@ -459,9 +504,80 @@ async function doJump(p, i, j, alive){
       frames.push({ left:(u*u*a.x + 2*u*t*cx + t*t*b.x)+'%', top:(u*u*a.y + 2*u*t*cy + t*t*b.y)+'%' }); }
   }
   el.style.transition = 'none'; el.style.zIndex = 6;
-  const anim = el.animate(frames, { duration: Math.max(1, (ladder ? 1000 : 1300) * factor()), easing: ladder ? 'ease-in-out' : 'ease-in', fill:'forwards' });
+  ladder ? sfx.ladder() : sfx.dragon();
+  const anim = el.animate(frames, { duration: Math.max(1, (reduced ? 500 : (ladder ? 1000 : 1300)) * factor()), easing: ladder ? 'ease-in-out' : 'ease-in', fill:'forwards' });
   try { await anim.finished; } catch(e){}
   p.pos = j.to; layout(); anim.cancel(); el.style.transition = '';
+}
+
+function glow(pt, color, big){                    // a burst of light on the picture
+  const d = document.createElement('div'); d.className = 'flash';
+  d.style.left = pt[0] + '%'; d.style.top = pt[1] + '%'; d.style.background = 'radial-gradient(circle, ' + color + ' 0%, ' + color + '00 68%)';
+  grid.appendChild(d);
+  const a = d.animate([{ opacity:.95, transform:'translate(-50%,-50%) scale(.3)' },{ opacity:0, transform:'translate(-50%,-50%) scale(' + (big ? 2.2 : 1.5) + ')' }],
+    { duration: Math.max(1, 650*factor()), easing:'ease-out' });
+  a.onfinish = () => d.remove(); a.oncancel = () => d.remove();
+}
+function shakeBoard(){
+  if (reduced || INSTANT) return;
+  $('#board').animate([{ transform:'translate(0,0)' },{ transform:'translate(-5px,2px)' },{ transform:'translate(5px,-2px)' },{ transform:'translate(-3px,1px)' },{ transform:'translate(0,0)' }], { duration: 320*factor() });
+}
+function moveTo(el, pt, ms, easing){              // glide the token to a point (% of the grid) and wait for it
+  el.style.transition = 'left ' + (ms*factor()/1000) + 's ' + easing + ', top ' + (ms*factor()/1000) + 's ' + easing;
+  el.style.left = pt[0] + '%'; el.style.top = pt[1] + '%'; return sleep(ms);
+}
+
+// Ladder: walk to the foot, then climb it rung by rung along the ladder in the picture, then step off at the top.
+async function climb(p, i, j, art, alive){
+  const el = tokEls[i], foot = art[0], top = art[art.length-1], dest = cellCenter(j.to);
+  const rungs = Math.max(4, Math.round(Math.hypot(top[0]-foot[0], top[1]-foot[1]) / 4.2));
+  el.style.zIndex = 6;
+  await moveTo(el, foot, 260, 'ease-out'); if (!alive()) return;
+  for (let k = 1; k <= rungs && alive(); k++) {
+    const t = k / rungs, sway = (k % 2 ? 1 : -1) * 0.35;           // hand over hand: a little sideways wobble
+    await moveTo(el, [foot[0] + (top[0]-foot[0])*t + sway, foot[1] + (top[1]-foot[1])*t], 150, 'linear');
+    bounce(i); sfx.rung(k);
+  }
+  if (!alive()) return;
+  sfx.ladder();
+  el.firstElementChild.animate([{ transform:'scale(1)' },{ transform:'scale(1.35)' },{ transform:'scale(1)' }], { duration: Math.max(1, 320*factor()) });
+  await moveTo(el, [dest.x, dest.y], 260, 'ease-out');
+  p.pos = j.to; el.style.transition = ''; layout();
+}
+
+// Dragon: run to its head, get caught (glow, roar, shake), slide down its body to the tail, pop out.
+async function slide(p, i, j, art, alive){
+  const el = tokEls[i], svg = el.firstElementChild, head = art[0], tail = art[art.length-1], dest = cellCenter(j.to), col = GLOW[j.color] || '#ffffff';
+  el.style.zIndex = 6;
+  await moveTo(el, head, 300, 'ease-in'); if (!alive()) return;
+  glow(head, col, true); shakeBoard(); sfx.dragon();
+  svg.animate([{ transform:'scale(1) rotate(0deg)' },{ transform:'scale(.7) rotate(-14deg)' },{ transform:'scale(.75) rotate(10deg)' },{ transform:'scale(.8) rotate(0deg)' }],
+    { duration: Math.max(1, 480*factor()), fill:'forwards' });
+  await sleep(480); if (!alive()) return;
+  // the slide itself: accelerates down the body, wobbling a little, and eases to a stop at the tail
+  const pts = spline(art, 10), cum = measure(pts), N = 60, frames = [];
+  for (let k = 0; k <= N; k++) {
+    const tau = k / N, g = Math.pow(tau, 1.4), f = g * (2 - g);
+    const a = pointAt(pts, cum, Math.max(0, f - 0.01)), b = pointAt(pts, cum, Math.min(1, f + 0.01)), c = pointAt(pts, cum, f);
+    const tx = b[0]-a[0], ty = b[1]-a[1], tl = Math.hypot(tx, ty) || 1, wob = Math.sin(tau * 20) * 0.6 * (1 - tau);
+    frames.push({ offset: tau, left: (c[0] + (-ty/tl)*wob) + '%', top: (c[1] + (tx/tl)*wob) + '%' });
+  }
+  el.style.transition = 'none';
+  sfx.slide();
+  const anim = el.animate(frames, { duration: Math.max(1, 1600*factor()), easing:'linear', fill:'forwards' });
+  try { await anim.finished; } catch(e){}
+  el.style.left = tail[0] + '%'; el.style.top = tail[1] + '%'; anim.cancel();
+  if (!alive()) return;
+  glow(tail, '#ffe9a8', false); sfx.land();
+  svg.animate([{ transform:'scale(.8)' },{ transform:'scale(1.15)' },{ transform:'scale(1)' }], { duration: Math.max(1, 300*factor()), fill:'forwards' });
+  await moveTo(el, [dest.x, dest.y], 300, 'ease-out');
+  p.pos = j.to; el.style.transition = ''; svg.getAnimations().forEach(x => x.cancel()); layout();
+}
+
+async function doJump(p, i, j, alive){
+  const art = ART[j.from];
+  if (!art || reduced || INSTANT) return glideJump(p, i, j, alive);
+  return j.kind === 'ladder' ? climb(p, i, j, art, alive) : slide(p, i, j, art, alive);
 }
 // Plays out one roll that has ALREADY been decided (by this page in local mode, by the server online).
 async function playRoll(i, roll, out, alive){
@@ -478,8 +594,8 @@ async function playRoll(i, roll, out, alive){
   }
   const j = out.jump;
   if (j && alive()) {
-    if (j.kind === 'ladder') { say(p.name + ' found a ladder and climbs from ' + j.from + ' to ' + j.to + '!'); sfx.ladder(); }
-    else { say('The ' + j.color + ' dragon catches ' + p.name + ' and carries them down from ' + j.from + ' to ' + j.to + '!'); sfx.dragon(); }
+    if (j.kind === 'ladder') say(p.name + ' found a ladder and climbs from ' + j.from + ' to ' + j.to + '!');
+    else say('The ' + j.color + ' dragon catches ' + p.name + ' and carries them down from ' + j.from + ' to ' + j.to + '!');
     await doJump(p, i, j, alive);
   }
 }

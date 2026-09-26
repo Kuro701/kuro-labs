@@ -20,5 +20,13 @@
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["DnlRoom"] }
-  ]
+  ],
+  // Nightly cleanup of accounts data (03:17 UTC): expired logins and codes, old reports, long-unused accounts.
+  "triggers": { "crons": ["17 3 * * *"] }
+
+  // ACCOUNTS (login): when the D1 database exists, remove the two slashes in front of the next 3 lines and put its
+  // ID in database_id (Cloudflare dashboard > Storage & databases > D1 > kuro-labs > copy the ID). See site/accounts/README.md.
+  // , "d1_databases": [
+  //   { "binding": "DB", "database_name": "kuro-labs", "database_id": "PASTE-THE-ID-HERE" }
+  // ]
 }

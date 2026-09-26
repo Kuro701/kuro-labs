@@ -1,0 +1,73 @@
+/* Kuro Labs accounts: header button, dialogs, /account/, /admin/, /rules/ and /privacy/.
+   Uses the same black and red look as techno.css. Kept in its own file so the main design file stays untouched. */
+
+/* ---- header button ---- */
+#kl-techno .kl-account{position:relative;display:inline-flex;align-items:center;margin-left:6px}
+#kl-techno .kl-acct-btn{border:1px solid #38343d;background:#121216;color:#f4f2f3;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer}
+#kl-techno .kl-acct-btn:hover{border-color:var(--red);background:#261018}
+#kl-techno .kl-acct-btn.kl-signed-in{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#kl-techno .kl-acct-menu{position:absolute;right:0;top:calc(100% + 6px);min-width:170px;background:#121216;border:1px solid #38343d;border-radius:8px;padding:6px;display:grid;gap:2px;z-index:40;box-shadow:0 12px 30px rgba(0,0,0,.6)}
+#kl-techno .kl-acct-menu a,#kl-techno .kl-acct-menu button{display:block;width:100%;text-align:left;border:0;background:none;color:#f4f2f3;font-size:13px;padding:9px 12px;border-radius:5px}
+#kl-techno .kl-acct-menu a:hover,#kl-techno .kl-acct-menu button:hover{background:#261018}
+@media (max-width:760px){#kl-techno .kl-account{margin:6px 0 0 9px}}
+
+/* ---- dialogs ---- */
+.kl-dialog::backdrop{background:rgba(0,0,0,.74)}
+#kl-techno dialog.kl-dialog{background:#101115;color:#f4f2f3;border:1px solid #38343d;border-radius:10px;padding:0;width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+#kl-techno .kl-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 0}
+#kl-techno .kl-dialog-head h2{font-size:24px;letter-spacing:-.5px}
+#kl-techno .kl-x{border:0;background:none;font-size:26px;line-height:1;color:#a8a7b1;padding:4px 8px;border-radius:6px}
+#kl-techno .kl-x:hover{color:#fff;background:#261018}
+#kl-techno .kl-dialog-body{padding:14px 20px 22px;display:grid;gap:12px}
+#kl-techno .kl-dialog label,#kl-techno .kl-card label{font-size:13px;color:#c9c7d0;display:block;margin-bottom:6px}
+#kl-techno input[type=text],#kl-techno input[type=email],#kl-techno textarea{width:100%;background:#0b0c0f;color:#f4f2f3;border:1px solid #38343d;border-radius:6px;padding:11px 12px;font:inherit;min-height:44px}
+#kl-techno input:focus-visible,#kl-techno textarea:focus-visible{outline:2px solid #fff;outline-offset:2px}
+#kl-techno input.kl-code{font:600 24px/1 'IBM Plex Mono',monospace;letter-spacing:8px;text-align:center}
+#kl-techno .kl-wide{width:100%}
+#kl-techno .kl-dialog .kl-action,#kl-techno .kl-card .kl-action{min-height:44px}
+#kl-techno .kl-primary{background:var(--red);border-color:var(--red);color:#fff}
+#kl-techno .kl-primary:hover{background:#c81935;border-color:#c81935}
+#kl-techno .kl-action:disabled{opacity:.5;cursor:default}
+#kl-techno .kl-danger{border-color:#7a2130;color:#ff9aa8}
+#kl-techno .kl-danger:hover{background:#3a0f18;border-color:var(--red)}
+#kl-techno .kl-note{font-size:13px;color:#a8a7b1}
+#kl-techno .kl-dialog form{display:grid;gap:12px}
+#kl-techno .kl-check{margin:0}
+#kl-techno .kl-err{color:#ff9aa8;font-size:13px;min-height:1.2em}
+#kl-techno .kl-or{text-align:center;color:#8a8894;font-size:12px;margin:2px 0}
+#kl-techno .kl-check{display:flex;gap:10px;align-items:center;font-size:14px;color:#e6e4ea}
+#kl-techno .kl-check input{width:20px;height:20px;margin-top:2px;accent-color:var(--red);flex:none}
+#kl-techno .kl-check a{text-decoration:underline}
+#kl-techno .kl-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#kl-techno .kl-link{border:0;background:none;color:#ee8e9c;text-decoration:underline;font-size:13px;padding:6px 2px}
+#kl-techno .kl-link:disabled{color:#77747f;text-decoration:none}
+#kl-techno .kl-email{display:grid;gap:10px}
+#kl-techno .kl-ts{min-height:65px}
+#kl-techno .kl-email > div{display:grid;gap:10px}
+
+/* ---- toast ---- */
+#kl-techno .kl-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1b1c22;border:1px solid #38343d;color:#f4f2f3;padding:12px 18px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:calc(100vw - 32px)}
+#kl-techno .kl-toast.kl-show{opacity:1;transform:translate(-50%,0)}
+#kl-techno .kl-toast.kl-bad{border-color:var(--red)}
+@media (prefers-reduced-motion:reduce){#kl-techno .kl-toast{transition:none}}
+
+/* ---- /account/ and /admin/ ---- */
+#kl-techno .kl-legal section.kl-card,#kl-techno .kl-card{background:#101115;border:1px solid #28272f;border-radius:8px;padding:22px;margin:0 0 16px;display:grid;gap:12px;max-width:640px}
+#kl-techno .kl-card h2{font-size:22px;letter-spacing:-.5px}
+#kl-techno .kl-card form{display:grid;gap:10px}
+#kl-techno .kl-methods{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#kl-techno .kl-methods a{text-decoration:underline;color:#ee8e9c}
+#kl-techno .kl-item{border-top:1px solid #28272f;padding:14px 0;display:grid;gap:8px}
+
+/* ---- rules and privacy ---- */
+#kl-techno .kl-legal{max-width:820px;padding-bottom:70px}
+#kl-techno .kl-legal section{padding:28px 0;border-top:1px solid #232329}
+#kl-techno .kl-legal h2{font-size:26px;margin-bottom:14px}
+#kl-techno .kl-legal p{margin:0 0 14px;max-width:70ch}
+#kl-techno .kl-legal ul,#kl-techno .kl-legal ol{margin:0 0 14px;padding-left:22px;color:#b1afb9;max-width:70ch}
+#kl-techno .kl-legal li{margin:0 0 10px}
+#kl-techno .kl-legal li strong,#kl-techno .kl-legal p strong{color:#f4f2f3;font-weight:600}
+#kl-techno .kl-legal a{text-decoration:underline;text-decoration-color:#ee8e9c;text-underline-offset:3px}
+#kl-techno .kl-callout{border:1px solid #4a2933;background:#1a0f13;color:#f2c4cc;border-radius:8px;padding:14px 18px;margin:0 0 8px;max-width:70ch}
+#kl-techno .kl-callout strong{color:#fff}
+#kl-techno .kl-rules{counter-reset:none}
