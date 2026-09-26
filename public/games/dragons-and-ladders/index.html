@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dragons &amp; Ladders — Kuro Labs</title>
+<meta name="description" content="Snakes and ladders with dragons, on the Mytheder board. Two to four players, or play against bots. Free in your browser.">
+<meta name="theme-color" content="#0b1416">
+<style>
+:root{
+  --bg:#0b1416; --bg2:#122326; --panel:#101d20; --line:#2b4a48;
+  --gold:#d9b25a; --gold2:#f3d98f; --teal:#1f8a80; --text:#eef1ea; --muted:#9db3ad;
+  --danger:#c0392b; --hop:.14s;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#173236 0%,var(--bg) 60%);color:var(--text);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+a{color:var(--gold2)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:1180px;margin:0 auto;padding:10px 14px}
+.top h1{margin:0;font-size:1.05rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold2)}
+.top a{text-decoration:none;font-size:.9rem}
+.stage{display:grid;gap:16px;max-width:1180px;margin:0 auto;padding:0 12px 28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){.stage{grid-template-columns:minmax(0,1fr) 340px;align-items:start}}
+
+/* ---- board ---- */
+.board{position:relative;width:min(100%,calc(100vh - 84px));aspect-ratio:1/1;margin:0 auto;
+  background:#0b1416 url(board.webp) center/100% 100% no-repeat;border-radius:10px;overflow:hidden;
+  box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 0 1px var(--line)}
+/* the 10x10 grid sits exactly over the drawn tiles (fractions of the picture) */
+.grid{position:absolute;left:15.55%;top:15.95%;width:68.58%;height:68.98%}
+.tok{position:absolute;width:6.4%;aspect-ratio:1/1.15;transform:translate(-50%,-50%);
+  transition:left var(--hop) linear,top var(--hop) linear;pointer-events:none;z-index:3}
+.tok svg{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
+.tok.active svg{filter:drop-shadow(0 0 5px var(--gold2)) drop-shadow(0 2px 2px rgba(0,0,0,.7))}
+.startlabel{position:absolute;left:12%;top:106%;transform:translateY(-50%);font-size:clamp(9px,1.5vw,13px);
+  letter-spacing:.14em;color:var(--gold2);background:rgba(8,14,16,.72);padding:2px 8px;border-radius:99px;pointer-events:none;z-index:2}
+/* debug overlay (?debug=1) */
+.dbg-cell{position:absolute;width:10%;height:10%;border:1px solid rgba(255,0,0,.55);font:700 clamp(8px,1.4vw,13px)/1 monospace;
+  color:#ff0;text-shadow:0 0 3px #000,0 0 3px #000;padding:2px;pointer-events:none;z-index:1}
+.dbg-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+
+/* ---- side panel ---- */
+.panel{display:grid;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.turn{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.die{width:68px;height:68px;border-radius:14px;background:linear-gradient(#f6f0dc,#e4d9b4);border:2px solid var(--gold);
+  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:9px;box-shadow:0 4px 10px rgba(0,0,0,.5)}
+.die i{display:block;width:100%;height:100%;border-radius:50%}
+.die i.on{background:#1b2a2c;transform:scale(.78)}
+.die.rolling{animation:shake .14s linear infinite}
+@keyframes shake{0%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(7deg) translateY(-4px)}100%{transform:rotate(-8deg) translateY(0)}}
+.who{font-size:1.15rem;font-weight:700;line-height:1.2;word-break:break-word}
+.who small{display:block;color:var(--muted);font-weight:400;font-size:.85rem}
+button,select,input{font:inherit}
+button{cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#16292c;color:var(--text);padding:10px 14px;min-height:44px}
+button:hover:not(:disabled){border-color:var(--gold)}
+button:disabled{opacity:.55;cursor:default}
+button.primary{background:linear-gradient(#e4be62,#c79a3a);color:#1b1608;border-color:#e9c877;font-weight:700}
+button.primary:disabled{filter:grayscale(.5)}
+:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+#roll{width:100%;margin-top:12px;font-size:1.05rem}
+#status{margin:10px 0 0;min-height:2.9em;color:var(--gold2)}
+.players{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.players li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;border:1px solid transparent}
+.players li.now{border-color:var(--gold);background:rgba(217,178,90,.08)}
+.players .sq{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dot{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid rgba(0,0,0,.4)}
+.log{margin:0;padding:0;list-style:none;color:var(--muted);font-size:.9rem;display:grid;gap:3px}
+.log li:first-child{color:var(--text)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools button{flex:1 1 auto;min-width:96px}
+details summary{cursor:pointer;color:var(--gold2)}
+details p,details li{color:var(--muted);font-size:.92rem}
+.note{font-size:.8rem;color:var(--muted);text-align:center;margin:0}
+
+/* ---- modals ---- */
+.modal{position:fixed;inset:0;background:rgba(4,8,9,.78);display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
+.modal[hidden]{display:none}
+.modal .card{width:min(460px,100%);max-height:calc(100vh - 28px);overflow:auto;background:#0f1c1f}
+.modal h2{margin:0 0 10px;color:var(--gold2)}
+.seg{display:flex;gap:8px;border:0;margin:0 0 12px;padding:0}
+.seg legend{padding:0 0 6px;color:var(--muted);font-size:.9rem}
+.seg button{flex:1}
+.seg button[aria-pressed=true]{border-color:var(--gold);background:rgba(217,178,90,.16)}
+.row{display:grid;grid-template-columns:auto 1fr 108px;gap:8px;align-items:center;margin-bottom:8px}
+.row input,.row select{width:100%;min-height:44px;background:#0b1416;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.chk{display:flex;gap:10px;align-items:center;margin:10px 0 14px}
+.chk input{width:20px;height:20px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{flex:1 1 auto}
+.win{text-align:center}
+.win .crown{font-size:3rem;line-height:1}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.die.rolling{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <h1>Dragons &amp; Ladders</h1>
+    <a href="/games/">&larr; All games</a>
+  </div>
+  <div class="stage">
+    <div class="board" id="board" role="group" aria-label="Game board: 100 squares, four dragons and five ladders">
+      <div class="grid" id="grid"><span class="startlabel">START</span></div>
+    </div>
+    <aside class="panel" aria-label="Game controls">
+      <section class="card">
+        <div class="turn">
+          <div class="die" id="die" aria-hidden="true"></div>
+          <div class="who" id="who">&nbsp;</div>
+        </div>
+        <button class="primary" id="roll" type="button" disabled>Roll the die</button>
+        <p id="status" role="status" aria-live="polite">Loading&hellip;</p>
+      </section>
+      <section class="card">
+        <ul class="players" id="players"></ul>
+      </section>
+      <section class="card">
+        <ul class="log" id="log" aria-label="Recent moves"></ul>
+      </section>
+      <div class="tools">
+        <button type="button" id="mute" aria-pressed="false">Sound: on</button>
+        <button type="button" id="speed" aria-pressed="false">Speed: normal</button>
+        <button type="button" id="newgame">New game</button>
+      </div>
+      <details class="card">
+        <summary>How to play</summary>
+        <ul>
+          <li>Take turns rolling the die and moving that many squares. Reach square 100 first to win.</li>
+          <li>Land on the foot of a ladder and you climb to its top.</li>
+          <li>Land on a dragon's head and it carries you down to its tail.</li>
+          <li>You need the exact number to land on 100. Roll too high and you stay put.</li>
+        </ul>
+      </details>
+      <p class="note">Playing as a guest. Your game is saved in this browser only.</p>
+    </aside>
+  </div>
+</div>
+
+<div class="modal" id="setup" role="dialog" aria-modal="true" aria-labelledby="setupTitle" hidden>
+  <div class="card">
+    <h2 id="setupTitle">New game</h2>
+    <fieldset class="seg" id="countSeg"><legend>Players</legend>
+      <button type="button" data-n="2" aria-pressed="true">2</button>
+      <button type="button" data-n="3" aria-pressed="false">3</button>
+      <button type="button" data-n="4" aria-pressed="false">4</button>
+    </fieldset>
+    <div id="rows"></div>
+    <label class="chk"><input type="checkbox" id="six"> A six gives an extra roll</label>
+    <div class="actions">
+      <button type="button" id="cancel" hidden>Back to the game</button>
+      <button type="button" id="resume" hidden>Resume saved game</button>
+      <button type="button" id="go" class="primary">Start game</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="winner" role="dialog" aria-modal="true" aria-labelledby="winTitle" hidden>
+  <div class="card win">
+    <div class="crown" aria-hidden="true">&#128081;</div>
+    <h2 id="winTitle">Winner</h2>
+    <p id="winText"></p>
+    <div class="actions">
+      <button type="button" id="again" class="primary">Play again</button>
+      <button type="button" id="change">Change players</button>
+    </div>
+  </div>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div class="sr" id="live" aria-live="polite"></div>
+<noscript><p style="padding:20px">This game needs JavaScript.</p></noscript>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= DATA (edit here; nothing else knows the board's theme) =================
+   Squares are numbered 1..100 in the usual zig-zag: 1 is bottom-left, 100 is top-left.
+   Read off the board picture. A dragon carries you DOWN from its head (from) to its tail (to).
+   A ladder carries you UP from its foot (from) to its top (to). */
+const JUMPS = [
+  { kind:'dragon', color:'red',    from:98, to:44 },
+  { kind:'dragon', color:'blue',   from:88, to:48 },
+  { kind:'dragon', color:'green',  from:66, to:26 },
+  { kind:'dragon', color:'purple', from:50, to:9  },
+  { kind:'ladder',                 from:76, to:96 },
+  { kind:'ladder',                 from:69, to:91 },
+  { kind:'ladder',                 from:38, to:79 },
+  { kind:'ladder',                 from:17, to:37 },
+  { kind:'ladder',                 from:8,  to:33 },
+];
+// Player pieces. Deliberately not red/blue/green/purple so they never blend into the dragons.
+const COLORS = [
+  { name:'Gold',   fill:'#e3bb4d', edge:'#6d4f0c', ink:'#3b2a05' },
+  { name:'Silver', fill:'#d9e0e4', edge:'#4f5b63', ink:'#26313a' },
+  { name:'Bronze', fill:'#c47c3e', edge:'#4e2a0e', ink:'#2b1505' },
+  { name:'Black',  fill:'#2c2c33', edge:'#d9b25a', ink:'#f3d98f' },
+];
+const SAVE_KEY = 'kl.dragons-and-ladders.v1';
+const MUTE_KEY = 'kl.dragons-and-ladders.muted';
+
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const qs = new URLSearchParams(location.search);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FAST = qs.has('fast');                       // test mode: near-instant animations, no sound
+let SP = FAST ? 0.02 : (reduced ? 0.3 : 1);        // animation time multiplier
+function applySpeed(){ document.documentElement.style.setProperty('--hop', Math.max(0.001, 0.14 * SP) + 's'); }
+applySpeed();
+const sleep = ms => new Promise(r => setTimeout(r, Math.max(0, ms * SP)));
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} },
+};
+
+const JUMP_AT = {};
+for (const j of JUMPS) JUMP_AT[j.from] = j;
+(function validate(){
+  for (const j of JUMPS) {
+    const bad = !(j.from>=1 && j.from<=99 && j.to>=1 && j.to<=100 && j.from!==j.to)
+      || (j.kind==='dragon' && j.to>=j.from) || (j.kind==='ladder' && j.to<=j.from) || JUMP_AT[j.to];
+    if (bad) console.warn('Bad jump definition', j);
+  }
+})();
+
+// Uniform 1..6 (rejection sampling). Async so a server-side roll can replace it later for ranked play.
+async function getRoll(){
+  const a = new Uint32Array(1), lim = Math.floor(0x100000000/6)*6;
+  do { crypto.getRandomValues(a); } while (a[0] >= lim);
+  return a[0] % 6 + 1;
+}
+
+// centre of square n, in % of the grid; n = 0 is the start pad just below square 1
+function cellCenter(n){
+  if (n <= 0) return { x:5, y:106 };
+  const i = n-1, r = Math.floor(i/10), c = i % 10, col = (r%2===0) ? c : 9-c;
+  return { x:(col+.5)*10, y:(9-r+.5)*10 };
+}
+
+/* ================= sound ================= */
+let AC = null, muted = FAST || store.get(MUTE_KEY) === '1';
+function ac(){
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, d, type='sine', v=.07, to=null, delay=0){
+  if (muted) return; const c = ac(); if (!c) return;
+  const t = c.currentTime + delay/1000, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t+d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t+d);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t+d+.03);
+}
+const sfx = {
+  roll(){ for (let i=0;i<6;i++) tone(500+Math.random()*500, .04, 'square', .03, null, i*90); },
+  hop(n){ tone(300 + (n%10)*18, .06, 'triangle', .06); },
+  ladder(){ [392,494,587,784].forEach((f,i)=>tone(f,.16,'triangle',.07,null,i*110)); },
+  dragon(){ tone(260,1.0,'sawtooth',.06,50); tone(130,1.0,'square',.04,40,80); },
+  stay(){ tone(200,.15,'sine',.05,150); },
+  win(){ [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.22,'triangle',.08,null,i*140)); },
+};
+
+/* ================= board build ================= */
+const grid = $('#grid'), tokEls = [];
+if (qs.has('debug')) {
+  for (let n=1;n<=100;n++){
+    const c = cellCenter(n), d = document.createElement('div');
+    d.className = 'dbg-cell'; d.style.left = (c.x-5)+'%'; d.style.top = (c.y-5)+'%'; d.textContent = n; grid.appendChild(d);
+  }
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS,'svg');
+  svg.setAttribute('class','dbg-svg'); svg.setAttribute('viewBox','0 0 100 100'); svg.setAttribute('preserveAspectRatio','none');
+  for (const j of JUMPS){
+    const a = cellCenter(j.from), b = cellCenter(j.to), l = document.createElementNS(NS,'line');
+    l.setAttribute('x1',a.x); l.setAttribute('y1',a.y); l.setAttribute('x2',b.x); l.setAttribute('y2',b.y);
+    l.setAttribute('stroke', j.kind==='ladder' ? '#00ff88' : '#ff3355'); l.setAttribute('stroke-width','.9');
+    l.setAttribute('stroke-linecap','round'); svg.appendChild(l);
+    const dot = document.createElementNS(NS,'circle'); dot.setAttribute('cx',a.x); dot.setAttribute('cy',a.y); dot.setAttribute('r','1.6');
+    dot.setAttribute('fill', j.kind==='ladder' ? '#00ff88' : '#ff3355'); svg.appendChild(dot);
+  }
+  grid.appendChild(svg);
+}
+
+function makeToken(i){
+  const col = COLORS[i], el = document.createElement('div');
+  el.className = 'tok';
+  el.innerHTML = '<svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 37 8v16c0 10-8 17-17 20C11 41 3 34 3 24V8Z" stroke-width="3" stroke-linejoin="round"></path><text x="20" y="29" text-anchor="middle" font-size="19" font-weight="800" font-family="system-ui,sans-serif"></text></svg>';
+  const path = el.querySelector('path'), text = el.querySelector('text');
+  path.setAttribute('fill', col.fill); path.setAttribute('stroke', col.edge);
+  text.setAttribute('fill', col.ink); text.textContent = i+1;
+  el.setAttribute('role','img'); grid.appendChild(el); return el;
+}
+
+/* ================= state ================= */
+let S = { players:[], turn:0, phase:'setup', rules:{six:false}, sixes:0, run:0, log:[], hold:false };
+const cur = () => S.players[S.turn];
+const alive = my => S.run === my;
+
+function layout(){
+  const groups = {};
+  S.players.forEach((p,i) => (groups[p.pos] = groups[p.pos] || []).push(i));
+  const SLOTS = [[-1.7,-1.7],[1.7,-1.7],[-1.7,1.7],[1.7,1.7]];
+  S.players.forEach((p,i) => {
+    const el = tokEls[i], base = cellCenter(p.pos), g = groups[p.pos];
+    const off = g.length > 1 ? SLOTS[g.indexOf(i)] : [0,0];
+    el.style.left = (base.x + off[0]) + '%'; el.style.top = (base.y + off[1]) + '%';
+    el.style.zIndex = (i === S.turn ? 4 : 3);
+    el.classList.toggle('active', S.phase !== 'over' && i === S.turn);
+    el.setAttribute('aria-label', p.name + ', ' + (p.pos ? 'square ' + p.pos : 'at the start'));
+  });
+}
+
+/* ================= UI ================= */
+const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const die = $('#die');
+for (let i=0;i<9;i++) die.appendChild(document.createElement('i'));
+function showDie(n){ [...die.children].forEach((e,i) => e.classList.toggle('on', !!n && PIPS[n].includes(i))); }
+
+function say(msg){
+  $('#status').textContent = msg;
+  S.log.unshift(msg); S.log = S.log.slice(0,7);
+  const ol = $('#log'); ol.textContent = '';
+  S.log.forEach(m => { const li = document.createElement('li'); li.textContent = m; ol.appendChild(li); });
+}
+
+function renderPanel(){
+  const p = cur(); if (!p) return;
+  const who = $('#who'); who.textContent = '';
+  who.append(document.createTextNode(S.phase==='over' ? 'Game over' : p.name + "'s turn"));
+  const sm = document.createElement('small'); sm.textContent = COLORS[S.turn].name + (p.bot ? ' · bot' : ''); who.appendChild(sm);
+  const btn = $('#roll');
+  btn.disabled = !(S.phase === 'idle' && !p.bot);
+  btn.textContent = p.bot && S.phase !== 'over' ? 'Bot is playing…' : 'Roll the die';
+  const ul = $('#players'); ul.textContent = '';
+  S.players.forEach((q,i) => {
+    const li = document.createElement('li'); if (i === S.turn && S.phase !== 'over') li.className = 'now';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = COLORS[i].fill;
+    const nm = document.createElement('span'); nm.textContent = q.name + (q.bot ? ' (bot)' : '');
+    const sq = document.createElement('span'); sq.className = 'sq'; sq.textContent = q.pos ? 'Square ' + q.pos : 'Start';
+    li.append(dot, nm, sq); ul.appendChild(li);
+  });
+  layout();
+}
+
+const app = $('#app');
+function openModal(id){ app.inert = true; const m = $(id); m.hidden = false; const f = m.querySelector('input,button'); if (f) f.focus(); }
+function closeModal(id){ $(id).hidden = true; if ($('#setup').hidden && $('#winner').hidden) app.inert = false; }
+
+/* ================= save / resume (guest, this browser only) ================= */
+function save(){
+  if (S.phase === 'over' || !S.players.length) { store.del(SAVE_KEY); return; }
+  store.set(SAVE_KEY, JSON.stringify({ v:1, turn:S.turn, six:S.rules.six, sixes:S.sixes,
+    players:S.players.map(p => ({ name:p.name, bot:p.bot, pos:p.pos, turns:p.turns })) }));
+}
+function readSave(){
+  try {
+    const d = JSON.parse(store.get(SAVE_KEY) || 'null');
+    if (!d || d.v !== 1 || !Array.isArray(d.players) || d.players.length < 2 || d.players.length > 4) return null;
+    const players = d.players.map(p => ({ name:String(p.name || 'Player').slice(0,16), bot:!!p.bot,
+      pos:Math.max(0, Math.min(99, p.pos|0)), turns:Math.max(0, p.turns|0) }));
+    return { players, turn:Math.max(0, Math.min(players.length-1, d.turn|0)), six:!!d.six, sixes:Math.max(0, Math.min(2, d.sixes|0)) };
+  } catch(e){ return null; }
+}
+
+/* ================= game flow ================= */
+function startGame(players, six, resume){
+  S.run++; const my = S.run;
+  S = { players, turn: resume ? resume.turn : 0, phase:'idle', rules:{ six }, sixes: resume ? resume.sixes : 0, run:my, log:[], hold:false };
+  tokEls.forEach(e => e.remove()); tokEls.length = 0;
+  players.forEach((p,i) => tokEls.push(makeToken(i)));
+  showDie(0);
+  closeModal('#setup'); closeModal('#winner');
+  say(resume ? 'Welcome back. ' + cur().name + ' to roll.' : 'Roll the die to begin. First to square 100 wins.');
+  save(); renderPanel(); nextActor();
+}
+
+function nextActor(){
+  if (S.phase !== 'idle' || S.hold) return;
+  const p = cur(), my = S.run;
+  if (p.bot) setTimeout(() => { if (alive(my)) doRoll(); }, 750 * (FAST ? 0.02 : Math.max(SP, 0.3)));
+  else if ($('#setup').hidden && $('#winner').hidden) $('#roll').focus({ preventScroll:true });
+}
+
+async function tumble(n){
+  if (reduced || FAST) { showDie(n); return; }
+  die.classList.add('rolling'); sfx.roll();
+  const t0 = performance.now();
+  while (performance.now() - t0 < 700) { showDie(1 + Math.floor(Math.random()*6)); await sleep(70); }
+  die.classList.remove('rolling'); showDie(n);
+}
+
+function bounce(i){
+  const svg = tokEls[i].firstElementChild;
+  svg.animate([{ transform:'translateY(0)' },{ transform:'translateY(-40%)' },{ transform:'translateY(0)' }],
+    { duration: Math.max(1, 150*SP) });
+}
+
+async function hopTo(p, i, to, my){
+  while (p.pos < to && alive(my)) { p.pos++; layout(); bounce(i); sfx.hop(p.pos); await sleep(150); }
+}
+
+async function doJump(p, i, j, my){
+  const el = tokEls[i], a = cellCenter(j.from), b = cellCenter(j.to), ladder = j.kind === 'ladder';
+  let frames;
+  if (ladder) frames = [{ left:a.x+'%', top:a.y+'%' },{ left:b.x+'%', top:b.y+'%' }];
+  else {
+    // dragon: a curved slide, bowed sideways
+    const dx = b.x-a.x, dy = b.y-a.y, len = Math.hypot(dx,dy) || 1;
+    const side = (a.x < 50 ? 1 : -1) * 14, cx = (a.x+b.x)/2 + (-dy/len)*side, cy = (a.y+b.y)/2 + (dx/len)*side;
+    frames = [];
+    for (let k=0;k<=28;k++){ const t = k/28, u = 1-t;
+      frames.push({ left:(u*u*a.x + 2*u*t*cx + t*t*b.x)+'%', top:(u*u*a.y + 2*u*t*cy + t*t*b.y)+'%' }); }
+  }
+  el.style.transition = 'none'; el.style.zIndex = 6;
+  const anim = el.animate(frames, { duration: Math.max(1, (ladder ? 1000 : 1300) * SP), easing: ladder ? 'ease-in-out' : 'ease-in', fill:'forwards' });
+  try { await anim.finished; } catch(e){}
+  p.pos = j.to; layout(); anim.cancel(); el.style.transition = '';
+}
+
+async function doRoll(){
+  if (S.phase !== 'idle' || S.hold) return;
+  const my = S.run, p = cur(), i = S.turn;
+  S.phase = 'rolling'; renderPanel();
+  const roll = await getRoll(); p.turns++;
+  await tumble(roll); if (!alive(my)) return;
+  S.phase = 'moving';
+  const target = p.pos + roll;
+  if (target > 100) {
+    say(p.name + ' rolled a ' + roll + '. They need exactly ' + (100 - p.pos) + ' to finish, so they stay put.'); sfx.stay(); await sleep(500);
+  } else {
+    say(p.name + ' rolled a ' + roll + '.');
+    await hopTo(p, i, target, my); if (!alive(my)) return;
+    const j = JUMP_AT[p.pos];
+    if (j) {
+      if (j.kind === 'ladder') { say(p.name + ' found a ladder and climbs from ' + j.from + ' to ' + j.to + '!'); sfx.ladder(); }
+      else { say('The ' + j.color + ' dragon catches ' + p.name + ' and carries them down from ' + j.from + ' to ' + j.to + '!'); sfx.dragon(); }
+      await doJump(p, i, j, my); if (!alive(my)) return;
+    }
+    if (p.pos === 100) { win(p); return; }
+  }
+  if (S.rules.six && roll === 6 && S.sixes < 2) { S.sixes++; say(p.name + ' rolled a six and goes again!'); }
+  else { S.sixes = 0; S.turn = (S.turn + 1) % S.players.length; }
+  S.phase = 'idle'; save(); renderPanel(); nextActor();
+}
+
+function win(p){
+  S.phase = 'over'; save(); renderPanel();
+  say(p.name + ' reaches square 100 and wins!'); sfx.win();
+  $('#winTitle').textContent = p.name + ' wins!';
+  $('#winText').textContent = 'Reached square 100 in ' + p.turns + (p.turns === 1 ? ' turn.' : ' turns.');
+  $('#live').textContent = p.name + ' wins the game.';
+  closeModal('#setup'); openModal('#winner'); confetti();
+}
+
+function confetti(){
+  if (reduced || FAST) return;
+  const cv = $('#confetti'), ctx = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#e3bb4d','#f3d98f','#2fa39a','#c0392b','#8e44ad','#3b6fd8'];
+  const ps = Array.from({ length:150 }, () => ({ x:Math.random()*cv.width, y:-20-Math.random()*cv.height*.6, vx:(Math.random()-.5)*3,
+    vy:2+Math.random()*4, s:5+Math.random()*7, c:cols[Math.floor(Math.random()*cols.length)], r:Math.random()*6, vr:(Math.random()-.5)*.3 }));
+  const t0 = performance.now();
+  (function frame(t){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for (const q of ps){ q.x += q.vx; q.y += q.vy; q.r += q.vr; ctx.save(); ctx.translate(q.x,q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.s/2,-q.s/2,q.s,q.s*.6); ctx.restore(); }
+    if (t - t0 < 4500) requestAnimationFrame(frame); else ctx.clearRect(0,0,cv.width,cv.height);
+  })(t0);
+}
+
+/* ================= setup screen ================= */
+const cfg = [
+  { name:'Player 1', bot:false }, { name:'Bot 2', bot:true }, { name:'Bot 3', bot:true }, { name:'Bot 4', bot:true },
+];
+let count = 2;
+function drawRows(){
+  const box = $('#rows'); box.textContent = '';
+  for (let i=0;i<count;i++){
+    const row = document.createElement('div'); row.className = 'row';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = COLORS[i].fill;
+    const inp = document.createElement('input'); inp.maxLength = 16; inp.value = cfg[i].name; inp.setAttribute('aria-label', 'Name for ' + COLORS[i].name + ' player');
+    inp.addEventListener('input', () => { cfg[i].name = inp.value; });
+    const sel = document.createElement('select'); sel.setAttribute('aria-label', 'Human or bot for ' + COLORS[i].name + ' player');
+    sel.innerHTML = '<option value="h">Human</option><option value="b">Bot</option>'; sel.value = cfg[i].bot ? 'b' : 'h';
+    sel.addEventListener('change', () => { cfg[i].bot = sel.value === 'b'; });
+    row.append(dot, inp, sel); box.appendChild(row);
+  }
+  document.querySelectorAll('#countSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === count)));
+}
+document.querySelectorAll('#countSeg button').forEach(b => b.addEventListener('click', () => { count = +b.dataset.n; drawRows(); }));
+
+function inGame(){ return S.players.length > 0 && S.phase !== 'over'; }
+function openSetup(){
+  const sv = readSave(); $('#resume').hidden = !sv || inGame(); $('#six').checked = S.rules.six;
+  S.hold = inGame();             // pause the game behind the dialog (a move already under way finishes)
+  $('#cancel').hidden = !S.hold;
+  drawRows(); openModal('#setup');
+}
+function cancelSetup(){
+  closeModal('#setup'); S.hold = false; renderPanel(); nextActor();
+}
+$('#go').addEventListener('click', () => {
+  const players = cfg.slice(0, count).map((c,i) => ({ name:(c.name || '').trim().slice(0,16) || ('Player ' + (i+1)), bot:c.bot, pos:0, turns:0 }));
+  startGame(players, $('#six').checked, null);
+});
+$('#resume').addEventListener('click', () => { const sv = readSave(); if (sv) startGame(sv.players, sv.six, sv); });
+$('#newgame').addEventListener('click', openSetup);
+$('#change').addEventListener('click', () => { closeModal('#winner'); openSetup(); });
+$('#again').addEventListener('click', () => {
+  const players = S.players.map(p => ({ name:p.name, bot:p.bot, pos:0, turns:0 }));
+  startGame(players, S.rules.six, null);
+});
+$('#roll').addEventListener('click', () => { ac(); doRoll(); });
+$('#mute').addEventListener('click', () => {
+  muted = !muted; store.set(MUTE_KEY, muted ? '1' : '0'); ac();
+  $('#mute').textContent = 'Sound: ' + (muted ? 'off' : 'on'); $('#mute').setAttribute('aria-pressed', String(muted));
+});
+$('#mute').textContent = 'Sound: ' + (muted ? 'off' : 'on'); $('#mute').setAttribute('aria-pressed', String(muted));
+$('#cancel').addEventListener('click', cancelSetup);
+$('#speed').addEventListener('click', () => {
+  const quick = SP >= 0.5; SP = quick ? 0.25 : (reduced ? 0.3 : 1); applySpeed();
+  $('#speed').textContent = 'Speed: ' + (quick ? 'fast' : 'normal'); $('#speed').setAttribute('aria-pressed', String(quick));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#setup').hidden && S.hold) cancelSetup();
+});
+
+if (qs.has('debug')) window.DNL = { JUMPS, cellCenter, get S(){ return S; } };
+showDie(0);
+S.phase = 'setup'; say('Choose your players to start.');
+openSetup();
+})();
+</script>
+</body>
+</html>

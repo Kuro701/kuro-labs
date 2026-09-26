@@ -27,6 +27,18 @@
    "img": "/assets/img/proj-star-quest.webp"
   },
   {
+   "slug": "dragons-and-ladders",
+   "title": "Dragons & Ladders",
+   "blurb": "Snakes and ladders with dragons, played on the Mytheder board. Roll, climb, and try not to get carried back down. Against friends or bots.",
+   "url": "/games/dragons-and-ladders/",
+   "status": "wip",
+   "players": "1–4",
+   "language": "English",
+   "thumb": null,
+   "art": "DRAGONS & LADDERS",
+   "img": "/assets/img/proj-dragons-and-ladders.webp"
+  },
+  {
    "slug": "monkey-paw",
    "title": "Monkey Paw",
    "blurb": "One player makes a wish. Everyone else writes the catch that makes them regret it. Free text, no deck, nothing ever runs out.",
