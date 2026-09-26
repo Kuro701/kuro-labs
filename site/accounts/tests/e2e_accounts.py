@@ -49,12 +49,15 @@ async def email_login(pg, base, email):
     await pg.click("dialog.kl-dialog button:has-text('Send me a code')")
     await pg.wait_for_selector("dialog.kl-dialog input.kl-code", timeout=10000)
     await pg.fill("dialog.kl-dialog input.kl-code", await last_code(pg, base, email))
-    await pg.click("dialog.kl-dialog button:has-text('Log in')")
+    await pg.click("dialog.kl-dialog button:has-text('Check code')")
+
+PW = 'correct horse battery'
 
 async def register(pg, name, agree=True):
     await pg.wait_for_selector("#kl-username", timeout=10000)
     if agree: await pg.check("#kl-agree-rules"); await pg.check("#kl-agree-18")
     await pg.fill("#kl-username", name)
+    await pg.fill("#kl-new-pw", PW); await pg.fill("#kl-new-pw2", PW)
     await pg.click("dialog.kl-dialog button:has-text('Create my account')")
 
 async def main():
@@ -95,7 +98,11 @@ async def main():
             assert "agree to the rules" in await A.inner_text("dialog.kl-dialog .kl-err")
             await A.check("#kl-agree-rules"); await A.check("#kl-agree-18"); await A.fill("#kl-username", "ab"); await A.click("dialog.kl-dialog button:has-text('Create my account')")
             assert "3 to 20" in await A.inner_text("dialog.kl-dialog .kl-err")
-            await A.fill("#kl-username", "Admin"); await A.click("dialog.kl-dialog button:has-text('Create my account')")
+            await A.fill("#kl-username", "AnnPlays"); await A.click("dialog.kl-dialog button:has-text('Create my account')")
+            assert "at least 10" in await A.inner_text("dialog.kl-dialog .kl-err")
+            await A.fill("#kl-new-pw", PW); await A.fill("#kl-new-pw2", PW + "x"); await A.click("dialog.kl-dialog button:has-text('Create my account')")
+            assert "not the same" in await A.inner_text("dialog.kl-dialog .kl-err")
+            await A.fill("#kl-new-pw2", PW); await A.fill("#kl-username", "Admin"); await A.click("dialog.kl-dialog button:has-text('Create my account')")
             await wait_until(lambda: A.evaluate("document.querySelector('dialog.kl-dialog .kl-err').textContent.includes(\"isn't available\")"), 5, "reserved name refused")
             await A.fill("#kl-username", "AnnPlays"); await A.click("dialog.kl-dialog button:has-text('Create my account')")
             await wait_until(lambda: A.evaluate("document.querySelector('#kl-account .kl-signed-in')?.textContent.includes('AnnPlays')"), 10, "signed in header")
@@ -152,8 +159,8 @@ async def main():
             await A.click("#kl-account .kl-acct-btn"); await A.fill("#kl-email-login", "ann@example.org"); await wait_until(lambda: A.is_enabled("dialog.kl-dialog button:has-text('Send me a code')"), 10, "check")
             await A.evaluate("fetch('/__dev/mailbox')"); await asyncio.sleep(0.2)
             await A.click("dialog.kl-dialog button:has-text('Send me a code')"); await A.wait_for_selector("dialog.kl-dialog input.kl-code")
-            await A.fill("dialog.kl-dialog input.kl-code", await last_code(A, base, "ann@example.org")); await A.click("dialog.kl-dialog button:has-text('Log in')")
-            await wait_until(lambda: A.evaluate("document.querySelector('dialog.kl-dialog .kl-err').textContent.includes(\"can't be used\")"), 5, "banned message"); ok("report, admin ban, and the banned person is told they cannot log in")
+            await A.fill("dialog.kl-dialog input.kl-code", await last_code(A, base, "ann@example.org")); await A.click("dialog.kl-dialog button:has-text('Check code')")
+            await wait_until(lambda: A.evaluate("document.querySelector('dialog.kl-dialog .kl-email .kl-err').textContent.includes(\"can't be used\")"), 5, "banned message"); ok("report, admin ban, and the banned person is told they cannot log in")
 
             # ---- deleting the account ----
             E = await new_page(browser, base, "/", viewport={"width": 1100, "height": 800})
@@ -170,6 +177,27 @@ async def main():
             await email_login(F, base, "fay@example.org"); await register(F, "FayFlyer"); await wait_until(lambda: F.evaluate("document.querySelector('#kl-account .kl-signed-in')?.textContent.includes('FayFlyer')"), 10, "in")
             await F.request.get(base + "/__dev/age-sessions"); await F.goto(base + "/account/"); await F.wait_for_selector("button:has-text('Confirm with my email')")
             assert await F.locator("#kl-del-confirm").count() == 0; ok("an old login must be confirmed again before the delete button appears")
+
+            # ---- password: log in with it, wrong password, change it ----
+            G = await new_page(browser, base, "/", viewport={"width": 1100, "height": 800}); await wait_until(lambda: G.is_visible("#kl-account .kl-acct-btn"), 10, "button")
+            await G.click("#kl-account .kl-acct-btn"); await G.wait_for_selector("#kl-login-name"); await G.screenshot(path=f"{OUT}/login_with_password.png")
+            await G.fill("#kl-login-name", "fayflyer"); await G.fill("#kl-login-pw", "wrong wrong wrong"); await G.click("dialog.kl-dialog button:has-text('Log in')")
+            await wait_until(lambda: G.evaluate("document.querySelector('dialog.kl-dialog .kl-err').textContent.includes('Wrong username or password')"), 5, "wrong password message")
+            await G.fill("#kl-login-pw", PW); await G.click("dialog.kl-dialog button:has-text('Log in')")
+            await wait_until(lambda: G.evaluate("document.querySelector('#kl-account .kl-signed-in')?.textContent.includes('FayFlyer')"), 10, "logged in by password")
+            await G.goto(base + "/account/"); await G.wait_for_selector("#kl-pw-1"); assert await G.locator("#kl-cur-pw").count() == 0, "fresh login: no current password asked"
+            await G.fill("#kl-pw-1", "another long phrase"); await G.fill("#kl-pw-2", "another long phrasE"); await G.click("button:has-text('Change password')")
+            assert "not the same" in await G.inner_text(".kl-card:has(#kl-pw-1) .kl-err")
+            await G.fill("#kl-pw-2", "another long phrase"); await G.click("button:has-text('Change password')")
+            await wait_until(lambda: G.evaluate("document.getElementById('kl-toast')?.textContent.includes('Password saved')"), 5, "password saved toast"); ok("log in with username and password; wrong password message; change password (mismatch checked)")
+            await F.reload(); await asyncio.sleep(0.8); assert await F.locator("#kl-account .kl-signed-in").count() == 0, "changing the password logged the other device out"; ok("changing the password logs out other devices")
+            await F.request.get(base + "/__dev/age-sessions")
+            H = await new_page(browser, base, "/", viewport={"width": 1100, "height": 800}); await wait_until(lambda: H.is_visible("#kl-account .kl-acct-btn"), 10, "button")
+            await H.click("#kl-account .kl-acct-btn"); await H.fill("#kl-login-name", "FAYFLYER"); await H.fill("#kl-login-pw", "another long phrase"); await H.click("dialog.kl-dialog button:has-text('Log in')")
+            await wait_until(lambda: H.evaluate("document.querySelector('#kl-account .kl-signed-in')?.textContent.includes('FayFlyer')"), 10, "logged in with the new password (name is case-insensitive)")
+            await H.request.get(base + "/__dev/age-sessions"); await H.goto(base + "/account/"); await H.wait_for_selector("#kl-reauth-pw"); assert await H.locator("#kl-del-confirm").count() == 0
+            await H.fill("#kl-reauth-pw", "nope nope nope"); await H.click("button:has-text('Confirm with password')"); await wait_until(lambda: H.evaluate("document.body.innerText.includes('not right')"), 5, "wrong reauth password")
+            await H.fill("#kl-reauth-pw", "another long phrase"); await H.click("button:has-text('Confirm with password')"); await H.wait_for_selector("#kl-del-confirm"); ok("an old login can be confirmed with the password to unlock deleting")
         finally:
             await browser.close(); server.kill(); off.kill()
     print(f"\n{passed} account UI tests passed")

@@ -30,4 +30,21 @@ function safeEqual(a, b) {                                                  // c
   return d === 0;
 }
 
-module.exports = { randomToken, randomInt, randomDigits, sha256Hex, hmacHex, safeEqual, b64url };
+/* Passwords: PBKDF2-SHA256, random 16-byte salt, 100000 rounds (the most Cloudflare Workers allows). Stored as "pbkdf2$rounds$salt$hash". */
+const PBKDF2_ROUNDS = 100000;
+const fromB64url = t => { const b = atob(t.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+async function pbkdf2(password, salt, rounds) {
+  const key = await subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: rounds }, key, 256));
+}
+async function hashPassword(password) {
+  const salt = randomBytes(16);
+  return 'pbkdf2$' + PBKDF2_ROUNDS + '$' + b64url(salt) + '$' + b64url(await pbkdf2(password, salt, PBKDF2_ROUNDS));
+}
+async function verifyPassword(password, stored) {
+  const m = /^pbkdf2\$(\d+)\$([\w-]+)\$([\w-]+)$/.exec(String(stored || ''));
+  if (!m) { await pbkdf2(String(password), new Uint8Array(16), PBKDF2_ROUNDS); return false; }   // same work whether or not there is a password
+  return safeEqual(b64url(await pbkdf2(String(password), fromB64url(m[2]), Number(m[1]))), m[3]);
+}
+
+module.exports = { hashPassword, verifyPassword, randomToken, randomInt, randomDigits, sha256Hex, hmacHex, safeEqual, b64url };

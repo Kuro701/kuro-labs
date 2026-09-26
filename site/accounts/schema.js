@@ -4,7 +4,7 @@
  * To change the schema later, append an entry to MIGRATIONS with a higher number: each runs once. Times are ms since epoch.
  *
  * What is stored about a person (see the privacy note): username, login identifiers (Discord id and/or email), the
- * record that they accepted the rules and are 18+, their saves and stats. Never: passwords, birth date, IP addresses.
+ * record that they accepted the rules and are 18+, their saves and stats. Passwords only as a salted one-way hash (pw_hash). Never: the password itself, birth date, IP addresses.
  */
 const MIGRATIONS = [
   { n: 1, sql: [
@@ -22,6 +22,10 @@ const MIGRATIONS = [
     `CREATE TABLE IF NOT EXISTS admin_log (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_id INTEGER, action TEXT NOT NULL, target TEXT, detail TEXT, created_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS rate (key TEXT PRIMARY KEY, window_start INTEGER NOT NULL, count INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`
+  ] },
+  { n: 2, sql: [
+    `ALTER TABLE users ADD COLUMN pw_hash TEXT`,
+    `ALTER TABLE users ADD COLUMN pw_changed_at INTEGER`
   ] }
 ];
 

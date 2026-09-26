@@ -62,7 +62,7 @@ python .\site\accounts\tests\e2e_accounts.py          # real browsers: button, d
 
 ## How it behaves (the promises the privacy note makes)
 
-- No passwords, no birth dates. Login is a Discord id and/or an email address; logins last 30 days and are stored only as a hash.
+- Passwords are stored only as a salted PBKDF2-SHA256 hash (100000 rounds, the Workers maximum). Login is username + password, with Discord and/or an email code as the backup and the way to reset a forgotten password. No birth dates, no IP addresses; logins last 30 days and are stored only as a hash.
 - IP addresses are never stored. The email limits use a keyed hash of the connection, deleted within 2 days.
 - Registration needs both boxes ticked (rules, 18+) and is checked on the server. When `RULES_VERSION` goes up, everyone must accept again.
 - Deleting an account needs a login from the last 10 minutes and the typed username, and really deletes everything (saves, stats, sessions). Leaving by choice leaves no trace.

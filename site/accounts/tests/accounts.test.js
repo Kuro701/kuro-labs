@@ -9,6 +9,7 @@ const disposable = require('../data/disposable.json').domains;
 
 const ORIGIN = 'https://kurolabs.net';
 const IP = '203.0.113.9';
+const PWD = 'correct horse battery';
 const MS = cfg.MS;
 
 /* ---------- pretend outside services ---------- */
@@ -58,7 +59,7 @@ class Browser {
   }
   async registerEmail(email, username) {
     const v = await this.emailLogin(email); assert.equal(v.json.next, 'register');
-    const r = await this.post('/api/auth/register', { agreedRules: true, is18: true, username }); assert.equal(r.status, 200, JSON.stringify(r.json)); return r;
+    const r = await this.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username }); assert.equal(r.status, 200, JSON.stringify(r.json)); return r;
   }
 }
 const q = (env, sql, ...a) => env.DB.prepare(sql).bind(...a).first();
@@ -93,9 +94,9 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
     const me = await b.get('/api/me'); assert.equal(me.json.user, null); assert.deepEqual(me.json.pending, { kind: 'email', email: 'a***@example.org' });
     assert.equal((await b.post('/api/auth/register', { agreedRules: true, is18: false, username: 'AnnPlays' })).json.error, 'agree_required');
     assert.equal((await b.post('/api/auth/register', { agreedRules: false, is18: true, username: 'AnnPlays' })).json.error, 'agree_required');
-    assert.equal((await b.post('/api/auth/register', { agreedRules: true, is18: true, username: 'ab' })).json.error, 'bad_username');
-    assert.equal((await b.post('/api/auth/register', { agreedRules: true, is18: true, username: 'Admin' })).json.error, 'username_unavailable');
-    const r = await b.post('/api/auth/register', { agreedRules: true, is18: true, username: 'AnnPlays' }); assert.equal(r.status, 200);
+    assert.equal((await b.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'ab' })).json.error, 'bad_username');
+    assert.equal((await b.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'Admin' })).json.error, 'username_unavailable');
+    const r = await b.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'AnnPlays' }); assert.equal(r.status, 200);
     const ses = r.setCookies.find(c => c.startsWith('kl_session=')); assert.ok(/HttpOnly/.test(ses) && /SameSite=Lax/.test(ses) && /Secure/.test(ses) && /Max-Age=2592000/.test(ses), ses);
     assert.ok(!b.jar.kl_pending, 'pending cookie cleared');
     const me2 = await b.get('/api/me'); assert.equal(me2.json.user.username, 'AnnPlays'); assert.equal(me2.json.user.email, 'a***@example.org'); assert.equal(me2.json.user.rulesOk, true); assert.equal(me2.json.user.isAdmin, false);
@@ -160,8 +161,8 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
   /* ===== usernames ===== */
   await test('usernames: unique in any case, reserved/filtered refused, rename limited to once per 30 days', async () => {
     const e = newEnv(); const a = new Browser(e), c = new Browser(e); await a.registerEmail('one@example.org', 'Zed_One');
-    await c.emailLogin('two@example.org'); const dup = await c.post('/api/auth/register', { agreedRules: true, is18: true, username: 'zed_one' }); assert.equal(dup.status, 409); assert.equal(dup.json.error, 'username_unavailable');
-    const ok = await c.post('/api/auth/register', { agreedRules: true, is18: true, username: 'Zed_Two' }); assert.equal(ok.status, 200);
+    await c.emailLogin('two@example.org'); const dup = await c.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'zed_one' }); assert.equal(dup.status, 409); assert.equal(dup.json.error, 'username_unavailable');
+    const ok = await c.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'Zed_Two' }); assert.equal(ok.status, 200);
     const r1 = await c.post('/api/me/username', { username: 'ZedTwoRenamed' }); assert.equal(r1.status, 200);
     const r2 = await c.post('/api/me/username', { username: 'Another_One' }); assert.equal(r2.status, 429); assert.equal(r2.json.error, 'rename_wait');
     await e.DB.prepare('UPDATE users SET username_changed_at = ?').bind(Date.now() - 31 * MS.DAY).run();
@@ -181,7 +182,7 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
     assert.match(st.setCookies.find(c => c.startsWith('kl_oauth=')), /HttpOnly.*Path=\/api\/auth|Path=\/api\/auth.*HttpOnly/);
     const cb = await x.get(`/api/auth/discord/callback?code=dc-1&state=${state}`); assert.equal(cb.location, '/?auth=register');
     assert.deepEqual((await x.get('/api/me')).json.pending, { kind: 'discord', email: null });
-    const reg = await x.post('/api/auth/register', { agreedRules: true, is18: true, username: 'DiscordDan' }); assert.equal(reg.status, 200);
+    const reg = await x.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'DiscordDan' }); assert.equal(reg.status, 200);
     assert.equal((await q(e, 'SELECT discord_id FROM users')).discord_id, '1111'); assert.equal((await x.get('/api/me')).json.user.discord, true);
     const replay = await x.get(`/api/auth/discord/callback?code=dc-1&state=${state}`); assert.equal(replay.location, '/?auth_error=expired');
     const y = new Browser(e); const s2 = await y.get('/api/auth/discord'); const st2 = new URL(s2.location).searchParams.get('state');
@@ -209,7 +210,7 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
     await c.get('/api/auth/discord?purpose=link'); assert.equal((await c.get(`/api/auth/discord/callback?code=dc-a&state=${c.jar.kl_oauth}`)).location, '/?auth_error=discord_taken');
     assert.equal((await new Browser(e).get('/api/auth/discord?purpose=link')).location, '/?auth_error=login_required');
     // Discord-only account adds an email
-    const d = new Browser(e); await d.get('/api/auth/discord'); await d.get(`/api/auth/discord/callback?code=dc-b&state=${d.jar.kl_oauth}`); await d.post('/api/auth/register', { agreedRules: true, is18: true, username: 'DiscordDee' });
+    const d = new Browser(e); await d.get('/api/auth/discord'); await d.get(`/api/auth/discord/callback?code=dc-b&state=${d.jar.kl_oauth}`); await d.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'DiscordDee' });
     assert.equal((await d.emailLogin('dee@example.org', 'link')).json.next, 'done'); assert.equal((await d.get('/api/me')).json.user.email, 'd***@example.org');
     const d2 = new Browser(e); assert.equal((await d2.emailLogin('dee@example.org')).json.next, 'done'); assert.equal((await d2.get('/api/me')).json.user.username, 'DiscordDee');
     const clash = await d.emailLogin('link@example.org', 'link'); assert.equal(clash.json.error, 'email_taken');
@@ -275,7 +276,7 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
     await A.recordGameResult(e2, (await q(e2, 'SELECT id FROM users')).id, 'dragons-and-ladders', { won: true, turns: 31 });
     const ex = await me.get('/api/me/export'); assert.match(ex.res.headers.get('content-disposition'), /attachment/);
     assert.equal(ex.json.account.username, 'SaverSue'); assert.equal(ex.json.account.email, 'saver@example.org'); assert.equal(ex.json.saves[0].game, 'dragons-and-ladders'); assert.equal(ex.json.stats[0].won, 1);
-    assert.ok(!/token_hash|code_hash|secret|password|ip/i.test(Object.keys(ex.json.account).join(' ')));
+    assert.ok(!/token_hash|code_hash|secret|pw_hash|\bip/i.test(Object.keys(ex.json.account).join(' '))); assert.ok(!/pbkdf2/.test(ex.text), 'the password hash is never exported'); assert.equal(ex.json.account.hasPassword, true);
   });
 
   await test('stats: written only by the server, counting games and the best win', async () => {
@@ -301,7 +302,7 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
 
   await test('Discord accounts re-check by logging in with Discord again before deleting', async () => {
     const e = newEnv(); discordUsers = { 'dc-x': '7777' }; const d = new Browser(e);
-    await d.get('/api/auth/discord'); await d.get(`/api/auth/discord/callback?code=dc-x&state=${d.jar.kl_oauth}`); await d.post('/api/auth/register', { agreedRules: true, is18: true, username: 'DiscordDel' });
+    await d.get('/api/auth/discord'); await d.get(`/api/auth/discord/callback?code=dc-x&state=${d.jar.kl_oauth}`); await d.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'DiscordDel' });
     await e.DB.prepare('UPDATE sessions SET last_auth_at = 0').run(); assert.equal((await d.call('DELETE', '/api/me', { body: { confirm: 'DiscordDel' } })).json.error, 'reauth_required');
     await d.get('/api/auth/discord?purpose=reauth&next=/account/'); assert.equal((await d.get(`/api/auth/discord/callback?code=dc-x&state=${d.jar.kl_oauth}`)).location, '/account/?reauth=ok');
     assert.equal((await d.call('DELETE', '/api/me', { body: { confirm: 'discorddel' } })).status, 200);
@@ -344,7 +345,7 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
   await test('a banned Discord identity is refused at login and at linking', async () => {
     const e = newEnv(); discordUsers = { 'dc-t': '5555', 'dc-ok': '5556' }; const admin = new Browser(e), t = new Browser(e), o = new Browser(e);
     await admin.registerEmail('adm@example.org', 'AdminAda'); await e.DB.prepare('UPDATE users SET is_admin = 1').run();
-    await t.get('/api/auth/discord'); await t.get(`/api/auth/discord/callback?code=dc-t&state=${t.jar.kl_oauth}`); await t.post('/api/auth/register', { agreedRules: true, is18: true, username: 'DiscordTroll' });
+    await t.get('/api/auth/discord'); await t.get(`/api/auth/discord/callback?code=dc-t&state=${t.jar.kl_oauth}`); await t.post('/api/auth/register', { agreedRules: true, is18: true, password: PWD, username: 'DiscordTroll' });
     await admin.post('/api/admin/users/DiscordTroll/ban', { reason: 'x' });
     const t2 = new Browser(e); await t2.get('/api/auth/discord'); assert.equal((await t2.get(`/api/auth/discord/callback?code=dc-t&state=${t2.jar.kl_oauth}`)).location, '/?auth_error=banned');
     await o.registerEmail('ok@example.org', 'OkOlga'); await o.get('/api/auth/discord?purpose=link'); assert.equal((await o.get(`/api/auth/discord/callback?code=dc-t&state=${o.jar.kl_oauth}`)).location, '/?auth_error=discord_taken');
@@ -379,6 +380,67 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
     assert.equal(await d.prepare('SELECT MAX(n) AS n FROM schema_version').first('n'), S.MIGRATIONS.length);
     const d2 = new D1Shim(); await S.ensureSchema(d2); const fresh = new D1Shim(); assert.equal(await fresh.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table'").first('n'), 0);
     assert.throws(() => d.db.exec('INSERT INTO sessions VALUES (1,999,0,0,0)'), /FOREIGN KEY/, 'foreign keys are enforced');
+  });
+
+  /* ===== passwords ===== */
+  await test('passwords: required at sign-up, checked for strength, stored only as a salted hash', async () => {
+    const e = newEnv(); const x = new Browser(e);
+    assert.equal((await x.emailLogin('pw@example.org')).json.next, 'register');
+    const base = { agreedRules: true, is18: true, username: 'PwPeter' };
+    assert.equal((await x.post('/api/auth/register', base)).json.error, 'bad_password');                                   // none
+    assert.equal((await x.post('/api/auth/register', { ...base, password: 'short' })).json.error, 'bad_password');
+    assert.equal((await x.post('/api/auth/register', { ...base, password: 'password123' })).json.error, 'bad_password');    // too common
+    assert.equal((await x.post('/api/auth/register', { ...base, password: 'pwpeter!!!!' })).json.error, 'bad_password');    // same as the name
+    assert.equal((await x.post('/api/auth/register', { ...base, password: 'x'.repeat(200) })).json.error, 'bad_password');
+    assert.equal((await x.post('/api/auth/register', { ...base, password: 'a  passphrase with spaces ünïcode' })).status, 200);
+    const row = await q(e, 'SELECT pw_hash FROM users WHERE username_lower = ?', 'pwpeter');
+    assert.match(row.pw_hash, /^pbkdf2\$100000\$[\w-]+\$[\w-]+$/); assert.ok(!row.pw_hash.includes('passphrase'));
+    const me = await x.get('/api/me'); assert.equal(me.json.user.hasPassword, true);
+  });
+  await test('password login: right one works, wrong/unknown give the same answer, bans and rate limits hold', async () => {
+    const e = newEnv(); const a = new Browser(e); await a.registerEmail('pl@example.org', 'PassPia');
+    const x = new Browser(e);
+    const wrong = await x.post('/api/auth/login', { username: 'passpia', password: 'not the one' }), none = await x.post('/api/auth/login', { username: 'nobody', password: 'not the one' });
+    assert.equal(wrong.status, 400); assert.equal(wrong.json.error, 'bad_login'); assert.equal(wrong.json.message, none.json.message);
+    assert.equal((await x.get('/api/me')).json.user, null);
+    const ok = await x.post('/api/auth/login', { username: 'PASSPIA', password: PWD }); assert.equal(ok.status, 200); assert.equal((await x.get('/api/me')).json.user.username, 'PassPia');
+    assert.ok(ok.setCookies.some(c => /^kl_session=/.test(c) && /HttpOnly/.test(c) && /Secure/.test(c)));
+    // an account without a password (or with a different login only) cannot be entered by password
+    await e.DB.prepare('UPDATE users SET pw_hash = NULL').run(); assert.equal((await new Browser(e).post('/api/auth/login', { username: 'passpia', password: PWD })).json.error, 'bad_login');
+    await e.DB.prepare('UPDATE users SET pw_hash = ?').bind(await require('../crypto.js').hashPassword(PWD)).run();
+    // banned: only said after the right password
+    await e.DB.prepare("UPDATE users SET status = 'banned'").run();
+    assert.equal((await new Browser(e).post('/api/auth/login', { username: 'passpia', password: 'wrong' })).json.error, 'bad_login'); assert.equal((await new Browser(e).post('/api/auth/login', { username: 'passpia', password: PWD })).json.error, 'banned');
+    await e.DB.prepare("UPDATE users SET status = 'active'").run();
+    // guessing: 10 wrong tries for one name, then even the right password waits
+    const g = new Browser(e); let last; for (let i = 0; i < 12; i++) last = await g.post('/api/auth/login', { username: 'passpia', password: 'guess' + i });
+    assert.equal(last.status, 429); assert.equal((await g.post('/api/auth/login', { username: 'passpia', password: PWD })).status, 429);
+  });
+  await test('password: change needs the current one or a fresh login; other devices are logged out; reauth by password unlocks deleting', async () => {
+    const e = newEnv(); const a = new Browser(e), other = new Browser(e); await a.registerEmail('ch@example.org', 'ChangeCy'); await other.post('/api/auth/login', { username: 'changecy', password: PWD });
+    assert.equal((await a.post('/api/me/password', { password: 'a brand new phrase' })).status, 200);               // fresh: just signed up
+    assert.equal((await other.get('/api/me')).json.user, null, 'other devices are logged out');
+    assert.equal((await a.get('/api/me')).json.user.username, 'ChangeCy');
+    assert.equal((await new Browser(e).post('/api/auth/login', { username: 'changecy', password: PWD })).json.error, 'bad_login');
+    assert.equal((await new Browser(e).post('/api/auth/login', { username: 'changecy', password: 'a brand new phrase' })).status, 200);
+    await e.DB.prepare('UPDATE sessions SET last_auth_at = 0').run();                                              // no longer fresh
+    assert.equal((await a.post('/api/me/password', { password: 'yet another phrase' })).json.error, 'reauth_required');
+    assert.equal((await a.post('/api/me/password', { current: 'wrong wrong wrong', password: 'yet another phrase' })).json.error, 'reauth_required');
+    assert.equal((await a.post('/api/me/password', { current: 'a brand new phrase', password: 'short' })).json.error, 'bad_password');
+    assert.equal((await a.post('/api/me/password', { current: 'a brand new phrase', password: 'yet another phrase' })).status, 200);
+    await e.DB.prepare('UPDATE sessions SET last_auth_at = 0').run();
+    assert.equal((await a.call('DELETE', '/api/me', { body: { confirm: 'changecy' } })).json.error, 'reauth_required');
+    assert.equal((await a.post('/api/auth/reauth', { password: 'nope nope nope' })).json.error, 'bad_login');
+    assert.equal((await a.post('/api/auth/reauth', { password: 'yet another phrase' })).status, 200);
+    assert.equal((await a.call('DELETE', '/api/me', { body: { confirm: 'changecy' } })).status, 200);
+  });
+  await test('password: an account without one (older or Discord-only) can set one after a fresh Discord/email login', async () => {
+    const e = newEnv(); const a = new Browser(e); await a.registerEmail('np@example.org', 'NoPassNed');
+    await e.DB.prepare('UPDATE users SET pw_hash = NULL').run(); await e.DB.prepare('UPDATE sessions SET last_auth_at = 0').run();
+    assert.equal((await a.post('/api/me/password', { password: 'my first password' })).json.error, 'reauth_required');
+    assert.equal((await a.emailLogin('np@example.org')).json.next, 'done');
+    assert.equal((await a.post('/api/me/password', { password: 'my first password' })).status, 200);
+    assert.equal((await new Browser(e).post('/api/auth/login', { username: 'nopassned', password: 'my first password' })).status, 200);
   });
 
   console.log(`\n${n} account tests passed`);

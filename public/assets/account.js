@@ -66,7 +66,7 @@ function emailPanel(purpose, onDone, opts) {
   const send = el('button', { type: 'button', class: 'kl-action kl-primary', disabled: true }, 'Send me a code');
   const step1 = el('div', {}, el('label', { for: emailInput.id }, opts.emailLabel || 'Your email address'), emailInput, ts, send);
   const codeInput = el('input', { type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: 8, placeholder: '123456', 'aria-label': 'The 6-digit code from the email', class: 'kl-code' });
-  const go = el('button', { type: 'button', class: 'kl-action kl-primary' }, opts.verifyLabel || 'Log in');
+  const go = el('button', { type: 'button', class: 'kl-action kl-primary' }, opts.verifyLabel || 'Check code');
   const again = el('button', { type: 'button', class: 'kl-link', disabled: true }, 'Send a new code');
   const other = el('button', { type: 'button', class: 'kl-link' }, 'Use a different email');
   const sentText = el('p', { class: 'kl-note' });
@@ -102,9 +102,32 @@ function emailPanel(purpose, onDone, opts) {
 }
 
 /* ---------- dialogs ---------- */
+function pwField(id, label, autocomplete) {
+  const input = el('input', { type: 'password', id, autocomplete, maxlength: 128, required: true });
+  return { input, wrap: el('div', {}, el('label', { for: id }, label), input) };
+}
+const PW_MIN = 10;
+
+function passwordLogin(dlg) {
+  const err = errBox(), form = el('form', { novalidate: true });
+  const name = el('input', { type: 'text', id: 'kl-login-name', autocomplete: 'username', maxlength: 40, spellcheck: 'false', autocapitalize: 'off' });
+  const pw = pwField('kl-login-pw', 'Password', 'current-password');
+  const go = el('button', { type: 'submit', class: 'kl-action kl-primary kl-wide' }, 'Log in');
+  form.append(el('label', { for: name.id }, 'Username'), name, pw.wrap, go, err);
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); err.textContent = '';
+    if (!name.value.trim() || !pw.input.value) { err.textContent = 'Please type your username and password.'; return; }
+    busy(go, true);
+    try { await api('/api/auth/login', { method: 'POST', body: { username: name.value.trim(), password: pw.input.value } }); dlg.close(); location.reload(); }
+    catch (e2) { err.textContent = e2.message; busy(go, false); pw.input.select(); }
+  });
+  return form;
+}
+
 function openLogin() {
   const { dlg, body } = makeDialog('Log in or sign up');
-  body.append(el('p', { class: 'kl-note' }, 'New here? Logging in for the first time creates your account, after you agree to the rules. You must be 18 or older to have an account.'));
+  body.append(passwordLogin(dlg));
+  body.append(el('p', { class: 'kl-note' }, 'New here, or forgot your password? Use Discord or an email code below. The first time creates your account, after you agree to the rules and choose a password. You must be 18 or older to have an account.'));
   if (S.config.discord) body.append(el('a', { class: 'kl-action kl-primary kl-wide', href: '/api/auth/discord?next=' + encodeURIComponent(location.pathname === '/account/' ? '/account/' : '/') }, 'Continue with Discord'));
   if (S.config.discord && S.config.email) body.append(el('p', { class: 'kl-or' }, 'or with your email'));
   if (S.config.email) body.append(emailPanel('login', r => { dlg.close(); if (r.next === 'register') refresh(); else location.reload(); }));
@@ -122,18 +145,22 @@ function agreementFields(form) {
 function openRegister() {
   const { dlg, body } = makeDialog('Almost there');
   const p = S.me.pending, err = errBox();
-  body.append(el('p', { class: 'kl-note' }, p && p.kind === 'discord' ? 'Your Discord login worked.' : 'Your email address is confirmed.', ' Two more things and your account is ready.'));
+  body.append(el('p', { class: 'kl-note' }, p && p.kind === 'discord' ? 'Your Discord login worked.' : 'Your email address is confirmed.', ' Choose a username and a password and your account is ready.'));
   const form = el('form', { novalidate: true }); const ag = agreementFields(form);
   const name = el('input', { type: 'text', id: 'kl-username', autocomplete: 'off', maxlength: 20, spellcheck: 'false', autocapitalize: 'off' });
   const hint = el('p', { class: 'kl-note kl-hint' }, '3 to 20 letters, numbers, "_" or "-". Other players will see this name. You can change it once every 30 days.');
+  const pw1 = pwField('kl-new-pw', 'Choose a password', 'new-password'), pw2 = pwField('kl-new-pw2', 'Type the password again', 'new-password');
+  const pwHint = el('p', { class: 'kl-note kl-hint' }, 'At least ' + PW_MIN + ' characters. A few random words in a row make a good password. You will use it with your username to log in; Discord or email stays as your backup.');
   const submit = el('button', { type: 'submit', class: 'kl-action kl-primary kl-wide' }, 'Create my account');
-  form.append(el('label', { for: name.id }, 'Choose a username'), name, hint, submit, err);
+  form.append(el('label', { for: name.id }, 'Choose a username'), name, hint, pw1.wrap, pw2.wrap, pwHint, submit, err);
   form.addEventListener('submit', async e => {
     e.preventDefault(); err.textContent = '';
     if (!ag.ok()) { err.textContent = 'Please agree to the rules and confirm that you are 18 or older.'; return; }
     if (!NAME_RE.test(name.value.trim())) { err.textContent = 'Use 3 to 20 letters, numbers, "_" or "-", starting with a letter or number.'; return; }
+    if (pw1.input.value.length < PW_MIN) { err.textContent = 'Your password needs at least ' + PW_MIN + ' characters.'; return; }
+    if (pw1.input.value !== pw2.input.value) { err.textContent = 'The two passwords are not the same.'; return; }
     busy(submit, true);
-    try { await api('/api/auth/register', { method: 'POST', body: { agreedRules: true, is18: true, username: name.value.trim() } }); dlg.close(); location.reload(); }
+    try { await api('/api/auth/register', { method: 'POST', body: { agreedRules: true, is18: true, username: name.value.trim(), password: pw1.input.value } }); dlg.close(); location.reload(); }
     catch (e2) { err.textContent = e2.message; busy(submit, false); if (e2.code === 'no_pending') setTimeout(() => { dlg.close(); refresh(); }, 1800); }
   });
   body.append(form); name.focus();
@@ -187,13 +214,33 @@ function renderAccountPage() {
   page.append(card('Your name', el('p', {}, 'Other players see this name.'), nameForm, nameErr,
     canRename ? null : el('p', { class: 'kl-note' }, 'You can change it again on ' + new Date(me.renameAt).toLocaleDateString() + '.')));
 
+  // password
+  {
+    const f = el('form', { novalidate: true }), pErr = errBox();
+    const cur = me.fresh || !me.hasPassword ? null : pwField('kl-cur-pw', 'Current password', 'current-password');
+    const n1 = pwField('kl-pw-1', 'New password', 'new-password'), n2 = pwField('kl-pw-2', 'New password again', 'new-password');
+    const b = el('button', { type: 'submit', class: 'kl-action' }, me.hasPassword ? 'Change password' : 'Set a password');
+    f.append(...(cur ? [cur.wrap] : []), n1.wrap, n2.wrap, b, pErr);
+    f.addEventListener('submit', async e => {
+      e.preventDefault(); pErr.textContent = '';
+      if (n1.input.value.length < PW_MIN) { pErr.textContent = 'Your password needs at least ' + PW_MIN + ' characters.'; return; }
+      if (n1.input.value !== n2.input.value) { pErr.textContent = 'The two passwords are not the same.'; return; }
+      busy(b, true);
+      try { await api('/api/me/password', { method: 'POST', body: { current: cur ? cur.input.value : undefined, password: n1.input.value } }); toast('Password saved. Other devices were logged out.'); await refresh(); }
+      catch (e2) { pErr.textContent = e2.message; busy(b, false); }
+    });
+    page.append(card('Password', el('p', {}, me.hasPassword ? 'Change your password.' : 'This account has no password yet. Set one to log in with your username.'),
+      f,
+      el('p', { class: 'kl-note' }, 'Forgot it? Log in with Discord or an email code, then set a new one here.')));
+  }
+
   // ways to log in
   const methods = el('ul', { class: 'kl-methods' });
   methods.append(el('li', {}, el('strong', {}, 'Discord: '), me.discord ? 'connected' : el('a', { href: '/api/auth/discord?purpose=link&next=/account/' }, S.config.discord ? 'Add Discord' : 'not available')),
     el('li', {}, el('strong', {}, 'Email: '), me.email || (S.config.email ? 'not added' : 'not available')));
   const add = el('div', {});
   if (!me.email && S.config.email) { const btn = el('button', { type: 'button', class: 'kl-action' }, 'Add an email address'); btn.addEventListener('click', () => { btn.replaceWith(emailPanel('link', () => { toast('Email address added.'); refresh(); }, { verifyLabel: 'Add this email' })); }); add.append(btn); }
-  page.append(card('Ways to log in', el('p', {}, 'Have two, so you can never get locked out.'), methods, add));
+  page.append(card('Ways to log in', el('p', {}, 'Your password logs you in, and these are your backup if you ever forget it.'), methods, add));
 
   // privacy + data
   const hide = el('input', { type: 'checkbox', id: 'kl-hide-lb', checked: me.hideLeaderboards });
@@ -214,6 +261,12 @@ function renderAccountPage() {
   const del = el('div', {});
   if (!me.fresh) {
     del.append(el('p', {}, 'For your safety, please confirm it is you before deleting your account.'));
+    if (me.hasPassword) {
+      const rf = el('form', { novalidate: true }), rp = pwField('kl-reauth-pw', 'Your password', 'current-password'), rb = el('button', { type: 'submit', class: 'kl-action' }, 'Confirm with password'), rErr2 = errBox();
+      rf.append(rp.wrap, rb, rErr2);
+      rf.addEventListener('submit', async e => { e.preventDefault(); rErr2.textContent = ''; busy(rb, true); try { await api('/api/auth/reauth', { method: 'POST', body: { password: rp.input.value } }); toast('Thank you.'); refresh(); } catch (e2) { rErr2.textContent = e2.message; busy(rb, false); } });
+      del.append(rf);
+    }
     if (me.discord && S.config.discord) del.append(el('p', {}, el('a', { class: 'kl-action', href: '/api/auth/discord?purpose=reauth&next=/account/' }, 'Confirm with Discord')));
     if (me.email && S.config.email) { const b = el('button', { type: 'button', class: 'kl-action' }, 'Confirm with my email'); b.addEventListener('click', () => b.replaceWith(emailPanel('reauth', () => { toast('Thank you.'); refresh(); }, { verifyLabel: 'Confirm', emailLabel: 'The email address of this account' }))); del.append(b); }
   } else {

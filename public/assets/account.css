@@ -20,7 +20,7 @@
 #kl-techno .kl-x:hover{color:#fff;background:#261018}
 #kl-techno .kl-dialog-body{padding:14px 20px 22px;display:grid;gap:12px}
 #kl-techno .kl-dialog label,#kl-techno .kl-card label{font-size:13px;color:#c9c7d0;display:block;margin-bottom:6px}
-#kl-techno input[type=text],#kl-techno input[type=email],#kl-techno textarea{width:100%;background:#0b0c0f;color:#f4f2f3;border:1px solid #38343d;border-radius:6px;padding:11px 12px;font:inherit;min-height:44px}
+#kl-techno input[type=text],#kl-techno input[type=email],#kl-techno input[type=password],#kl-techno textarea{width:100%;background:#0b0c0f;color:#f4f2f3;border:1px solid #38343d;border-radius:6px;padding:11px 12px;font:inherit;min-height:44px}
 #kl-techno input:focus-visible,#kl-techno textarea:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #kl-techno input.kl-code{font:600 24px/1 'IBM Plex Mono',monospace;letter-spacing:8px;text-align:center}
 #kl-techno .kl-wide{width:100%}
@@ -44,6 +44,8 @@
 #kl-techno .kl-email{display:grid;gap:10px}
 #kl-techno .kl-ts{min-height:65px}
 #kl-techno .kl-email > div{display:grid;gap:10px}
+#kl-techno .kl-dialog form > div,#kl-techno .kl-card form > div{display:grid;gap:6px}
+#kl-techno .kl-or{line-height:1.5}
 
 /* ---- toast ---- */
 #kl-techno .kl-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1b1c22;border:1px solid #38343d;color:#f4f2f3;padding:12px 18px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:calc(100vw - 32px)}

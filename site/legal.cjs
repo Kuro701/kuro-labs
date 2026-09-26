@@ -53,19 +53,19 @@ ${head('Kuro Labs / Privacy', 'Privacy note.', `What kurolabs.net does with your
 <p>You can play every game as a guest.</p>
 <ul>
 <li><strong>Playing on your own device</strong> gives us nothing. Your progress is saved in your own browser on your own device and never sent to us.</li>
-<li><strong>Playing online in a room</strong> (Dragons &amp; Ladders): you type a nickname, which is shown to the other players in that room. The game server holds the nickname, a random seat number and the game position while the room exists, so the game can carry on if someone's connection drops. The room and everything in it is deleted about 2 hours after the last move, or straight away when the last person leaves, and 30 minutes after it was created if nobody joins. We ask for nothing else.</li>
+<li><strong>Playing online in a room:</strong> you type a nickname, which is shown to the other players in that room. The game server holds the nickname, a random seat number and the game position while the room exists, so the game can carry on if someone's connection drops. The room and everything in it is deleted about 2 hours after the last move, or straight away when the last person leaves, and 30 minutes after it was created if nobody joins. We ask for nothing else.</li>
 </ul></section>
 <section><h2>If you make an account</h2>
 ${notOpen('This section describes how they will work when they open.')}
 <p><strong>What we store</strong></p>
 <ul>
 <li><strong>Your username</strong>, which you choose. It is shown publicly (for example on leaderboards).</li>
-<li><strong>How you log in:</strong> if you use Discord, your Discord user ID (a number). We do not store your Discord name, avatar or email. If you use email login, your email address.</li>
+<li><strong>How you log in:</strong> your <strong>password</strong>, stored only as a salted one-way scramble (a hash) that we cannot turn back into the password, plus the way you proved who you are when you signed up: if you use Discord, your Discord user ID (a number; we do not store your Discord name, avatar or email); if you use email, your email address. Discord or email is also how you get back in if you forget your password.</li>
 <li><strong>That you agreed to the rules and confirmed you are 18 or older,</strong> which version of the rules, and when.</li>
-<li><strong>Your game data:</strong> saved progress and settings, and scores or stats from games that count for the leaderboard.</li>
+<li><strong>Your game data:</strong> saved progress and settings, and scores and stats from the games on this site, which can appear on leaderboards.</li>
 <li><strong>Simple account facts:</strong> when you signed up and when you last logged in.</li>
 </ul>
-<p><strong>What we do not store:</strong> passwords (we do not use any), your date of birth, your ID, or your IP address. To stop abuse we count how often a connection asks for a login code, using a one-way scrambled value that cannot be turned back into an address, and we delete it within two days.</p>
+<p><strong>What we do not store:</strong> your password in readable form, your date of birth, your ID, or your IP address. To stop abuse we count how often a connection asks for a login code, using a one-way scrambled value that cannot be turned back into an address, and we delete it within two days.</p>
 <p><strong>Why we keep it.</strong> To run your account and your games: to let you log in, to remember your progress, to run online rooms, to show the leaderboard, and to keep the community safe under the <a href="/rules/">rules</a>. We use it for nothing else. There is no advertising, no tracking of what you do on other sites, and no selling or renting of data.</p></section>
 <section><h2>Who else handles your data</h2>
 <p>We use a few services to run the site. They handle data only to do their job for us.</p>
@@ -93,7 +93,7 @@ ${notOpen('This section describes how they will work when they open.')}
 <section><h2>Deleting your account and getting your data</h2>
 <p>Both are buttons in your account settings.</p>
 <ul>
-<li><strong>Delete my account</strong> removes your username, login details, saves, stats and leaderboard entries. It is a real deletion, not a hidden flag. You need to have logged in recently and type your username to confirm.</li>
+<li><strong>Delete my account</strong> removes your username, password hash, login details, saves, stats and leaderboard entries. It is a real deletion, not a hidden flag. You need to have logged in recently and type your username to confirm.</li>
 <li><strong>Download my data</strong> gives you a file of everything we hold about you.</li>
 </ul></section>
 <section><h2>Bans</h2>

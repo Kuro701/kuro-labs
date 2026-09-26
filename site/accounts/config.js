@@ -7,8 +7,8 @@ module.exports = {
   // every logged-in user is then asked to read and accept them again. The pages /rules/ and /privacy/ show these.
   RULES_VERSION: 1,
   RULES_DATE: '2026-09-26',
-  PRIVACY_VERSION: 1,
-  PRIVACY_DATE: '2026-09-26',
+  PRIVACY_VERSION: 2,
+  PRIVACY_DATE: '2026-09-27',
 
   // Build-time switch for the wording of the legal pages: while false they say accounts are "not open yet".
   // Flip to true when the dashboard steps are done and logins work, then run the site build.
@@ -31,6 +31,8 @@ module.exports = {
   EMAIL_PER_ADDRESS_PER_HOUR: 5,
   EMAIL_PER_IP_PER_HOUR: 20,
   EMAIL_PER_DAY_TOTAL: 90,       // the free Resend plan allows 100 emails a day; stay under it
+  LOGIN_PER_IP_PER_15MIN: 30,    // password tries
+  LOGIN_PER_NAME_PER_15MIN: 10,
   USERNAME_RENAME_DAYS: 30,
   REPORTS_PER_DAY: 5,
 

@@ -11,12 +11,13 @@
  *   RESEND_API_KEY, TURNSTILE_SECRET, TURNSTILE_SITEKEY   email login (optional; all three needed)
  *   MAIL_FROM (optional)     default "Kuro Labs <login@kurolabs.net>"
  *   APP_SECRET (optional)    otherwise one is generated and kept in the database
- * Nothing here logs personal data, and nothing here stores passwords, birth dates or IP addresses.
+ * Nothing here logs personal data. Passwords are stored only as a salted PBKDF2 hash; birth dates and IP addresses are never stored.
  */
 const cfg = require('./config.js');
 const { ensureSchema } = require('./schema.js');
 const C = require('./crypto.js');
 const U = require('./usernames.js');
+const PW = require('./passwords.js');
 const DISPOSABLE = new Set(require('./data/disposable.json').domains);
 const MS = cfg.MS;
 
@@ -157,7 +158,7 @@ async function requireAdmin(ctx) {
 
 function publicUser(ctx, s) {
   const u = s.user;
-  return { username: u.username, discord: !!u.discord_id, email: u.email ? maskEmail(u.email) : null, isAdmin: !!u.is_admin, hideLeaderboards: !!u.hide_lb,
+  return { username: u.username, hasPassword: !!u.pw_hash, discord: !!u.discord_id, email: u.email ? maskEmail(u.email) : null, isAdmin: !!u.is_admin, hideLeaderboards: !!u.hide_lb,
     status: u.status, rulesOk: u.rules_version === cfg.RULES_VERSION, createdAt: u.created_at,
     renameAt: u.username_changed_at + cfg.USERNAME_RENAME_DAYS * MS.DAY, fresh: ctx.now - s.lastAuthAt < cfg.FRESH_LOGIN_MINUTES * MS.MINUTE };
 }
@@ -365,10 +366,12 @@ async function routeRegister(ctx) {
   if (body.agreedRules !== true || body.is18 !== true) throw fail(400, 'agree_required', 'Please agree to the rules and confirm that you are 18 or older.');
   const v = U.validate(body.username);
   if (!v.ok) throw fail(400, v.code === 'format' ? 'bad_username' : 'username_unavailable', v.message);
+  const pv = PW.validate(body.password, v.name); if (!pv.ok) throw fail(400, pv.code, pv.message);
   if (await isBannedIdentity(ctx, { discord_id: p.discord_id, email_key: p.email_key })) throw BANNED();
+  const pwHash = await C.hashPassword(body.password);
   try {
-    await ctx.db.prepare(`INSERT INTO users (username, username_lower, discord_id, email, email_key, rules_version, accepted_at, created_at, last_login_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(v.name, v.name.toLowerCase(), p.discord_id, p.email, p.email_key, cfg.RULES_VERSION, ctx.now, ctx.now, ctx.now).run();
+    await ctx.db.prepare(`INSERT INTO users (username, username_lower, discord_id, email, email_key, rules_version, accepted_at, created_at, last_login_at, pw_hash, pw_changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(v.name, v.name.toLowerCase(), p.discord_id, p.email, p.email_key, cfg.RULES_VERSION, ctx.now, ctx.now, ctx.now, pwHash, ctx.now).run();
   } catch (e) {
     const m = String(e && e.message || e);
     if (/username_lower/.test(m)) throw fail(409, 'username_unavailable', "That name isn't available.");
@@ -379,6 +382,46 @@ async function routeRegister(ctx) {
   const user = await ctx.db.prepare('SELECT * FROM users WHERE username_lower = ?').bind(v.name.toLowerCase()).first();
   await createSession(ctx, user.id);
   return reply(ctx, { ok: true, username: user.username });
+}
+
+/* ---- password: log in, confirm it is you, change it ---- */
+async function routePasswordLogin(ctx) {
+  const body = await readJson(ctx.request);
+  const name = String(body.username || '').trim().toLowerCase(), pw = typeof body.password === 'string' ? body.password : '';
+  if (!name || name.length > 40 || !pw || pw.length > PW.MAX) throw fail(400, 'bad_login', 'Wrong username or password.');
+  const ipKey = await hashIdent(ctx, 'ip', ctx.ip || 'unknown');
+  if (!(await rateHit(ctx, 'pw:ip:' + ipKey, cfg.LOGIN_PER_IP_PER_15MIN, 15 * MS.MINUTE)) || !(await rateHit(ctx, 'pw:name:' + await hashIdent(ctx, 'pwname', name), cfg.LOGIN_PER_NAME_PER_15MIN, 15 * MS.MINUTE)))
+    throw fail(429, 'rate', 'Too many tries. Please wait a few minutes, or log in with Discord or an email code instead.');
+  const user = await ctx.db.prepare('SELECT * FROM users WHERE username_lower = ?').bind(name).first();
+  const good = await C.verifyPassword(pw, user && user.pw_hash);
+  if (!user || !good) throw fail(400, 'bad_login', 'Wrong username or password. If you forgot it, log in with Discord or an email code and set a new one.');
+  if (user.status === 'banned') throw BANNED();
+  await createSession(ctx, user.id);
+  return reply(ctx, { ok: true, next: 'done' });
+}
+async function routePasswordReauth(ctx) {          // confirm it is you again (needed to delete the account)
+  const s = await requireUser(ctx, { rules: false }); const body = await readJson(ctx.request);
+  const ipKey = await hashIdent(ctx, 'ip', ctx.ip || 'unknown');
+  if (!(await rateHit(ctx, 'pw:name:' + await hashIdent(ctx, 'pwname', s.user.username_lower), cfg.LOGIN_PER_NAME_PER_15MIN, 15 * MS.MINUTE)) || !(await rateHit(ctx, 'pw:ip:' + ipKey, cfg.LOGIN_PER_IP_PER_15MIN, 15 * MS.MINUTE)))
+    throw fail(429, 'rate', 'Too many tries. Please wait a few minutes.');
+  if (!(await C.verifyPassword(typeof body.password === 'string' ? body.password.slice(0, PW.MAX) : '', s.user.pw_hash))) throw fail(400, 'bad_login', 'That password is not right.');
+  await ctx.db.prepare('UPDATE sessions SET last_auth_at = ? WHERE token_hash = ?').bind(ctx.now, s.hash).run();
+  return reply(ctx, { ok: true });
+}
+async function routeSetPassword(ctx) {             // needs your current password, or a login within the last few minutes (Discord / email code)
+  const s = await requireUser(ctx); const body = await readJson(ctx.request); const u = s.user;
+  const fresh = ctx.now - s.lastAuthAt < cfg.FRESH_LOGIN_MINUTES * MS.MINUTE;
+  if (!fresh) {
+    if (!u.pw_hash || !(await rateHit(ctx, 'pw:name:' + await hashIdent(ctx, 'pwname', u.username_lower), cfg.LOGIN_PER_NAME_PER_15MIN, 15 * MS.MINUTE)) ||
+        !(await C.verifyPassword(typeof body.current === 'string' ? body.current.slice(0, PW.MAX) : '', u.pw_hash)))
+      throw fail(403, 'reauth_required', u.pw_hash ? 'Your current password is not right.' : 'Please log in again first, then set a password.');
+  }
+  const pv = PW.validate(body.password, u.username); if (!pv.ok) throw fail(400, pv.code, pv.message);
+  await ctx.db.batch([
+    ctx.db.prepare('UPDATE users SET pw_hash = ?, pw_changed_at = ? WHERE id = ?').bind(await C.hashPassword(body.password), ctx.now, u.id),
+    ctx.db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash != ?').bind(u.id, s.hash)              // everywhere else gets logged out
+  ]);
+  return reply(ctx, { ok: true });
 }
 
 async function routeAcceptRules(ctx) {
@@ -417,7 +460,7 @@ async function routeExport(ctx) {
   const filed = await ctx.db.prepare('SELECT COUNT(*) AS n FROM reports WHERE reporter_id = ?').bind(u.id).first('n');
   const data = { exportedAt: new Date(ctx.now).toISOString(), note: 'Everything Kuro Labs holds about this account.',
     account: { username: u.username, discordId: u.discord_id, email: u.email, status: u.status, createdAt: new Date(u.created_at).toISOString(), lastLoginAt: new Date(u.last_login_at).toISOString(),
-      acceptedRulesVersion: u.rules_version, acceptedRulesAt: new Date(u.accepted_at).toISOString(), hideFromLeaderboards: !!u.hide_lb }, saves, stats, reportsYouFiled: filed };
+      acceptedRulesVersion: u.rules_version, acceptedRulesAt: new Date(u.accepted_at).toISOString(), hideFromLeaderboards: !!u.hide_lb, hasPassword: !!u.pw_hash, passwordChangedAt: u.pw_changed_at ? new Date(u.pw_changed_at).toISOString() : null }, saves, stats, reportsYouFiled: filed };
   return reply(ctx, data, 200, { 'content-disposition': 'attachment; filename="kurolabs-my-data.json"' });
 }
 async function routeDeleteAccount(ctx) {
@@ -528,6 +571,9 @@ async function handleAccounts(request, env) {
     if (path === '/api/auth/discord' && m === 'GET') return await routeDiscordStart(ctx);
     if (path === '/api/auth/discord/callback' && m === 'GET') return await routeDiscordCallback(ctx);
     if (path === '/api/auth/register' && m === 'POST') return await routeRegister(ctx);
+    if (path === '/api/auth/login' && m === 'POST') return await routePasswordLogin(ctx);
+    if (path === '/api/auth/reauth' && m === 'POST') return await routePasswordReauth(ctx);
+    if (path === '/api/me/password' && m === 'POST') return await routeSetPassword(ctx);
     if (path === '/api/auth/accept-rules' && m === 'POST') return await routeAcceptRules(ctx);
     if (path === '/api/auth/logout' && m === 'POST') return await routeLogout(ctx);
     if (path === '/api/me/username' && m === 'POST') return await routeSetUsername(ctx);
