@@ -12,5 +12,13 @@
     "html_handling": "auto-trailing-slash",
     // serve our own themed 404 instead of Cloudflare's default
     "not_found_handling": "404-page"
-  }
+  },
+  // Dragons & Ladders online rooms: one Durable Object per room (class DnlRoom, exported from site/worker.js).
+  // new_sqlite_classes is the only storage kind the Workers Free plan allows.
+  "durable_objects": {
+    "bindings": [{ "name": "DNL_ROOMS", "class_name": "DnlRoom" }]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DnlRoom"] }
+  ]
 }

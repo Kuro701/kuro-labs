@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dragons &amp; Ladders — Kuro Labs</title>
-<meta name="description" content="Snakes and ladders with dragons, on the Mytheder board. Two to four players, or play against bots. Free in your browser.">
+<meta name="description" content="Snakes and ladders with dragons, on the Mytheder board. Play on one screen or online with a room code. Two to four players, or play against bots. Free in your browser.">
 <meta name="theme-color" content="#0b1416">
 <style>
 :root{
@@ -33,6 +33,7 @@ a{color:var(--gold2)}
   transition:left var(--hop) linear,top var(--hop) linear;pointer-events:none;z-index:3}
 .tok svg{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .tok.active svg{filter:drop-shadow(0 0 5px var(--gold2)) drop-shadow(0 2px 2px rgba(0,0,0,.7))}
+.tok.off svg{opacity:.55}
 .startlabel{position:absolute;left:12%;top:106%;transform:translateY(-50%);font-size:clamp(9px,1.5vw,13px);
   letter-spacing:.14em;color:var(--gold2);background:rgba(8,14,16,.72);padding:2px 8px;border-radius:99px;pointer-events:none;z-index:2}
 /* debug overlay (?debug=1) */
@@ -58,13 +59,16 @@ button:hover:not(:disabled){border-color:var(--gold)}
 button:disabled{opacity:.55;cursor:default}
 button.primary{background:linear-gradient(#e4be62,#c79a3a);color:#1b1608;border-color:#e9c877;font-weight:700}
 button.primary:disabled{filter:grayscale(.5)}
+button.mini{min-height:32px;padding:3px 10px;font-size:.85rem}
 :focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 #roll{width:100%;margin-top:12px;font-size:1.05rem}
 #status{margin:10px 0 0;min-height:2.9em;color:var(--gold2)}
 .players{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .players li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;border:1px solid transparent}
 .players li.now{border-color:var(--gold);background:rgba(217,178,90,.08)}
+.players li.off{opacity:.6}
 .players .sq{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.players .tag{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold2);border:1px solid var(--line);border-radius:99px;padding:0 7px}
 .dot{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid rgba(0,0,0,.4)}
 .log{margin:0;padding:0;list-style:none;color:var(--muted);font-size:.9rem;display:grid;gap:3px}
 .log li:first-child{color:var(--text)}
@@ -73,6 +77,11 @@ button.primary:disabled{filter:grayscale(.5)}
 details summary{cursor:pointer;color:var(--gold2)}
 details p,details li{color:var(--muted);font-size:.92rem}
 .note{font-size:.8rem;color:var(--muted);text-align:center;margin:0}
+.netbar{margin:0;padding:8px 12px;border-radius:10px;border:1px solid var(--gold);background:#2a220f;color:var(--gold2);font-size:.92rem}
+.netbar[hidden],.card[hidden],.tools button[hidden]{display:none}
+.roomline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.roomline b{font:700 1.25rem/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.18em;color:var(--gold2)}
+.roomline button{margin-left:auto}
 
 /* ---- modals ---- */
 .modal{position:fixed;inset:0;background:rgba(4,8,9,.78);display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
@@ -84,11 +93,19 @@ details p,details li{color:var(--muted);font-size:.92rem}
 .seg button{flex:1}
 .seg button[aria-pressed=true]{border-color:var(--gold);background:rgba(217,178,90,.16)}
 .row{display:grid;grid-template-columns:auto 1fr 108px;gap:8px;align-items:center;margin-bottom:8px}
-.row input,.row select{width:100%;min-height:44px;background:#0b1416;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+input[type=text],.row input,.row select{width:100%;min-height:44px;background:#0b1416;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .chk{display:flex;gap:10px;align-items:center;margin:10px 0 14px}
 .chk input{width:20px;height:20px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .actions button{flex:1 1 auto}
+.field{display:grid;gap:6px;margin:0 0 12px}
+.field label{color:var(--muted);font-size:.9rem}
+.joinrow{display:grid;grid-template-columns:1fr auto;gap:8px}
+.joinrow input{font:700 1.2rem/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase}
+.or{text-align:center;color:var(--muted);margin:12px 0;font-size:.9rem}
+.msg{min-height:1.4em;margin:10px 0 0;color:#ffb4a8;font-size:.92rem}
+.bigcode{font:800 2.6rem/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.3em;text-align:center;color:var(--gold2);margin:6px 0 12px;padding-left:.3em}
+.hint{color:var(--muted);font-size:.92rem;margin:10px 0}
 .win{text-align:center}
 .win .crown{font-size:3rem;line-height:1}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
@@ -107,6 +124,10 @@ details p,details li{color:var(--muted);font-size:.92rem}
       <div class="grid" id="grid"><span class="startlabel">START</span></div>
     </div>
     <aside class="panel" aria-label="Game controls">
+      <p class="netbar" id="netbar" role="status" hidden></p>
+      <section class="card" id="roomcard" hidden>
+        <div class="roomline"><span>Room</span><b id="roomcode"></b><button type="button" class="mini" id="copyLink2">Copy invite link</button></div>
+      </section>
       <section class="card">
         <div class="turn">
           <div class="die" id="die" aria-hidden="true"></div>
@@ -133,28 +154,66 @@ details p,details li{color:var(--muted);font-size:.92rem}
           <li>Land on the foot of a ladder and you climb to its top.</li>
           <li>Land on a dragon's head and it carries you down to its tail.</li>
           <li>You need the exact number to land on 100. Roll too high and you stay put.</li>
+          <li>Online: one player creates a room and shares the 5-character code (or the invite link). Friends join with it, the host can add bots and starts the game.</li>
         </ul>
       </details>
-      <p class="note">Playing as a guest. Your game is saved in this browser only.</p>
+      <p class="note" id="footnote">Playing as a guest. A game on this device is saved in this browser only.</p>
     </aside>
   </div>
 </div>
 
+<!-- new game: on this device / online -->
 <div class="modal" id="setup" role="dialog" aria-modal="true" aria-labelledby="setupTitle" hidden>
   <div class="card">
     <h2 id="setupTitle">New game</h2>
-    <fieldset class="seg" id="countSeg"><legend>Players</legend>
-      <button type="button" data-n="2" aria-pressed="true">2</button>
-      <button type="button" data-n="3" aria-pressed="false">3</button>
-      <button type="button" data-n="4" aria-pressed="false">4</button>
+    <fieldset class="seg" id="modeSeg"><legend>How do you want to play?</legend>
+      <button type="button" data-mode="local" aria-pressed="true">On this device</button>
+      <button type="button" data-mode="online" aria-pressed="false">Online, with a code</button>
     </fieldset>
-    <div id="rows"></div>
-    <label class="chk"><input type="checkbox" id="six"> A six gives an extra roll</label>
-    <div class="actions">
-      <button type="button" id="cancel" hidden>Back to the game</button>
-      <button type="button" id="resume" hidden>Resume saved game</button>
-      <button type="button" id="go" class="primary">Start game</button>
+
+    <div id="localPane">
+      <fieldset class="seg" id="countSeg"><legend>Players</legend>
+        <button type="button" data-n="2" aria-pressed="true">2</button>
+        <button type="button" data-n="3" aria-pressed="false">3</button>
+        <button type="button" data-n="4" aria-pressed="false">4</button>
+      </fieldset>
+      <div id="rows"></div>
+      <label class="chk"><input type="checkbox" id="six"> A six gives an extra roll</label>
+      <div class="actions">
+        <button type="button" id="cancel" hidden>Back to the game</button>
+        <button type="button" id="resume" hidden>Resume saved game</button>
+        <button type="button" id="go" class="primary">Start game</button>
+      </div>
     </div>
+
+    <div id="onlinePane" hidden>
+      <div class="field"><label for="netName">Your name</label><input type="text" id="netName" maxlength="16" autocomplete="nickname" placeholder="Player"></div>
+      <div class="actions"><button type="button" id="netCreate" class="primary">Create a room</button></div>
+      <p class="or">or join a friend's room</p>
+      <div class="joinrow">
+        <input type="text" id="netCode" maxlength="9" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCDE" aria-label="Room code">
+        <button type="button" id="netJoin">Join</button>
+      </div>
+      <div class="actions" style="margin-top:10px"><button type="button" id="netRejoin" hidden>Rejoin your room</button><button type="button" id="netCancel" hidden>Back to the game</button></div>
+      <p class="msg" id="netMsg" role="alert"></p>
+    </div>
+  </div>
+</div>
+
+<!-- online lobby -->
+<div class="modal" id="lobby" role="dialog" aria-modal="true" aria-labelledby="lobbyTitle" hidden>
+  <div class="card">
+    <h2 id="lobbyTitle">Your room</h2>
+    <div class="bigcode" id="lobbyCode" aria-label="Room code"></div>
+    <div class="actions"><button type="button" id="copyCode">Copy code</button><button type="button" id="copyLink">Copy invite link</button></div>
+    <p class="hint">Share the code or the link. Up to four players. Friends type the code under &ldquo;Online, with a code&rdquo;.</p>
+    <ul class="players" id="lobbyPlayers"></ul>
+    <div id="hostTools">
+      <div class="actions" style="margin-top:12px"><button type="button" id="addBot">Add a bot</button></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="netSix"> A six gives an extra roll</label>
+    <p class="hint" id="lobbyHint"></p>
+    <div class="actions"><button type="button" id="leaveRoom">Leave room</button><button type="button" id="startOnline" class="primary">Start game</button></div>
   </div>
 </div>
 
@@ -173,25 +232,15 @@ details p,details li{color:var(--muted);font-size:.92rem}
 <div class="sr" id="live" aria-live="polite"></div>
 <noscript><p style="padding:20px">This game needs JavaScript.</p></noscript>
 
+<script src="engine.js"></script>
 <script>
 (() => {
 'use strict';
 
-/* ================= DATA (edit here; nothing else knows the board's theme) =================
-   Squares are numbered 1..100 in the usual zig-zag: 1 is bottom-left, 100 is top-left.
-   Read off the board picture. A dragon carries you DOWN from its head (from) to its tail (to).
-   A ladder carries you UP from its foot (from) to its top (to). */
-const JUMPS = [
-  { kind:'dragon', color:'red',    from:98, to:44 },
-  { kind:'dragon', color:'blue',   from:88, to:48 },
-  { kind:'dragon', color:'green',  from:66, to:26 },
-  { kind:'dragon', color:'purple', from:50, to:9  },
-  { kind:'ladder',                 from:76, to:96 },
-  { kind:'ladder',                 from:69, to:91 },
-  { kind:'ladder',                 from:38, to:79 },
-  { kind:'ladder',                 from:17, to:37 },
-  { kind:'ladder',                 from:8,  to:33 },
-];
+/* ================= DATA ================= */
+// The rules and the jump table live in engine.js, shared with the room server, so both always agree.
+const E = window.DnlEngine;
+const JUMPS = E.JUMPS;
 // Player pieces. Deliberately not red/blue/green/purple so they never blend into the dragons.
 const COLORS = [
   { name:'Gold',   fill:'#e3bb4d', edge:'#6d4f0c', ink:'#3b2a05' },
@@ -201,6 +250,9 @@ const COLORS = [
 ];
 const SAVE_KEY = 'kl.dragons-and-ladders.v1';
 const MUTE_KEY = 'kl.dragons-and-ladders.muted';
+const NAME_KEY = 'kl.dragons-and-ladders.name';
+const SESSION_KEY = 'kl.dragons-and-ladders.session';
+const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 /* ================= helpers ================= */
 const $ = s => document.querySelector(s);
@@ -208,26 +260,22 @@ const qs = new URLSearchParams(location.search);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FAST = qs.has('fast');                       // test mode: near-instant animations, no sound
 let SP = FAST ? 0.02 : (reduced ? 0.3 : 1);        // animation time multiplier
-function applySpeed(){ document.documentElement.style.setProperty('--hop', Math.max(0.001, 0.14 * SP) + 's'); }
+let INSTANT = false;                               // true while catching up on a backlog of moves
+function applySpeed(){ document.documentElement.style.setProperty('--hop', Math.max(0.001, 0.14 * SP * (INSTANT ? 0.05 : 1)) + 's'); }
 applySpeed();
-const sleep = ms => new Promise(r => setTimeout(r, Math.max(0, ms * SP)));
+const factor = () => SP * (INSTANT ? 0.05 : 1);
+const sleep = ms => new Promise(r => setTimeout(r, Math.max(0, ms * factor())));
 const store = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
   del(k){ try { localStorage.removeItem(k); } catch(e){} },
 };
+function normalizeCode(s){
+  return String(s == null ? '' : s).toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+}
+const validCode = c => c.length === 5 && [...c].every(ch => ALPHABET.indexOf(ch) >= 0);
 
-const JUMP_AT = {};
-for (const j of JUMPS) JUMP_AT[j.from] = j;
-(function validate(){
-  for (const j of JUMPS) {
-    const bad = !(j.from>=1 && j.from<=99 && j.to>=1 && j.to<=100 && j.from!==j.to)
-      || (j.kind==='dragon' && j.to>=j.from) || (j.kind==='ladder' && j.to<=j.from) || JUMP_AT[j.to];
-    if (bad) console.warn('Bad jump definition', j);
-  }
-})();
-
-// Uniform 1..6 (rejection sampling). Async so a server-side roll can replace it later for ranked play.
+// Uniform 1..6 (rejection sampling), used for games on one device. Online, the server rolls.
 async function getRoll(){
   const a = new Uint32Array(1), lim = Math.floor(0x100000000/6)*6;
   do { crypto.getRandomValues(a); } while (a[0] >= lim);
@@ -249,7 +297,7 @@ function ac(){
   return AC;
 }
 function tone(f, d, type='sine', v=.07, to=null, delay=0){
-  if (muted) return; const c = ac(); if (!c) return;
+  if (muted || INSTANT) return; const c = ac(); if (!c) return;
   const t = c.currentTime + delay/1000, o = c.createOscillator(), g = c.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t);
   if (to) o.frequency.exponentialRampToValueAtTime(to, t+d);
@@ -263,6 +311,7 @@ const sfx = {
   dragon(){ tone(260,1.0,'sawtooth',.06,50); tone(130,1.0,'square',.04,40,80); },
   stay(){ tone(200,.15,'sine',.05,150); },
   win(){ [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.22,'triangle',.08,null,i*140)); },
+  ping(){ tone(660,.12,'sine',.05); },
 };
 
 /* ================= board build ================= */
@@ -284,32 +333,41 @@ if (qs.has('debug')) {
   }
   grid.appendChild(svg);
 }
+{ const bad = E.checkJumps(); if (bad.length) console.warn('Bad jump table', bad); }
 
-function makeToken(i){
+function makeToken(i, pid){
   const col = COLORS[i], el = document.createElement('div');
-  el.className = 'tok';
+  el.className = 'tok'; el.dataset.pid = pid || '';
   el.innerHTML = '<svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 37 8v16c0 10-8 17-17 20C11 41 3 34 3 24V8Z" stroke-width="3" stroke-linejoin="round"></path><text x="20" y="29" text-anchor="middle" font-size="19" font-weight="800" font-family="system-ui,sans-serif"></text></svg>';
   const path = el.querySelector('path'), text = el.querySelector('text');
   path.setAttribute('fill', col.fill); path.setAttribute('stroke', col.edge);
   text.setAttribute('fill', col.ink); text.textContent = i+1;
   el.setAttribute('role','img'); grid.appendChild(el); return el;
 }
+function syncTokens(){
+  const same = tokEls.length === S.players.length && S.players.every((p,i) => tokEls[i].dataset.pid === (p.pid || ''));
+  if (same) return;
+  tokEls.forEach(e => e.remove()); tokEls.length = 0;
+  S.players.forEach((p,i) => tokEls.push(makeToken(i, p.pid)));
+}
 
 /* ================= state ================= */
-let S = { players:[], turn:0, phase:'setup', rules:{six:false}, sixes:0, run:0, log:[], hold:false };
+// mode 'local': a game on this device. mode 'online': mirror of the server's room (the server is the authority).
+let S = { mode:'local', players:[], turn:0, phase:'setup', rules:{six:false}, sixes:0, run:0, log:[], hold:false };
 const cur = () => S.players[S.turn];
-const alive = my => S.run === my;
 
 function layout(){
   const groups = {};
   S.players.forEach((p,i) => (groups[p.pos] = groups[p.pos] || []).push(i));
   const SLOTS = [[-1.7,-1.7],[1.7,-1.7],[-1.7,1.7],[1.7,1.7]];
   S.players.forEach((p,i) => {
-    const el = tokEls[i], base = cellCenter(p.pos), g = groups[p.pos];
+    const el = tokEls[i]; if (!el) return;
+    const base = cellCenter(p.pos), g = groups[p.pos];
     const off = g.length > 1 ? SLOTS[g.indexOf(i)] : [0,0];
     el.style.left = (base.x + off[0]) + '%'; el.style.top = (base.y + off[1]) + '%';
     el.style.zIndex = (i === S.turn ? 4 : 3);
-    el.classList.toggle('active', S.phase !== 'over' && i === S.turn);
+    el.classList.toggle('active', S.phase !== 'over' && S.phase !== 'lobby' && i === S.turn);
+    el.classList.toggle('off', p.connected === false);
     el.setAttribute('aria-label', p.name + ', ' + (p.pos ? 'square ' + p.pos : 'at the start'));
   });
 }
@@ -323,87 +381,72 @@ function showDie(n){ [...die.children].forEach((e,i) => e.classList.toggle('on',
 function say(msg){
   $('#status').textContent = msg;
   S.log.unshift(msg); S.log = S.log.slice(0,7);
-  const ol = $('#log'); ol.textContent = '';
-  S.log.forEach(m => { const li = document.createElement('li'); li.textContent = m; ol.appendChild(li); });
+  const ul = $('#log'); ul.textContent = '';
+  S.log.forEach(m => { const li = document.createElement('li'); li.textContent = m; ul.appendChild(li); });
 }
 
+const online = () => S.mode === 'online';
+const myTurnOnline = () => online() && S.phase === 'idle' && cur() && cur().pid === Net.pid && !cur().bot;
+
 function renderPanel(){
-  const p = cur(); if (!p) return;
-  const who = $('#who'); who.textContent = '';
-  who.append(document.createTextNode(S.phase==='over' ? 'Game over' : p.name + "'s turn"));
-  const sm = document.createElement('small'); sm.textContent = COLORS[S.turn].name + (p.bot ? ' · bot' : ''); who.appendChild(sm);
-  const btn = $('#roll');
-  btn.disabled = !(S.phase === 'idle' && !p.bot);
-  btn.textContent = p.bot && S.phase !== 'over' ? 'Bot is playing…' : 'Roll the die';
+  const p = cur();
+  const btn = $('#roll'), who = $('#who'); who.textContent = '';
+  if (!p || S.phase === 'lobby') {
+    who.append(document.createTextNode(S.phase === 'lobby' ? 'Getting ready' : ' '));
+    btn.disabled = true; btn.textContent = 'Roll the die';
+  } else {
+    const mine = online() && p.pid === Net.pid;
+    who.append(document.createTextNode(S.phase === 'over' ? 'Game over' : (mine ? 'Your turn' : p.name + "'s turn")));
+    const sm = document.createElement('small'); sm.id = 'whoSub';
+    sm.textContent = COLORS[S.turn].name + (mine ? ' · ' + p.name : '') + (p.bot ? ' · bot' : '') + (online() && p.connected === false ? ' · disconnected' : '');
+    who.appendChild(sm);
+    if (online()) {
+      btn.disabled = !(myTurnOnline() && Date.now() >= Net.readyAt - 30);
+      btn.textContent = S.phase === 'over' ? 'Roll the die' : (mine ? 'Roll the die' : (p.bot ? 'Bot is playing…' : 'Waiting for ' + p.name + '…'));
+    } else {
+      btn.disabled = !(S.phase === 'idle' && !p.bot);
+      btn.textContent = p.bot && S.phase !== 'over' ? 'Bot is playing…' : 'Roll the die';
+    }
+  }
   const ul = $('#players'); ul.textContent = '';
   S.players.forEach((q,i) => {
-    const li = document.createElement('li'); if (i === S.turn && S.phase !== 'over') li.className = 'now';
+    const li = document.createElement('li');
+    if (i === S.turn && S.phase !== 'over' && S.phase !== 'lobby') li.classList.add('now');
+    if (q.connected === false) li.classList.add('off');
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = COLORS[i].fill;
-    const nm = document.createElement('span'); nm.textContent = q.name + (q.bot ? ' (bot)' : '');
+    const nm = document.createElement('span'); nm.textContent = q.name + (q.bot && !online() ? ' (bot)' : '');
+    li.append(dot, nm);
+    if (online()) {
+      if (q.pid === Net.pid) li.appendChild(tag('you'));
+      if (q.pid === Net.room.hostPid) li.appendChild(tag('host'));
+      if (q.bot) li.appendChild(tag('bot'));
+      if (q.connected === false) li.appendChild(tag('offline'));
+    }
     const sq = document.createElement('span'); sq.className = 'sq'; sq.textContent = q.pos ? 'Square ' + q.pos : 'Start';
-    li.append(dot, nm, sq); ul.appendChild(li);
+    li.appendChild(sq); ul.appendChild(li);
   });
   layout();
 }
+function tag(t){ const s = document.createElement('span'); s.className = 'tag'; s.textContent = t; return s; }
 
 const app = $('#app');
-function openModal(id){ app.inert = true; const m = $(id); m.hidden = false; const f = m.querySelector('input,button'); if (f) f.focus(); }
-function closeModal(id){ $(id).hidden = true; if ($('#setup').hidden && $('#winner').hidden) app.inert = false; }
+function openModal(id, focusSel){ app.inert = true; const m = $(id); m.hidden = false; const f = m.querySelector(focusSel || 'input,button'); if (f) f.focus(); }
+function closeModal(id){ $(id).hidden = true; if (['#setup','#winner','#lobby'].every(x => $(x).hidden)) app.inert = false; }
 
-/* ================= save / resume (guest, this browser only) ================= */
-function save(){
-  if (S.phase === 'over' || !S.players.length) { store.del(SAVE_KEY); return; }
-  store.set(SAVE_KEY, JSON.stringify({ v:1, turn:S.turn, six:S.rules.six, sixes:S.sixes,
-    players:S.players.map(p => ({ name:p.name, bot:p.bot, pos:p.pos, turns:p.turns })) }));
+/* ================= one move, animated (used by both modes) ================= */
+function bounce(i){
+  const el = tokEls[i]; if (!el) return;
+  el.firstElementChild.animate([{ transform:'translateY(0)' },{ transform:'translateY(-40%)' },{ transform:'translateY(0)' }],
+    { duration: Math.max(1, 150*factor()) });
 }
-function readSave(){
-  try {
-    const d = JSON.parse(store.get(SAVE_KEY) || 'null');
-    if (!d || d.v !== 1 || !Array.isArray(d.players) || d.players.length < 2 || d.players.length > 4) return null;
-    const players = d.players.map(p => ({ name:String(p.name || 'Player').slice(0,16), bot:!!p.bot,
-      pos:Math.max(0, Math.min(99, p.pos|0)), turns:Math.max(0, p.turns|0) }));
-    return { players, turn:Math.max(0, Math.min(players.length-1, d.turn|0)), six:!!d.six, sixes:Math.max(0, Math.min(2, d.sixes|0)) };
-  } catch(e){ return null; }
-}
-
-/* ================= game flow ================= */
-function startGame(players, six, resume){
-  S.run++; const my = S.run;
-  S = { players, turn: resume ? resume.turn : 0, phase:'idle', rules:{ six }, sixes: resume ? resume.sixes : 0, run:my, log:[], hold:false };
-  tokEls.forEach(e => e.remove()); tokEls.length = 0;
-  players.forEach((p,i) => tokEls.push(makeToken(i)));
-  showDie(0);
-  closeModal('#setup'); closeModal('#winner');
-  say(resume ? 'Welcome back. ' + cur().name + ' to roll.' : 'Roll the die to begin. First to square 100 wins.');
-  save(); renderPanel(); nextActor();
-}
-
-function nextActor(){
-  if (S.phase !== 'idle' || S.hold) return;
-  const p = cur(), my = S.run;
-  if (p.bot) setTimeout(() => { if (alive(my)) doRoll(); }, 750 * (FAST ? 0.02 : Math.max(SP, 0.3)));
-  else if ($('#setup').hidden && $('#winner').hidden) $('#roll').focus({ preventScroll:true });
-}
-
 async function tumble(n){
-  if (reduced || FAST) { showDie(n); return; }
+  if (reduced || FAST || INSTANT) { showDie(n); return; }
   die.classList.add('rolling'); sfx.roll();
   const t0 = performance.now();
   while (performance.now() - t0 < 700) { showDie(1 + Math.floor(Math.random()*6)); await sleep(70); }
   die.classList.remove('rolling'); showDie(n);
 }
-
-function bounce(i){
-  const svg = tokEls[i].firstElementChild;
-  svg.animate([{ transform:'translateY(0)' },{ transform:'translateY(-40%)' },{ transform:'translateY(0)' }],
-    { duration: Math.max(1, 150*SP) });
-}
-
-async function hopTo(p, i, to, my){
-  while (p.pos < to && alive(my)) { p.pos++; layout(); bounce(i); sfx.hop(p.pos); await sleep(150); }
-}
-
-async function doJump(p, i, j, my){
+async function doJump(p, i, j, alive){
   const el = tokEls[i], a = cellCenter(j.from), b = cellCenter(j.to), ladder = j.kind === 'ladder';
   let frames;
   if (ladder) frames = [{ left:a.x+'%', top:a.y+'%' },{ left:b.x+'%', top:b.y+'%' }];
@@ -416,44 +459,29 @@ async function doJump(p, i, j, my){
       frames.push({ left:(u*u*a.x + 2*u*t*cx + t*t*b.x)+'%', top:(u*u*a.y + 2*u*t*cy + t*t*b.y)+'%' }); }
   }
   el.style.transition = 'none'; el.style.zIndex = 6;
-  const anim = el.animate(frames, { duration: Math.max(1, (ladder ? 1000 : 1300) * SP), easing: ladder ? 'ease-in-out' : 'ease-in', fill:'forwards' });
+  const anim = el.animate(frames, { duration: Math.max(1, (ladder ? 1000 : 1300) * factor()), easing: ladder ? 'ease-in-out' : 'ease-in', fill:'forwards' });
   try { await anim.finished; } catch(e){}
   p.pos = j.to; layout(); anim.cancel(); el.style.transition = '';
 }
-
-async function doRoll(){
-  if (S.phase !== 'idle' || S.hold) return;
-  const my = S.run, p = cur(), i = S.turn;
-  S.phase = 'rolling'; renderPanel();
-  const roll = await getRoll(); p.turns++;
-  await tumble(roll); if (!alive(my)) return;
-  S.phase = 'moving';
-  const target = p.pos + roll;
-  if (target > 100) {
-    say(p.name + ' rolled a ' + roll + '. They need exactly ' + (100 - p.pos) + ' to finish, so they stay put.'); sfx.stay(); await sleep(500);
-  } else {
-    say(p.name + ' rolled a ' + roll + '.');
-    await hopTo(p, i, target, my); if (!alive(my)) return;
-    const j = JUMP_AT[p.pos];
-    if (j) {
-      if (j.kind === 'ladder') { say(p.name + ' found a ladder and climbs from ' + j.from + ' to ' + j.to + '!'); sfx.ladder(); }
-      else { say('The ' + j.color + ' dragon catches ' + p.name + ' and carries them down from ' + j.from + ' to ' + j.to + '!'); sfx.dragon(); }
-      await doJump(p, i, j, my); if (!alive(my)) return;
-    }
-    if (p.pos === 100) { win(p); return; }
+// Plays out one roll that has ALREADY been decided (by this page in local mode, by the server online).
+async function playRoll(i, roll, out, alive){
+  const p = S.players[i]; if (!p) return;
+  S.phase = 'moving'; renderPanel();
+  await tumble(roll); if (!alive()) return;
+  if (out.stay) {
+    say(p.name + ' rolled a ' + roll + '. They need exactly ' + out.need + ' to finish, so they stay put.'); sfx.stay(); await sleep(500); return;
   }
-  if (S.rules.six && roll === 6 && S.sixes < 2) { S.sixes++; say(p.name + ' rolled a six and goes again!'); }
-  else { S.sixes = 0; S.turn = (S.turn + 1) % S.players.length; }
-  S.phase = 'idle'; save(); renderPanel(); nextActor();
-}
-
-function win(p){
-  S.phase = 'over'; save(); renderPanel();
-  say(p.name + ' reaches square 100 and wins!'); sfx.win();
-  $('#winTitle').textContent = p.name + ' wins!';
-  $('#winText').textContent = 'Reached square 100 in ' + p.turns + (p.turns === 1 ? ' turn.' : ' turns.');
-  $('#live').textContent = p.name + ' wins the game.';
-  closeModal('#setup'); openModal('#winner'); confetti();
+  say(p.name + ' rolled a ' + roll + '.');
+  for (const sq of out.path) {
+    if (!alive()) return;
+    p.pos = sq; layout(); bounce(i); sfx.hop(sq); await sleep(150);
+  }
+  const j = out.jump;
+  if (j && alive()) {
+    if (j.kind === 'ladder') { say(p.name + ' found a ladder and climbs from ' + j.from + ' to ' + j.to + '!'); sfx.ladder(); }
+    else { say('The ' + j.color + ' dragon catches ' + p.name + ' and carries them down from ' + j.from + ' to ' + j.to + '!'); sfx.dragon(); }
+    await doJump(p, i, j, alive);
+  }
 }
 
 function confetti(){
@@ -470,17 +498,78 @@ function confetti(){
   })(t0);
 }
 
-/* ================= setup screen ================= */
+/* ================= MODE 1: a game on this device ================= */
+function save(){
+  if (online()) return;
+  if (S.phase === 'over' || !S.players.length) { store.del(SAVE_KEY); return; }
+  store.set(SAVE_KEY, JSON.stringify({ v:1, turn:S.turn, six:S.rules.six, sixes:S.sixes,
+    players:S.players.map(p => ({ name:p.name, bot:p.bot, pos:p.pos, turns:p.turns })) }));
+}
+function readSave(){
+  try {
+    const d = JSON.parse(store.get(SAVE_KEY) || 'null');
+    if (!d || d.v !== 1 || !Array.isArray(d.players) || d.players.length < 2 || d.players.length > 4) return null;
+    const players = d.players.map(p => ({ name:String(p.name || 'Player').slice(0,16), bot:!!p.bot,
+      pos:Math.max(0, Math.min(99, p.pos|0)), turns:Math.max(0, p.turns|0) }));
+    return { players, turn:Math.max(0, Math.min(players.length-1, d.turn|0)), six:!!d.six, sixes:Math.max(0, Math.min(2, d.sixes|0)) };
+  } catch(e){ return null; }
+}
+
+function startGame(players, six, resume){
+  S.run++; const my = S.run;
+  S = { mode:'local', players, turn: resume ? resume.turn : 0, phase:'idle', rules:{ six }, sixes: resume ? resume.sixes : 0, run:my, log:[], hold:false };
+  setOnlineChrome(false);
+  tokEls.forEach(e => e.remove()); tokEls.length = 0;
+  players.forEach((p,i) => tokEls.push(makeToken(i, '')));
+  showDie(0);
+  closeModal('#setup'); closeModal('#winner'); closeModal('#lobby');
+  say(resume ? 'Welcome back. ' + cur().name + ' to roll.' : 'Roll the die to begin. First to square 100 wins.');
+  save(); renderPanel(); nextActor();
+}
+
+function nextActor(){
+  if (S.mode !== 'local' || S.phase !== 'idle' || S.hold) return;
+  const p = cur(), my = S.run;
+  if (p.bot) setTimeout(() => { if (S.run === my) doRoll(); }, 750 * (FAST ? 0.02 : Math.max(SP, 0.3)));
+  else if (['#setup','#winner','#lobby'].every(x => $(x).hidden)) $('#roll').focus({ preventScroll:true });
+}
+
+async function doRoll(){
+  if (S.mode !== 'local' || S.phase !== 'idle' || S.hold) return;
+  const my = S.run, alive = () => S.run === my, p = cur(), i = S.turn;
+  S.phase = 'rolling'; renderPanel();
+  const roll = await getRoll(); p.turns++;
+  const out = E.rollOutcome(p.pos, roll);
+  await playRoll(i, roll, out, alive); if (!alive()) return;
+  if (out.win) { winLocal(p); return; }
+  const nt = E.nextTurn({ turn:S.turn, sixes:S.sixes, count:S.players.length, six:S.rules.six }, roll);
+  S.turn = nt.turn; S.sixes = nt.sixes;
+  if (nt.extra) say(p.name + ' rolled a six and goes again!');
+  S.phase = 'idle'; save(); renderPanel(); nextActor();
+}
+
+function winLocal(p){
+  S.phase = 'over'; save(); renderPanel();
+  say(p.name + ' reaches square 100 and wins!'); sfx.win();
+  showWinner(p.name + ' wins!', 'Reached square 100 in ' + p.turns + (p.turns === 1 ? ' turn.' : ' turns.'));
+  $('#again').textContent = 'Play again'; $('#again').disabled = false; $('#change').textContent = 'Change players';
+}
+function showWinner(title, text){
+  $('#winTitle').textContent = title; $('#winText').textContent = text; $('#live').textContent = title;
+  closeModal('#setup'); closeModal('#lobby'); openModal('#winner'); confetti();
+}
+
+/* ---- setup screen ---- */
 const cfg = [
   { name:'Player 1', bot:false }, { name:'Bot 2', bot:true }, { name:'Bot 3', bot:true }, { name:'Bot 4', bot:true },
 ];
-let count = 2;
+let count = 2, setupMode = 'local';
 function drawRows(){
   const box = $('#rows'); box.textContent = '';
   for (let i=0;i<count;i++){
     const row = document.createElement('div'); row.className = 'row';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = COLORS[i].fill;
-    const inp = document.createElement('input'); inp.maxLength = 16; inp.value = cfg[i].name; inp.setAttribute('aria-label', 'Name for ' + COLORS[i].name + ' player');
+    const inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 16; inp.value = cfg[i].name; inp.setAttribute('aria-label', 'Name for ' + COLORS[i].name + ' player');
     inp.addEventListener('input', () => { cfg[i].name = inp.value; });
     const sel = document.createElement('select'); sel.setAttribute('aria-label', 'Human or bot for ' + COLORS[i].name + ' player');
     sel.innerHTML = '<option value="h">Human</option><option value="b">Bot</option>'; sel.value = cfg[i].bot ? 'b' : 'h';
@@ -491,46 +580,330 @@ function drawRows(){
 }
 document.querySelectorAll('#countSeg button').forEach(b => b.addEventListener('click', () => { count = +b.dataset.n; drawRows(); }));
 
-function inGame(){ return S.players.length > 0 && S.phase !== 'over'; }
-function openSetup(){
-  const sv = readSave(); $('#resume').hidden = !sv || inGame(); $('#six').checked = S.rules.six;
-  S.hold = inGame();             // pause the game behind the dialog (a move already under way finishes)
+function setMode(m){
+  setupMode = m;
+  document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  $('#localPane').hidden = m !== 'local'; $('#onlinePane').hidden = m !== 'online';
+  $('#netMsg').textContent = '';
+}
+document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+function inLocalGame(){ return S.mode === 'local' && S.players.length > 0 && S.phase !== 'over'; }
+function openSetup(mode, note){
+  const sv = readSave(), inGame = inLocalGame();
+  $('#resume').hidden = !sv || inGame; $('#six').checked = S.rules.six;
+  S.hold = inGame && S.mode === 'local';        // pause a game on this device behind the dialog (a move already under way finishes)
   $('#cancel').hidden = !S.hold;
-  drawRows(); openModal('#setup');
+  const ses = readSession(); $('#netRejoin').hidden = !ses; if (ses) $('#netRejoin').textContent = 'Rejoin room ' + ses.code;
+  $('#netCancel').hidden = !(online() && Net.pid);
+  $('#netName').value = store.get(NAME_KEY) || '';
+  drawRows(); setMode(mode || 'local');
+  if (note) $('#netMsg').textContent = note;
+  openModal('#setup');
 }
-function cancelSetup(){
-  closeModal('#setup'); S.hold = false; renderPanel(); nextActor();
-}
+function cancelSetup(){ closeModal('#setup'); S.hold = false; renderPanel(); nextActor(); }
+
 $('#go').addEventListener('click', () => {
   const players = cfg.slice(0, count).map((c,i) => ({ name:(c.name || '').trim().slice(0,16) || ('Player ' + (i+1)), bot:c.bot, pos:0, turns:0 }));
   startGame(players, $('#six').checked, null);
 });
 $('#resume').addEventListener('click', () => { const sv = readSave(); if (sv) startGame(sv.players, sv.six, sv); });
-$('#newgame').addEventListener('click', openSetup);
-$('#change').addEventListener('click', () => { closeModal('#winner'); openSetup(); });
+$('#cancel').addEventListener('click', cancelSetup);
+
+/* ================= MODE 2: online rooms ================= */
+const Net = { ws:null, code:null, pid:null, secret:null, name:'', joined:false, queue:[], pumping:false, session:0, tries:0,
+  reconnectTimer:null, pingTimer:null, readyTimer:null, pingSeq:-1, room:null, readyAt:0, deadlineAt:null, intentional:false, winShown:false };
+
+const wsUrl = code => (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/api/dnl/room/' + code + '/ws';
+function onlineAvailable(){ return location.protocol === 'http:' || location.protocol === 'https:'; }
+function netMsg(t){ $('#netMsg').textContent = t || ''; }
+function netBar(t){ const b = $('#netbar'); b.hidden = !t; b.textContent = t || ''; }
+function inviteLink(){ return location.origin + location.pathname + '?room=' + Net.code; }
+
+function saveSession(){ store.set(SESSION_KEY, JSON.stringify({ code:Net.code, pid:Net.pid, secret:Net.secret, name:Net.name, ts:Date.now() })); }
+function readSession(){
+  try {
+    const d = JSON.parse(store.get(SESSION_KEY) || 'null');
+    if (!d || !validCode(String(d.code)) || !d.pid || !d.secret || Date.now() - d.ts > 6*3600*1000) return null;
+    return d;
+  } catch(e){ return null; }
+}
+
+async function createRoom(){
+  const name = $('#netName').value.trim(); store.set(NAME_KEY, name);
+  netMsg('Creating a room…'); setNetBusy(true);
+  try {
+    const r = await fetch('/api/dnl/room', { method:'POST' });
+    if (!r.ok) throw new Error('status ' + r.status);
+    const { code } = await r.json();
+    await joinRoom(code, name, null);
+  } catch(e){ netMsg('Could not create a room. Check your connection and try again.'); setNetBusy(false); }
+}
+function setNetBusy(b){ ['#netCreate','#netJoin','#netRejoin'].forEach(s => { $(s).disabled = b; }); }
+
+async function joinRoom(rawCode, name, creds){
+  const code = normalizeCode(rawCode);
+  if (!validCode(code)) { netMsg('That code does not look right. Room codes have 5 letters or digits.'); setNetBusy(false); return; }
+  store.set(NAME_KEY, name); netMsg('Looking for the room…'); setNetBusy(true);
+  let info;
+  try {
+    const r = await fetch('/api/dnl/room/' + code);
+    if (r.status === 404) { netMsg('No room with that code. Ask your friend for the code again.'); setNetBusy(false); return; }
+    if (!r.ok) throw new Error('status ' + r.status);
+    info = await r.json();
+  } catch(e){ netMsg('Could not reach the game server. Try again in a moment.'); setNetBusy(false); return; }
+  if (!creds && !info.joinable) { netMsg(info.phase === 'lobby' ? 'That room is full.' : 'That game has already started.'); setNetBusy(false); return; }
+  resetNet(); Net.session++; Net.code = code; Net.name = name;
+  if (creds) { Net.pid = creds.pid; Net.secret = creds.secret; }
+  connect();
+}
+
+function resetNet(){
+  Net.intentional = true; clearTimeout(Net.reconnectTimer); clearInterval(Net.pingTimer); clearTimeout(Net.readyTimer);
+  if (Net.ws) { try { Net.ws.close(); } catch(e){} }
+  Object.assign(Net, { ws:null, code:null, pid:null, secret:null, joined:false, queue:[], pumping:false, tries:0, room:null, readyAt:0, deadlineAt:null, intentional:false, winShown:false, pingSeq:-1 });
+  netBar('');
+}
+
+function connect(){
+  const my = Net.session; Net.intentional = false;
+  if (Net.joined) netBar('Reconnecting…');
+  const ws = new WebSocket(wsUrl(Net.code)); Net.ws = ws;
+  ws.onopen = () => {
+    if (my !== Net.session) return;
+    ws.send(JSON.stringify({ t:'hello', name:Net.name, pid:Net.pid || undefined, secret:Net.secret || undefined }));
+    clearInterval(Net.pingTimer); Net.pingTimer = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch(e){} }, 25000);
+  };
+  ws.onmessage = e => {
+    if (my !== Net.session || e.data === 'pong') return;
+    let m; try { m = JSON.parse(e.data); } catch(err){ return; }
+    onNetMessage(m, my);
+  };
+  ws.onclose = ev => {
+    if (my !== Net.session) return;
+    clearInterval(Net.pingTimer);
+    if (Net.intentional) return;
+    if (ev.code === 4001) { leaveToSetup('This room was opened in another tab or window, so this one was disconnected.'); return; }
+    if (ev.code === 4002) { leaveToSetup('The host removed you from the room.'); return; }
+    if (ev.code === 4000) { leaveToSetup('That room has closed.'); return; }
+    if (!Net.joined) { if (!$('#netMsg').textContent || $('#netMsg').textContent.indexOf('…') >= 0) netMsg('Could not join that room.'); setNetBusy(false); return; }
+    scheduleReconnect(my);
+  };
+  ws.onerror = () => {};
+}
+
+function scheduleReconnect(my){
+  if (my !== Net.session) return;
+  Net.tries++;
+  if (Net.tries > 14) { leaveToSetup('The connection was lost.'); return; }
+  netBar('Connection lost. Reconnecting…'); renderPanel();
+  clearTimeout(Net.reconnectTimer);
+  Net.reconnectTimer = setTimeout(() => { if (my === Net.session) connect(); }, Math.min(5000, 400 * Math.pow(1.6, Net.tries)));
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && online() && Net.joined && (!Net.ws || Net.ws.readyState > 1)) { clearTimeout(Net.reconnectTimer); connect(); }
+});
+window.addEventListener('online', () => { if (online() && Net.joined && (!Net.ws || Net.ws.readyState > 1)) { clearTimeout(Net.reconnectTimer); connect(); } });
+
+function send(o){ try { if (Net.ws && Net.ws.readyState === 1) Net.ws.send(JSON.stringify(o)); } catch(e){} }
+
+function onNetMessage(m, my){
+  switch (m.t) {
+    case 'welcome':
+      Net.pid = m.pid; Net.secret = m.secret; Net.joined = true; Net.tries = 0; saveSession(); netBar('');
+      Net.queue = []; setNetBusy(false); enterOnline(); applyState(m.state); break;
+    case 'state': case 'roll':
+      Net.queue.push(m); pump(); break;
+    case 'error':
+      if (!Net.joined) {
+        if (m.code === 'seat_gone' || m.code === 'bad_secret') store.del(SESSION_KEY);
+        const map = { full:'That room is full.', started:'That game has already started.', seat_gone:'Your seat in that room is gone.', bad_secret:'Your seat in that room is gone.' };
+        netMsg(map[m.code] || m.message || 'Could not join that room.'); setNetBusy(false);
+        resetNet(); Net.session++;
+      } else say(m.message || 'Something went wrong.');
+      break;
+    case 'kicked': leaveToSetup('The host removed you from the room.'); break;
+    case 'closed': leaveToSetup('That room has closed.'); break;
+  }
+}
+
+function enterOnline(){
+  S.run++;                                       // stop anything running from a game on this device
+  if (S.mode !== 'online') S = { mode:'online', players:[], turn:0, phase:'lobby', rules:{six:false}, sixes:0, run:S.run, log:[], hold:false };
+  setOnlineChrome(true);
+  closeModal('#setup');
+}
+function setOnlineChrome(on){
+  $('#roomcard').hidden = !on;
+  $('#newgame').textContent = on ? 'Leave room' : 'New game';
+  $('#speed').hidden = on;                       // pace is set by the server online
+  $('#footnote').textContent = on ? 'Online room. The server rolls the dice for everyone.' : 'Playing as a guest. A game on this device is saved in this browser only.';
+  if (on) $('#roomcode').textContent = Net.code; else netBar('');
+}
+
+async function pump(){
+  if (Net.pumping) return; Net.pumping = true; const my = Net.session;
+  try {
+    while (Net.queue.length && Net.session === my) {
+      const m = Net.queue.shift();
+      INSTANT = Net.queue.length > 2; applySpeed();
+      if (m.t === 'roll') await onRollEvent(m, my);
+      else applyState(m.state);
+    }
+  } finally { INSTANT = false; applySpeed(); Net.pumping = false; }
+}
+
+async function onRollEvent(m, my){
+  const i = S.players.findIndex(p => p.pid === m.pid); if (i < 0) return;
+  S.turn = i; S.players[i].turns++;
+  await playRoll(i, m.roll, m.out, () => Net.session === my);
+}
+
+function applyState(st){
+  if (!online()) return;
+  Net.room = st;
+  S.players = st.players.map(p => ({ pid:p.pid, name:p.name, bot:p.bot, pos:p.pos, turns:p.turns, connected:p.connected, left:p.left }));
+  S.turn = st.turn; S.rules = { six:st.rules.six }; S.sixes = st.sixes;
+  Net.readyAt = Date.now() + st.readyIn; Net.deadlineAt = st.deadlineIn == null ? null : Date.now() + st.deadlineIn;
+  clearTimeout(Net.readyTimer); Net.readyTimer = setTimeout(renderRoomTimer, Math.max(0, st.readyIn) + 30);   // enable Roll the moment the server is ready
+  syncTokens();
+  if (st.phase === 'lobby') {
+    if (S.phase !== 'lobby') say('Waiting in the lobby. Share the room code with your friends.');
+    S.phase = 'lobby'; Net.winShown = false; closeModal('#winner'); renderPanel(); renderLobby(st);
+    if ($('#lobby').hidden) { openModal('#lobby', '#copyCode'); }
+  } else if (st.phase === 'playing') {
+    const wasLobby = S.phase === 'lobby';
+    S.phase = 'idle'; Net.winShown = false; closeModal('#lobby'); closeModal('#winner'); closeModal('#setup');
+    if (wasLobby) say('The game has started. First to square 100 wins.');
+    renderPanel();
+    if (myTurnOnline() && Net.pingSeq !== st.seq) { Net.pingSeq = st.seq; sfx.ping(); $('#roll').focus({ preventScroll:true }); }
+  } else if (st.phase === 'over') {
+    S.phase = 'over'; renderPanel();
+    if (!Net.winShown) {
+      Net.winShown = true;
+      const w = st.players.find(p => p.pid === st.winnerPid);
+      const isHost = st.hostPid === Net.pid;
+      say((w ? w.name : 'Someone') + ' reaches square 100 and wins!'); sfx.win();
+      showWinner((w ? w.name : 'Someone') + ' wins!', 'Reached square 100 in ' + (w ? w.turns : '?') + ' turns.');
+      $('#again').textContent = isHost ? 'Play again' : 'Waiting for the host…'; $('#again').disabled = !isHost;
+      $('#change').textContent = 'Leave room';
+    }
+  }
+  renderRoomTimer();
+}
+
+function renderLobby(st){
+  $('#lobbyCode').textContent = st.code;
+  const isHost = st.hostPid === Net.pid;
+  const ul = $('#lobbyPlayers'); ul.textContent = '';
+  st.players.forEach((p,i) => {
+    const li = document.createElement('li'); if (!p.connected) li.classList.add('off');
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = COLORS[i].fill;
+    const nm = document.createElement('span'); nm.textContent = p.name;
+    li.append(dot, nm);
+    if (p.pid === Net.pid) li.appendChild(tag('you'));
+    if (p.pid === st.hostPid) li.appendChild(tag('host'));
+    if (p.bot) li.appendChild(tag('bot'));
+    if (!p.connected) li.appendChild(tag('offline'));
+    if (isHost && p.pid !== Net.pid) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.style.marginLeft = 'auto';
+      b.textContent = p.bot ? 'Remove bot' : 'Remove'; b.setAttribute('aria-label', (p.bot ? 'Remove bot ' : 'Remove ') + p.name);
+      b.addEventListener('click', () => send({ t:'remove', pid:p.pid })); li.appendChild(b);
+    }
+    ul.appendChild(li);
+  });
+  $('#hostTools').hidden = !isHost; $('#addBot').disabled = st.players.length >= st.max;
+  const six = $('#netSix'); six.checked = st.rules.six; six.disabled = !isHost;
+  const start = $('#startOnline'); start.hidden = !isHost; start.disabled = st.players.length < 2;
+  $('#lobbyHint').textContent = isHost
+    ? (st.players.length < 2 ? 'You need at least two players. Share the code, or add a bot to play alone.' : 'Ready when you are.')
+    : 'Waiting for the host to start the game.';
+}
+
+// once a second: the auto-roll countdown and re-enabling the Roll button when the server says the last move is done
+function renderRoomTimer(){
+  if (!online() || S.phase === 'lobby') return;
+  const sub = $('#whoSub'), p = cur();
+  if (sub && p && S.phase === 'idle' && Net.deadlineAt && !p.bot) {
+    const s = Math.max(0, Math.ceil((Net.deadlineAt - Date.now()) / 1000));
+    const base = COLORS[S.turn].name + (p.pid === Net.pid ? ' · ' + p.name : '') + (p.connected === false ? ' · disconnected' : '');
+    sub.textContent = base + ' · auto-roll in ' + s + 's';
+  }
+  const btn = $('#roll'); if (S.phase === 'idle') btn.disabled = !(myTurnOnline() && Date.now() >= Net.readyAt - 30);
+}
+setInterval(renderRoomTimer, 500);
+
+function leaveToSetup(note){
+  const wasOnline = online();
+  resetNet(); Net.session++; store.del(SESSION_KEY);
+  S.run++; S = { mode:'local', players:[], turn:0, phase:'setup', rules:{six:false}, sixes:0, run:S.run, log:[], hold:false };
+  tokEls.forEach(e => e.remove()); tokEls.length = 0;
+  setOnlineChrome(false); closeModal('#lobby'); closeModal('#winner'); showDie(0);
+  say('Choose how you want to play.'); renderPanel(); setNetBusy(false);
+  openSetup(wasOnline ? 'online' : 'local', note);
+}
+function leaveRoom(){ send({ t:'leave' }); leaveToSetup(''); }
+
+/* ---- online setup / lobby buttons ---- */
+$('#netCreate').addEventListener('click', () => { ac(); createRoom(); });
+$('#netJoin').addEventListener('click', () => { ac(); joinRoom($('#netCode').value, $('#netName').value.trim(), null); });
+$('#netCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('#netJoin').click(); });
+$('#netCode').addEventListener('input', e => { const c = e.target.selectionStart; e.target.value = e.target.value.toUpperCase(); e.target.setSelectionRange(c, c); });
+$('#netRejoin').addEventListener('click', () => { const s = readSession(); if (s) joinRoom(s.code, s.name || $('#netName').value.trim(), { pid:s.pid, secret:s.secret }); });
+$('#netCancel').addEventListener('click', () => { closeModal('#setup'); });
+async function copy(text, btn, label){
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch(e){
+    try { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); ok = document.execCommand('copy'); t.remove(); } catch(err){}
+  }
+  const old = btn.textContent; btn.textContent = ok ? 'Copied' : label; setTimeout(() => { btn.textContent = old; }, 1400);
+}
+$('#copyCode').addEventListener('click', e => copy(Net.code, e.target, 'Select the code and copy it'));
+$('#copyLink').addEventListener('click', e => copy(inviteLink(), e.target, 'Could not copy'));
+$('#copyLink2').addEventListener('click', e => copy(inviteLink(), e.target, 'Could not copy'));
+$('#addBot').addEventListener('click', () => send({ t:'addBot' }));
+$('#netSix').addEventListener('change', e => send({ t:'rules', six:e.target.checked }));
+$('#startOnline').addEventListener('click', () => { ac(); send({ t:'start' }); });
+$('#leaveRoom').addEventListener('click', leaveRoom);
+
+/* ================= shared buttons ================= */
+$('#roll').addEventListener('click', () => {
+  ac();
+  if (online()) { if (!myTurnOnline()) return; S.phase = 'rolling'; renderPanel(); send({ t:'roll' }); }
+  else doRoll();
+});
+$('#newgame').addEventListener('click', () => { if (online()) leaveRoom(); else openSetup('local'); });
 $('#again').addEventListener('click', () => {
+  if (online()) { send({ t:'rematch' }); return; }
   const players = S.players.map(p => ({ name:p.name, bot:p.bot, pos:0, turns:0 }));
   startGame(players, S.rules.six, null);
 });
-$('#roll').addEventListener('click', () => { ac(); doRoll(); });
+$('#change').addEventListener('click', () => { if (online()) leaveRoom(); else { closeModal('#winner'); openSetup('local'); } });
 $('#mute').addEventListener('click', () => {
   muted = !muted; store.set(MUTE_KEY, muted ? '1' : '0'); ac();
   $('#mute').textContent = 'Sound: ' + (muted ? 'off' : 'on'); $('#mute').setAttribute('aria-pressed', String(muted));
 });
 $('#mute').textContent = 'Sound: ' + (muted ? 'off' : 'on'); $('#mute').setAttribute('aria-pressed', String(muted));
-$('#cancel').addEventListener('click', cancelSetup);
 $('#speed').addEventListener('click', () => {
   const quick = SP >= 0.5; SP = quick ? 0.25 : (reduced ? 0.3 : 1); applySpeed();
   $('#speed').textContent = 'Speed: ' + (quick ? 'fast' : 'normal'); $('#speed').setAttribute('aria-pressed', String(quick));
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !$('#setup').hidden && S.hold) cancelSetup();
+  if (e.key !== 'Escape') return;
+  if (!$('#setup').hidden && (S.hold || (online() && Net.pid))) { if (S.hold) cancelSetup(); else closeModal('#setup'); }
 });
 
-if (qs.has('debug')) window.DNL = { JUMPS, cellCenter, get S(){ return S; } };
+if (qs.has('debug')) window.DNL = { E, S: () => S, Net, cellCenter, send };
+
+/* ================= start-up ================= */
 showDie(0);
-S.phase = 'setup'; say('Choose your players to start.');
-openSetup();
+S.phase = 'setup'; say('Choose how you want to play.');
+{
+  const link = normalizeCode(qs.get('room') || '');
+  if (!onlineAvailable()) { document.querySelector('#modeSeg [data-mode=online]').disabled = true; document.querySelector('#modeSeg [data-mode=online]').title = 'Online play needs the website'; }
+  openSetup(link && onlineAvailable() ? 'online' : 'local');
+  if (link && onlineAvailable()) { $('#netCode').value = link; $('#netName').focus(); }
+}
 })();
 </script>
 </body>

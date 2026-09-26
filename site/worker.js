@@ -8,11 +8,21 @@
 // (Workers & Pages -> kuro-labs -> Settings -> Variables and secrets).
 // It is never logged, never echoed back, and never written to a file here.
 
+// Dragons & Ladders online rooms: routes under /api/dnl/ and the Durable Object class that holds each room.
+// (binding DNL_ROOMS in wrangler.jsonc; see site/dnl/README.md)
+import { handleDnl } from './dnl/routes.mjs';
+export { DnlRoom } from './dnl/do.mjs';
+
 const CACHE_TTL_SECONDS = 600; // 10 min: feels live, doesn't hammer Gumroad's API
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith('/api/dnl/')) {
+      const res = await handleDnl(request, env);
+      if (res) return res;
+    }
 
     if (url.pathname === '/api/sales-count') {
       return handleSalesCount(request, env, ctx);
