@@ -1,8 +1,17 @@
 /* Kuro Labs living K: pixel-swarm morph (WebGL). Static K if reduced-motion / Save-Data / no WebGL. */
 (()=>{
-const COLS=180,ROWS=262,DUR=1900,HOLD_K=3800,HOLD_S=2300;
+const COLS=180,ROWS=262,DUR=2600,HOLD_K=4200,HOLD_S=2600;
 const stage=document.querySelector('.kl-art .kl-k');if(!stage)return;
 const img=stage.querySelector('img'),cv=stage.querySelector('canvas'),label=document.querySelector('.kl-art-label');
+/* HD artwork layers (K-style engraved icons), lazy-loaded after idle */
+const HQ_V='?v=20260931',HQ={frame:'/assets/img/k-frame.webp'+HQ_V,shapes:[null,1,2,3,4].map(i=>i&&'/assets/img/k-shape-'+i+'.webp'+HQ_V)};
+const mk=(cls,css)=>{const e=document.createElement('img');e.alt='';e.setAttribute('aria-hidden','true');e.decoding='async';e.style.cssText='position:absolute;opacity:0;pointer-events:none;z-index:1;transition:opacity .35s;'+css;stage.insertBefore(e,cv);return e};
+const frameEl=mk('f','inset:0;width:100%;height:100%;object-fit:contain;filter:brightness(1.55) drop-shadow(0 0 28px #ed294548)');
+const shapeEl=mk('s','left:4.545%;top:18.72%;width:90.909%;height:62.402%;object-fit:contain;filter:brightness(1.55)');
+cv.style.zIndex=2;
+function loadImgs(){const load=u=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u});return Promise.all([load(HQ.frame),...HQ.shapes.slice(1).map(load)]).then(r=>{frameEl.src=HQ.frame;shapeImgs=[null,...r.slice(1)]})}
+function hq(on,i){if(on){shapeEl.src=HQ.shapes[i];requestAnimationFrame(()=>{shapeEl.style.opacity=1;cv.style.transition='opacity .4s';cv.style.opacity=0});return}
+ shapeEl.style.opacity=0}
 const LABEL0=label?label.textContent:'';
 const hud={};
 if(matchMedia('(prefers-reduced-motion:reduce)').matches||(navigator.connection&&navigator.connection.saveData))return
@@ -12,82 +21,34 @@ if(!gl)return
 const NAMES=['K','SOFTWARE & AI','3D & VR','WEB DESIGN','BROWSER GAMES'];
 const CX=220,CY=320;
 
-/* ---------- vector shapes, drawn in emblem space (440x641), gray level = brightness ---------- */
-const g=v=>{v=Math.round(255*v);return`rgb(${v},${v},${v})`};
-function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
-const SHAPE_DRAW=[null,
- /* 1 software & AI: chip with terminal prompt */
- c=>{c.translate(CX,CY);c.scale(1.12,1.12);c.lineJoin='round';c.lineCap='round';
-  for(let i=-2;i<=2;i++){const o=i*40;c.fillStyle=g(.85);c.fillRect(o-8,-128,16,34);c.fillRect(o-8,94,16,34);c.fillRect(-128,o-8,34,16);c.fillRect(94,o-8,34,16)}
-  rr(c,-98,-98,196,196,26);c.fillStyle=g(.4);c.fill();c.lineWidth=11;c.strokeStyle=g(1);c.stroke();
-  rr(c,-62,-62,124,124,14);c.fillStyle=g(.16);c.fill();c.lineWidth=6;c.strokeStyle=g(.8);c.stroke();
-  c.strokeStyle=g(1);c.lineWidth=11;c.beginPath();c.moveTo(-30,-24);c.lineTo(-6,0);c.lineTo(-30,24);c.stroke();
-  c.beginPath();c.moveTo(8,26);c.lineTo(38,26);c.stroke()},
- /* 2 3D & VR: headset */
- c=>{c.translate(CX,CY+8);c.scale(1.08,1.08);c.lineJoin='round';c.lineCap='round';
-  c.strokeStyle=g(.75);c.lineWidth=13;c.beginPath();c.moveTo(-138,-8);c.bezierCurveTo(-120,-118,120,-118,138,-8);c.stroke();
-  c.lineWidth=8;c.strokeStyle=g(.55);c.beginPath();c.moveTo(-70,-58);c.bezierCurveTo(-30,-108,30,-108,70,-58);c.stroke();
-  rr(c,-150,-52,300,124,52);c.fillStyle=g(.42);c.fill();c.lineWidth=11;c.strokeStyle=g(1);c.stroke();
-  c.globalCompositeOperation='destination-out';
-  for(const s of[-1,1]){c.beginPath();c.arc(s*66,10,36,0,7);c.fill()}
-  c.beginPath();c.moveTo(-16,72);c.lineTo(0,46);c.lineTo(16,72);c.closePath();c.fill();
-  c.globalCompositeOperation='source-over';
-  for(const s of[-1,1]){c.strokeStyle=g(1);c.lineWidth=9;c.beginPath();c.arc(s*66,10,36,0,7);c.stroke();
-   c.fillStyle=g(.9);c.beginPath();c.arc(s*66,10,9,0,7);c.fill();c.strokeStyle=g(.6);c.lineWidth=4;c.beginPath();c.arc(s*66,10,22,0,7);c.stroke()}
-  c.fillStyle=g(.9);for(const x of[-100,-70,70,100]){c.beginPath();c.arc(x,-38,4,0,7);c.fill()}},
- /* 3 web design: browser window + cursor */
- c=>{c.translate(CX-6,CY-6);c.scale(1.1,1.1);c.lineJoin='round';c.lineCap='round';
-  rr(c,-132,-100,264,200,18);c.fillStyle=g(.34);c.fill();c.lineWidth=11;c.strokeStyle=g(1);c.stroke();
-  c.lineWidth=7;c.beginPath();c.moveTo(-132,-58);c.lineTo(132,-58);c.stroke();
-  c.fillStyle=g(1);[-104,-82,-60].forEach(x=>{c.beginPath();c.arc(x,-79,6.5,0,7);c.fill()});
-  rr(c,-108,-38,120,76,8);c.fillStyle=g(.8);c.fill();
-  rr(c,26,-38,82,76,8);c.lineWidth=6;c.strokeStyle=g(.9);c.stroke();
-  c.fillStyle=g(.7);c.fillRect(-108,52,84,10);c.fillRect(-108,72,54,8);c.fillRect(36,52,72,10);
-  c.beginPath();c.moveTo(56,14);c.lineTo(56,84);c.lineTo(72,68);c.lineTo(88,102);c.lineTo(102,95);c.lineTo(87,62);c.lineTo(108,60);c.closePath();
-  c.lineWidth=9;c.strokeStyle=g(.12);c.stroke();c.fillStyle=g(1);c.fill()},
- /* 4 games: controller */
- c=>{c.translate(CX,CY-4);c.scale(1.04,1.04);c.lineJoin='round';c.lineCap='round';
-  const parts=()=>{rr(c,-132,-62,264,118,56);c.fill();
-   for(const s of[-1,1]){c.save();c.translate(s*92,44);c.rotate(-s*.32);rr(c,-38,-30,76,96,36);c.fill();c.restore()}};
-  c.fillStyle=g(1);c.strokeStyle=g(1);c.lineWidth=0;
-  // outline: dilate by drawing thick strokes then fill interior
-  c.lineWidth=22;const strokeParts=()=>{rr(c,-132,-62,264,118,56);c.stroke();for(const s of[-1,1]){c.save();c.translate(s*92,44);c.rotate(-s*.32);rr(c,-38,-30,76,96,36);c.stroke();c.restore()}};
-  c.strokeStyle=g(1);strokeParts();c.fillStyle=g(.36);parts();
-  c.fillStyle=g(1);c.fillRect(-92,-24,20,64);c.fillRect(-114,-2,64,20);
-  [[92,-18],[92,22],[72,2],[112,2]].forEach(([x,y],i)=>{c.beginPath();c.arc(x,y,11,0,7);c.fillStyle=g(i?.9:1);c.fill()});
-  for(const s of[-1,1]){c.strokeStyle=g(.85);c.lineWidth=7;c.beginPath();c.arc(s*38,44,19,0,7);c.stroke();c.fillStyle=g(.6);c.beginPath();c.arc(s*38,44,8,0,7);c.fill()}
-  c.fillStyle=g(.7);c.fillRect(-16,-16,12,8);c.fillRect(6,-16,12,8)}
-];
-
 /* ---------- sample emblem + shapes into cell lists ---------- */
 const off=document.createElement('canvas');off.width=COLS;off.height=ROWS;
 const oc=off.getContext('2d',{willReadFrequently:true});
 const isGlyph=(X,Y)=>{const dx=X-CX,dy=Y-CY;if(Math.hypot(dx,dy)>192)return false;if(Math.abs(dx)<6&&(Y<215||Y>452))return false;return Y>150&&Y<500};
-let F,forms,nP;
+let forms,nP,shapeImgs=[];
 function build(){
  oc.setTransform(1,0,0,1,0,0);oc.clearRect(0,0,COLS,ROWS);oc.imageSmoothingQuality='high';oc.drawImage(img,0,0,COLS,ROWS);
- const d=oc.getImageData(0,0,COLS,ROWS).data;
- const fr=[],kg=[];
+ const d=oc.getImageData(0,0,COLS,ROWS).data,kg=[];
  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const i=(y*COLS+x)*4;if(d[i+3]<80)continue;
-  const c=[Math.min(1,d[i]*1.5/255),Math.min(1,d[i+1]*1.9/255),Math.min(1,d[i+2]*1.9/255)];
-  const X=(x+.5)*440/COLS,Y=(y+.5)*641/ROWS;
-  (isGlyph(X,Y)?kg:fr).push({x:x+.5,y:y+.5,c})}
+  if(!isGlyph((x+.5)*440/COLS,(y+.5)*641/ROWS))continue;
+  kg.push({x:x+.5,y:y+.5,c:[Math.min(1,d[i]*1.5/255),Math.min(1,d[i+1]*1.9/255),Math.min(1,d[i+2]*1.9/255)]})}
+ /* target cells come straight from the HD icon images, so any artwork dropped into /assets/img/k-shape-N.webp is used as-is */
  const shapes=[];
- for(let s=1;s<SHAPE_DRAW.length;s++){
-  oc.setTransform(1,0,0,1,0,0);oc.clearRect(0,0,COLS,ROWS);oc.setTransform(COLS/440,0,0,ROWS/641,0,0);oc.save();SHAPE_DRAW[s](oc);oc.restore();
-  const dd=oc.getImageData(0,0,COLS,ROWS).data,list=[];
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const i=(y*COLS+x)*4;if(dd[i+3]>140)list.push({x:x+.5,y:y+.5,l:dd[i]/255})}
+ for(let s=1;s<=4;s++){
+  oc.setTransform(1,0,0,1,0,0);oc.clearRect(0,0,COLS,ROWS);
+  oc.drawImage(shapeImgs[s],(CX-200)*COLS/440,(CY-200)*ROWS/641,400*COLS/440,400*ROWS/641);
+  const dd=oc.getImageData(0,0,COLS,ROWS).data,list=[],ls=[];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const i=(y*COLS+x)*4;if(dd[i+3]>140){const l=(dd[i]*.3+dd[i+1]*.59+dd[i+2]*.11)/255;list.push({x:x+.5,y:y+.5,l});ls.push(l)}}
+  ls.sort((a,b)=>a-b);const p=ls[Math.floor(ls.length*.9)]||.5;list.forEach(o=>o.l=Math.min(1.25,o.l/p*.9));
   shapes.push(list)}
- const Ng=Math.max(kg.length,...shapes.map(s=>s.length));
+ const Ng=Math.max(kg.length,...shapes.map(s=>s.length));nP=Ng;
  const byPos=(a,b)=>a.y-b.y||a.x-b.x;kg.sort(byPos);shapes.forEach(s=>s.sort(byPos));
- const Fn=fr.length;nP=Fn+Ng;
  const colors=new Float32Array(nP*3),rnd=new Float32Array(nP*4);
  forms=[...Array(5)].map(()=>({pos:new Float32Array(nP*2),lum:new Float32Array(nP)}));
- fr.forEach((p,i)=>{colors.set(p.c,i*3);rnd.set([Math.random(),0,0,0],i*4);forms.forEach(f=>{f.pos[i*2]=p.x;f.pos[i*2+1]=p.y;f.lum[i]=1})});
- for(let k=0;k<Ng;k++){const i=Fn+k,kc=kg[Math.floor(k*kg.length/Ng)];
-  colors.set(kc.c,i*3);rnd.set([Math.random(),Math.random()-.5,Math.random()-.5,1],i*4);
-  forms[0].pos[i*2]=kc.x;forms[0].pos[i*2+1]=kc.y;forms[0].lum[i]=1;
-  shapes.forEach((s,j)=>{const t=s[Math.floor(k*s.length/Ng)]||kc;forms[j+1].pos[i*2]=t.x;forms[j+1].pos[i*2+1]=t.y;forms[j+1].lum[i]=t.l||1})}
+ for(let k=0;k<Ng;k++){const kc=kg[Math.floor(k*kg.length/Ng)];
+  colors.set(kc.c,k*3);rnd.set([Math.random(),Math.random()-.5,Math.random()-.5,1],k*4);
+  forms[0].pos[k*2]=kc.x;forms[0].pos[k*2+1]=kc.y;forms[0].lum[k]=1;
+  shapes.forEach((s,j)=>{const t=s[Math.floor(k*s.length/Ng)]||kc;forms[j+1].pos[k*2]=t.x;forms[j+1].pos[k*2+1]=t.y;forms[j+1].lum[k]=t.l||1})}
  upload(colors,rnd);
 }
 
@@ -135,21 +96,23 @@ function setLabel(i){if(!label)return;label.style.opacity=0;setTimeout(()=>{labe
 function morph(to,done){
  if(busy||to===cur){done&&done();return}
  busy=true;const from=cur;bind(from,to);render(0);
- cv.style.opacity=1;requestAnimationFrame(()=>{img.style.opacity=0});
+ cv.style.transition='none';cv.style.opacity=1;hq(false);frameEl.style.transition='none';frameEl.style.opacity=1;img.style.transition='none';img.style.opacity=0;
+ if(label)label.style.opacity=0;
  const t0=performance.now();
  const step=now=>{
   if(paused){raf=requestAnimationFrame(step);return}
   const u=Math.min(1,(now-t0)/DUR);render(u);
   if(u<1)raf=requestAnimationFrame(step);
   else{cur=to;busy=false;
-   if(to===0){setLabel(0);img.style.opacity=1;setTimeout(()=>{if(cur===0&&!busy)cv.style.opacity=0},320)}else setLabel(to);
+   if(to===0){setLabel(0);img.style.transition='';img.style.opacity=1;setTimeout(()=>{if(cur===0&&!busy){cv.style.opacity=0;frameEl.style.opacity=0}},320)}else{setLabel(to);hq(true,to)}
    done&&done()}};
  raf=requestAnimationFrame(step)}
 function loop(){clearTimeout(timer);if(!auto)return;
  timer=setTimeout(()=>{if(paused||busy)return loop();
   const chain=[1,2,3,4,0];let i=0;
   const next=()=>{if(!auto)return;const to=chain[i++];morph(to,()=>{timer=setTimeout(to===0?loop:next,to===0?0:HOLD_S)})};next()},HOLD_K)}
-function start(){try{size();build();bind(0,0);addEventListener('resize',()=>{size();render(cur===0?0:1)});loop();
+function start(){loadImgs().then(init).catch(()=>{})}
+function init(){try{size();build();bind(0,0);addEventListener('resize',()=>{size();render(cur===0?0:1)});loop();
  new IntersectionObserver(e=>{paused=!e[0].isIntersecting}).observe(stage);
  document.addEventListener('visibilitychange',()=>{paused=document.hidden})}catch(err){cv.style.opacity=0;img.style.opacity=1}}
 const boot=()=>(window.requestIdleCallback||setTimeout)(start);
