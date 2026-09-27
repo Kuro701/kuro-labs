@@ -70,6 +70,6 @@
 #kl-techno .kl-legal li{margin:0 0 10px}
 #kl-techno .kl-legal li strong,#kl-techno .kl-legal p strong{color:#f4f2f3;font-weight:600}
 #kl-techno .kl-legal a{text-decoration:underline;text-decoration-color:#ee8e9c;text-underline-offset:3px}
-#kl-techno .kl-callout{border:1px solid #4a2933;background:#1a0f13;color:#f2c4cc;border-radius:8px;padding:14px 18px;margin:0 0 8px;max-width:70ch}
-#kl-techno .kl-callout strong{color:#fff}
+#kl-techno p.kl-callout{border:1px solid #4a2933;background:#1a0f13;color:#f2c4cc;border-radius:8px;padding:14px 18px;margin:0 0 8px;max-width:70ch}
+#kl-techno p.kl-callout strong{color:#fff}
 #kl-techno .kl-rules{counter-reset:none}

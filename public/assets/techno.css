@@ -102,3 +102,25 @@ body{margin:0;background:#08090b}
 @keyframes kl-w1{from{transform:rotateX(74deg) rotateZ(0)}to{transform:rotateX(74deg) rotateZ(360deg)}}
 @keyframes kl-w2{from{transform:rotateZ(-24deg) rotateY(0)}to{transform:rotateZ(-24deg) rotateY(360deg)}}
 @keyframes kl-w3{from{transform:rotateZ(32deg) rotateX(360deg)}to{transform:rotateZ(32deg) rotateX(0)}}
+
+/* --- stop 3D rings from stretching the page (horizontal scrollbar) --- */
+#kl-techno{overflow-x:clip}
+#kl-techno .kl-hero{overflow-x:clip}
+
+/* --- emblem-style ornaments: four-point star, ring, corner brackets --- */
+#kl-techno{--star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0l2 10 10 2-10 2-2 10-2-10L0 12l10-2z' fill='%23ed2945'/%3E%3Ccircle cx='12' cy='12' r='2.4' fill='none' stroke='%2308090b' stroke-width='1.1'/%3E%3C/svg%3E")}
+#kl-techno .kl-eye:before{width:12px;height:12px;background:var(--star) center/contain no-repeat;vertical-align:-1px;margin-right:12px}
+#kl-techno .kl-strip span:before{content:'';display:inline-block;width:9px;height:9px;margin-right:12px;background:var(--star) center/contain no-repeat;opacity:.9}
+#kl-techno .kl-section{position:relative}
+#kl-techno .kl-section:after{content:'';position:absolute;left:50%;bottom:-11px;width:22px;height:22px;transform:translateX(-50%);border-radius:50%;background:var(--star) center/11px no-repeat,#08090b;border:1px solid #ed294555}
+#kl-techno .kl-tile,#kl-techno .kl-feature{position:relative}
+#kl-techno .kl-tile:before,#kl-techno .kl-feature:before,#kl-techno .kl-tile:after,#kl-techno .kl-feature:after{content:'';position:absolute;width:18px;height:18px;pointer-events:none;z-index:2;border:0 solid var(--red)}
+#kl-techno .kl-tile:before,#kl-techno .kl-feature:before{top:0;left:0;border-top-width:2px;border-left-width:2px;border-top-left-radius:6px}
+#kl-techno .kl-tile:after,#kl-techno .kl-feature:after{right:0;bottom:0;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:6px}
+#kl-techno .kl-tile:hover:before,#kl-techno .kl-tile:hover:after,#kl-techno .kl-feature:hover:before,#kl-techno .kl-feature:hover:after{width:34px;height:34px;transition:width .25s,height .25s}
+#kl-techno .kl-callout{position:relative;overflow:hidden}
+#kl-techno .kl-callout:before{content:'';position:absolute;right:-70px;top:50%;width:330px;height:330px;margin-top:-165px;pointer-events:none;background:var(--star) center/34px no-repeat,radial-gradient(circle,transparent 0 60%,#ed294533 60.4%,transparent 61.4% 72%,#ed294522 72.4%,transparent 73.4%)}
+#kl-techno .kl-footer{position:relative}
+#kl-techno .kl-footer:before{content:'';position:absolute;left:50%;top:-11px;width:22px;height:22px;transform:translateX(-50%);border-radius:50%;background:var(--star) center/11px no-repeat,#08090b;border:1px solid #ed294555}
+@media(prefers-reduced-motion:reduce){#kl-techno .kl-tile:hover:before,#kl-techno .kl-tile:hover:after,#kl-techno .kl-feature:hover:before,#kl-techno .kl-feature:hover:after{transition:none}}
+#kl-techno .kl-callout>*{position:relative;z-index:1}
