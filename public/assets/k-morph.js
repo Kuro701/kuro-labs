@@ -4,7 +4,7 @@
    so there is no picture swap anywhere. The ring + stars stay a fixed HD image. Static K for reduced-motion /
    Save-Data / no WebGL / any failure. */
 (()=>{
-const DUR=3600,HOLD_K=4200,HOLD_S=2600;
+const DUR=4400,HOLD_K=4200,HOLD_S=2600;
 const S=1.5,GW=Math.round(440*S),GH=Math.round(641*S),CX=220,CY=320,BOX=400;   // sampling grid = emblem x1.5
 const stage=document.querySelector('.kl-art .kl-k');if(!stage)return;
 const img=stage.querySelector('img'),cv=stage.querySelector('canvas'),label=document.querySelector('.kl-art-label');
@@ -67,15 +67,23 @@ async function pairUp(a,b){
 const VS=`attribute vec2 a_s,a_t;attribute vec3 a_ca,a_cb,a_r;uniform float u_t,u_cell,u_k;uniform vec2 u_grid;varying vec3 v_c;
 float ss(float x){x=clamp(x,0.,1.);return x*x*x*(x*(x*6.-15.)+10.);}
 void main(){
- float T=clamp((u_t-a_r.x*.16)/.84,0.,1.);
- float a=ss(T/.42),b=ss((T-.58)/.42);
- float ang=a_r.y*6.28318+u_t*5.5*(1.-a_r.z*.5);
- float rad=(.18+.82*sqrt(a_r.z))*165.*u_k;
- vec2 cloud=vec2(.5*u_grid.x,.5*u_grid.y)+vec2(cos(ang),sin(ang)*.92)*rad;
- vec2 p=mix(mix(a_s,cloud,a),a_t,b);
+ float T=clamp((u_t-a_r.x*.14)/.86,0.,1.);
+ float a=ss(T/.34),b=ss((T-.66)/.34);
+ vec2 ctr=.5*u_grid;
+ float rn=.05+.95*sqrt(a_r.z);
+ float arm=floor(a_r.y*3.);
+ float phv=arm*2.0944+rn*5.2+(fract(a_r.y*3.)-.5)*.55+u_t*(10.-7.*rn);
+ float rv=rn*170.*u_k;
+ vec2 sc=a_s-ctr,tc=a_t-ctr;
+ float rs=length(sc),ths=atan(sc.y,sc.x),rt=length(tc),tht=atan(tc.y,tc.x);
+ float dA=mod(phv-ths,6.28318)+6.28318,dB=mod(tht-phv,6.28318)+6.28318;
+ vec2 p;
+ if(b>0.){float r=mix(rv,rt,b),g=phv+dB*b;p=ctr+vec2(cos(g),sin(g))*r;}
+ else{float r=mix(rs,rv,a),g=ths+dA*a;p=ctr+vec2(cos(g),sin(g))*r;}
  gl_Position=vec4(p.x/u_grid.x*2.-1.,1.-p.y/u_grid.y*2.,0.,1.);
  gl_PointSize=u_cell;
- v_c=mix(a_ca,a_cb,ss((T-.4)/.2));}`;
+ float core=a*(1.-b)*(1.-smoothstep(0.,.22,rn));
+ v_c=mix(a_ca,a_cb,ss((T-.42)/.16))*(1.+.8*core);}`;
 const FS=`precision mediump float;varying vec3 v_c;
 void main(){float a=smoothstep(.5,.2,length(gl_PointCoord-.5));if(a<=0.)discard;gl_FragColor=vec4(v_c*a,a);}`;
 const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o};
