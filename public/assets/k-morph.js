@@ -4,7 +4,7 @@
    so there is no picture swap anywhere. The ring + stars stay a fixed HD image. Static K for reduced-motion /
    Save-Data / no WebGL / any failure. */
 (()=>{
-const DUR=2800,HOLD_K=4200,HOLD_S=2800;
+const DUR=3600,HOLD_K=4200,HOLD_S=2600;
 const S=1.5,GW=Math.round(440*S),GH=Math.round(641*S),CX=220,CY=320,BOX=400;   // sampling grid = emblem x1.5
 const stage=document.querySelector('.kl-art .kl-k');if(!stage)return;
 const img=stage.querySelector('img'),cv=stage.querySelector('canvas'),label=document.querySelector('.kl-art-label');
@@ -65,15 +65,17 @@ async function pairUp(a,b){
 
 /* ---- WebGL ---- */
 const VS=`attribute vec2 a_s,a_t;attribute vec3 a_ca,a_cb,a_r;uniform float u_t,u_cell,u_k;uniform vec2 u_grid;varying vec3 v_c;
+float ss(float x){x=clamp(x,0.,1.);return x*x*x*(x*(x*6.-15.)+10.);}
 void main(){
- float t=clamp((u_t-a_r.x*.2)/.8,0.,1.);
- float e=t*t*t*(t*(t*6.-15.)+10.);
- float w=sin(3.14159*e);
- vec2 m=(a_s+a_t)*.5/u_k;
- vec2 p=mix(a_s,a_t,e)+u_k*(w*vec2(sin(m.y*.03+u_t*4.),cos(m.x*.036-u_t*3.))*8.+(a_r.yz-.5)*w*3.);
+ float T=clamp((u_t-a_r.x*.16)/.84,0.,1.);
+ float a=ss(T/.42),b=ss((T-.58)/.42);
+ float ang=a_r.y*6.28318+u_t*5.5*(1.-a_r.z*.5);
+ float rad=(.18+.82*sqrt(a_r.z))*165.*u_k;
+ vec2 cloud=vec2(.5*u_grid.x,.5*u_grid.y)+vec2(cos(ang),sin(ang)*.92)*rad;
+ vec2 p=mix(mix(a_s,cloud,a),a_t,b);
  gl_Position=vec4(p.x/u_grid.x*2.-1.,1.-p.y/u_grid.y*2.,0.,1.);
  gl_PointSize=u_cell;
- v_c=mix(a_ca,a_cb,smoothstep(.3,.7,e));}`;
+ v_c=mix(a_ca,a_cb,ss((T-.4)/.2));}`;
 const FS=`precision mediump float;varying vec3 v_c;
 void main(){float a=smoothstep(.5,.2,length(gl_PointCoord-.5));if(a<=0.)discard;gl_FragColor=vec4(v_c*a,a);}`;
 const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o};
@@ -85,7 +87,10 @@ function buf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl
 function upload(P){P.g={s:buf(P.s),t:buf(P.t),ca:buf(P.ca),cb:buf(P.cb),r:buf(P.r)};P.s=P.t=P.ca=P.cb=P.r=null;return P}
 function free(P){if(P&&P.g){for(const k in P.g)gl.deleteBuffer(P.g[k]);P.g=null}}
 function attr(loc,b,n,type,norm,stride){gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,n,type||gl.FLOAT,!!norm,stride||0,0)}
-let P=null,lastU=0;
+let P=null,lastU=0,stopped=false;
+function alive(){const w=cv.width,h=cv.height,px=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,px);let n=0;for(let i=3;i<px.length;i+=16)if(px[i])n++;return n>200&&gl.getError()===gl.NO_ERROR}
+function fallback(){stopped=true;clearTimeout(timer);cv.style.transition='none';cv.style.opacity=0;frameEl.style.opacity=0;img.style.transition='none';img.style.opacity=1;if(label){label.textContent=LABEL0;label.style.opacity=1}}
+cv.addEventListener('webglcontextlost',e=>{e.preventDefault();fallback()});
 function use(p){const old=P;P=p;attr(L.a_s,p.g.s,2);attr(L.a_t,p.g.t,2);attr(L.a_ca,p.g.ca,3,gl.UNSIGNED_BYTE,true,4);attr(L.a_cb,p.g.cb,3,gl.UNSIGNED_BYTE,true,4);attr(L.a_r,p.g.r,3);return old}
 function size(){const dpr=Math.min(devicePixelRatio||1,2),w=Math.round(stage.clientWidth*dpr);cv.width=w;cv.height=Math.round(w*GH/GW);gl.viewport(0,0,cv.width,cv.height)}
 function render(u){lastU=u;gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
@@ -98,17 +103,18 @@ const prepare=(a,b)=>prep[key(a,b)]||(prep[key(a,b)]=pairUp(a,b));
 function setLabel(i){if(!label)return;label.style.opacity=0;setTimeout(()=>{label.textContent=i?'KURO LABS / '+NAMES[i]:LABEL0;label.style.opacity=1},320)}
 async function morph(to){
  if(busy)return;busy=true;const from=cur,p=await prepare(from,to),old=use(p);
- render(0);free(old);                                    // frame 0 == the frame the previous morph ended on
+ render(0);if(old&&old!==p)free(old);                                    // frame 0 == the frame the previous morph ended on
  if(label)label.style.opacity=0;
  await new Promise(res=>{let elapsed=0,last=performance.now();
   const step=now=>{const dt=now-last;last=now;if(!paused)elapsed+=Math.min(dt,50);
    const u=Math.min(1,elapsed/DUR);render(u);if(u<1)requestAnimationFrame(step);else res()};
   requestAnimationFrame(step)});
+ if(!alive()){fallback();busy=false;return}
  cur=to;busy=false;setLabel(to);delete prep[key(from,to)]}
 const chain=[1,2,3,4,0];
 function loop(){clearTimeout(timer);
- timer=setTimeout(async()=>{if(paused||busy)return loop();
-  for(const to of chain){await morph(to);
+ timer=setTimeout(async()=>{if(stopped)return;if(paused||busy)return loop();
+  for(const to of chain){await morph(to);if(stopped)return;
    const nxt=chain[(chain.indexOf(to)+1)%chain.length];prepare(to,nxt);
    await new Promise(r=>{timer=setTimeout(r,to===0?0:HOLD_S)})}
   loop()},HOLD_K)}
@@ -119,7 +125,7 @@ async function start(){
  try{
   const r=await Promise.all([load(SRC.frame),...SRC.shapes.slice(1).map(load)]);frameEl.src=SRC.frame;shapeImgs=[null,...r.slice(1)];
   size();buildForms();
-  const p=await prepare(0,1);use(p);render(0);
+  const p=await prepare(0,1);use(p);render(0);if(!alive())throw new Error('blank canvas');
   cv.style.transition='opacity .35s';cv.style.opacity=1;frameEl.style.opacity=1;              // ring is pixel-identical to the K image's ring
   setTimeout(()=>{img.style.transition='none';img.style.opacity=0},400);                     // K picture is only the first paint / no-JS fallback
   addEventListener('resize',()=>{size();if(P&&P.g)render(lastU)});
