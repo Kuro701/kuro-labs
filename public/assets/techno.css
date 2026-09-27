@@ -60,3 +60,45 @@ body{margin:0;background:#08090b}
 #kl-techno .kl-project-body p a,#kl-techno .kl-project-body li a{color:#ff9cad;text-decoration:underline;text-underline-offset:3px}
 #kl-techno .kl-detail-page .kl-project-body>p{margin-top:24px}
 @media(max-width:820px){#kl-techno:not(.kl-enhanced) .kl-nav{display:grid}#kl-techno:not(.kl-enhanced) .kl-menu-toggle{display:none}}
+
+/* Living K hero: slow orbits + ember glow. transform/opacity only; paused off-screen and for reduced motion. */
+#kl-techno .kl-art .kl-orb{transform:translateZ(-70px);position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,#ed294540 0,#ed294514 42%,transparent 68%);z-index:-1;pointer-events:none}
+#kl-techno .kl-art:before{transform:none;border:0;width:88%;height:88%;background:conic-gradient(from 0deg,transparent 0 55%,#ed294500 55%,#ed2945cc 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1px))}
+#kl-techno .kl-art:after{border-color:#ed29453d}
+@media(prefers-reduced-motion:no-preference){
+#kl-techno .kl-art:before{animation:kl-spin 26s linear infinite}
+#kl-techno .kl-art:after{animation:kl-tilt 70s linear infinite}
+#kl-techno .kl-art .kl-orb{animation:kl-ember 6s ease-in-out infinite}
+#kl-techno .kl-art>.kl-k{animation:kl-float 8s ease-in-out infinite}
+#kl-techno .kl-art.kl-paused:before,#kl-techno .kl-art.kl-paused:after,#kl-techno .kl-art.kl-paused .kl-orb,#kl-techno .kl-art.kl-paused>.kl-k{animation-play-state:paused}
+}
+@keyframes kl-spin{from{transform:translateZ(-40px) rotate(0)}to{transform:translateZ(-40px) rotate(360deg)}}
+@keyframes kl-tilt{from{transform:rotate(-34deg)}to{transform:rotate(326deg)}}
+@keyframes kl-ember{0%,100%{opacity:.55;transform:translateZ(-70px) scale(.94)}50%{opacity:1;transform:translateZ(-70px) scale(1.04)}}
+@keyframes kl-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* K morph: image + WebGL canvas share one box */
+#kl-techno .kl-art .kl-k{position:relative;width:64%;aspect-ratio:440/641}
+#kl-techno .kl-art .kl-k img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain;transition:opacity .25s}
+#kl-techno .kl-art .kl-k canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}
+#kl-techno .kl-art-label{transition:opacity .3s}
+@media(max-width:740px){#kl-techno .kl-art .kl-k{width:72%}}
+
+/* 3D wheel rings orbiting the K */
+#kl-techno .kl-art{perspective:1100px;transform-style:preserve-3d}
+#kl-techno .kl-art:after{display:none}
+#kl-techno .kl-ring{position:absolute;border-radius:50%;pointer-events:none;transform-style:preserve-3d;will-change:transform}
+#kl-techno .kl-ring:before{content:'';position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:#ff6a80;box-shadow:0 0 10px 2px #ed2945}
+#kl-techno .kl-r1{inset:0;border:1.5px solid #ed2945b0;transform:rotateX(74deg)}
+#kl-techno .kl-r2{inset:6%;border:2px dashed #ed294595;transform:rotateZ(-24deg) rotateY(60deg)}
+#kl-techno .kl-r3{inset:12%;border:1px solid #ed2945a0;transform:rotateZ(32deg) rotateX(60deg)}
+#kl-techno .kl-r3:before{top:auto;bottom:-4px}
+@media(prefers-reduced-motion:no-preference){
+#kl-techno .kl-r1{animation:kl-w1 22s linear infinite}
+#kl-techno .kl-r2{animation:kl-w2 15s linear infinite}
+#kl-techno .kl-r3{animation:kl-w3 26s linear infinite}
+#kl-techno .kl-art.kl-paused .kl-ring{animation-play-state:paused}
+}
+@keyframes kl-w1{from{transform:rotateX(74deg) rotateZ(0)}to{transform:rotateX(74deg) rotateZ(360deg)}}
+@keyframes kl-w2{from{transform:rotateZ(-24deg) rotateY(0)}to{transform:rotateZ(-24deg) rotateY(360deg)}}
+@keyframes kl-w3{from{transform:rotateZ(32deg) rotateX(360deg)}to{transform:rotateZ(32deg) rotateX(0)}}

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K lab — nano transform test</title><meta name="robots" content="noindex">
+<style>
+html,body{margin:0;background:#08090b;color:#f4f2f3;font:14px/1.5 system-ui,Arial,sans-serif}
+body{min-height:100vh;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 46%,#3a0a14 0,#08090b 62%)}
+main{display:grid;gap:14px;justify-items:center;padding:24px}
+#stage{position:relative;width:min(440px,84vw);aspect-ratio:440/641}
+#stage img,#stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#stage img{filter:brightness(1.55) drop-shadow(0 0 28px #ed294548);transition:opacity .25s}
+#stage canvas{pointer-events:none;opacity:0}
+#label{font:11px 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:3px;color:#ed6b7f;height:16px;transition:opacity .3s;opacity:0}
+nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button{font:inherit;font-size:11px;letter-spacing:1px;color:#f4f2f3;background:#121216;border:1px solid #38343d;border-radius:6px;padding:9px 12px;cursor:pointer}
+button:hover,button.on{border-color:#ed2945;background:#1b1116}
+small{color:#9a6d77;font:11px monospace;letter-spacing:1px}
+</style></head><body><main>
+<div id="stage"><img id="k" src="/assets/img/emblem.webp" alt="Kuro Labs emblem" width="440" height="641"><canvas id="c"></canvas></div>
+<div id="label"></div>
+<nav id="nav"><button data-s="1">SOFTWARE &amp; AI</button><button data-s="2">3D &amp; VR</button><button data-s="3">WEB DESIGN</button><button data-s="4">BROWSER GAMES</button><button id="auto" class="on">AUTO LOOP</button></nav>
+<small id="hud">nano transform test</small>
+</main>
+<script>
+(()=>{
+const COLS=180,ROWS=262,DUR=1900,HOLD_K=3800,HOLD_S=2300;
+const $=id=>document.getElementById(id);
+const img=$('k'),cv=$('c'),stage=$('stage'),hud=$('hud'),label=$('label');
+if(matchMedia('(prefers-reduced-motion:reduce)').matches||(navigator.connection&&navigator.connection.saveData)){$('nav').hidden=true;hud.textContent='static (reduced motion / data saver)';return}
+const gl=cv.getContext('webgl',{antialias:false,alpha:true,premultipliedAlpha:true});
+if(!gl){$('nav').hidden=true;hud.textContent='no WebGL: static K';return}
+
+const NAMES=['K','SOFTWARE & AI','3D & VR','WEB DESIGN','BROWSER GAMES'];
+const CX=220,CY=320;
+
+/* ---------- vector shapes, drawn in emblem space (440x641), gray level = brightness ---------- */
+const g=v=>{v=Math.round(255*v);return`rgb(${v},${v},${v})`};
+function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
+const SHAPE_DRAW=[null,
+ /* 1 software & AI: chip with terminal prompt */
+ c=>{c.translate(CX,CY);c.scale(1.12,1.12);c.lineJoin='round';c.lineCap='round';
+  for(let i=-2;i<=2;i++){const o=i*40;c.fillStyle=g(.85);c.fillRect(o-8,-128,16,34);c.fillRect(o-8,94,16,34);c.fillRect(-128,o-8,34,16);c.fillRect(94,o-8,34,16)}
+  rr(c,-98,-98,196,196,26);c.fillStyle=g(.4);c.fill();c.lineWidth=11;c.strokeStyle=g(1);c.stroke();
+  rr(c,-62,-62,124,124,14);c.fillStyle=g(.16);c.fill();c.lineWidth=6;c.strokeStyle=g(.8);c.stroke();
+  c.strokeStyle=g(1);c.lineWidth=11;c.beginPath();c.moveTo(-30,-24);c.lineTo(-6,0);c.lineTo(-30,24);c.stroke();
+  c.beginPath();c.moveTo(8,26);c.lineTo(38,26);c.stroke()},
+ /* 2 3D & VR: headset */
+ c=>{c.translate(CX,CY+8);c.scale(1.08,1.08);c.lineJoin='round';c.lineCap='round';
+  c.strokeStyle=g(.75);c.lineWidth=13;c.beginPath();c.moveTo(-138,-8);c.bezierCurveTo(-120,-118,120,-118,138,-8);c.stroke();
+  c.lineWidth=8;c.strokeStyle=g(.55);c.beginPath();c.moveTo(-70,-58);c.bezierCurveTo(-30,-108,30,-108,70,-58);c.stroke();
+  rr(c,-150,-52,300,124,52);c.fillStyle=g(.42);c.fill();c.lineWidth=11;c.strokeStyle=g(1);c.stroke();
+  c.globalCompositeOperation='destination-out';
+  for(const s of[-1,1]){c.beginPath();c.arc(s*66,10,36,0,7);c.fill()}
+  c.beginPath();c.moveTo(-16,72);c.lineTo(0,46);c.lineTo(16,72);c.closePath();c.fill();
+  c.globalCompositeOperation='source-over';
+  for(const s of[-1,1]){c.strokeStyle=g(1);c.lineWidth=9;c.beginPath();c.arc(s*66,10,36,0,7);c.stroke();
+   c.fillStyle=g(.9);c.beginPath();c.arc(s*66,10,9,0,7);c.fill();c.strokeStyle=g(.6);c.lineWidth=4;c.beginPath();c.arc(s*66,10,22,0,7);c.stroke()}
+  c.fillStyle=g(.9);for(const x of[-100,-70,70,100]){c.beginPath();c.arc(x,-38,4,0,7);c.fill()}},
+ /* 3 web design: browser window + cursor */
+ c=>{c.translate(CX-6,CY-6);c.scale(1.1,1.1);c.lineJoin='round';c.lineCap='round';
+  rr(c,-132,-100,264,200,18);c.fillStyle=g(.34);c.fill();c.lineWidth=11;c.strokeStyle=g(1);c.stroke();
+  c.lineWidth=7;c.beginPath();c.moveTo(-132,-58);c.lineTo(132,-58);c.stroke();
+  c.fillStyle=g(1);[-104,-82,-60].forEach(x=>{c.beginPath();c.arc(x,-79,6.5,0,7);c.fill()});
+  rr(c,-108,-38,120,76,8);c.fillStyle=g(.8);c.fill();
+  rr(c,26,-38,82,76,8);c.lineWidth=6;c.strokeStyle=g(.9);c.stroke();
+  c.fillStyle=g(.7);c.fillRect(-108,52,84,10);c.fillRect(-108,72,54,8);c.fillRect(36,52,72,10);
+  c.beginPath();c.moveTo(56,14);c.lineTo(56,84);c.lineTo(72,68);c.lineTo(88,102);c.lineTo(102,95);c.lineTo(87,62);c.lineTo(108,60);c.closePath();
+  c.lineWidth=9;c.strokeStyle=g(.12);c.stroke();c.fillStyle=g(1);c.fill()},
+ /* 4 games: controller */
+ c=>{c.translate(CX,CY-4);c.scale(1.04,1.04);c.lineJoin='round';c.lineCap='round';
+  const parts=()=>{rr(c,-132,-62,264,118,56);c.fill();
+   for(const s of[-1,1]){c.save();c.translate(s*92,44);c.rotate(-s*.32);rr(c,-38,-30,76,96,36);c.fill();c.restore()}};
+  c.fillStyle=g(1);c.strokeStyle=g(1);c.lineWidth=0;
+  // outline: dilate by drawing thick strokes then fill interior
+  c.lineWidth=22;const strokeParts=()=>{rr(c,-132,-62,264,118,56);c.stroke();for(const s of[-1,1]){c.save();c.translate(s*92,44);c.rotate(-s*.32);rr(c,-38,-30,76,96,36);c.stroke();c.restore()}};
+  c.strokeStyle=g(1);strokeParts();c.fillStyle=g(.36);parts();
+  c.fillStyle=g(1);c.fillRect(-92,-24,20,64);c.fillRect(-114,-2,64,20);
+  [[92,-18],[92,22],[72,2],[112,2]].forEach(([x,y],i)=>{c.beginPath();c.arc(x,y,11,0,7);c.fillStyle=g(i?.9:1);c.fill()});
+  for(const s of[-1,1]){c.strokeStyle=g(.85);c.lineWidth=7;c.beginPath();c.arc(s*38,44,19,0,7);c.stroke();c.fillStyle=g(.6);c.beginPath();c.arc(s*38,44,8,0,7);c.fill()}
+  c.fillStyle=g(.7);c.fillRect(-16,-16,12,8);c.fillRect(6,-16,12,8)}
+];
+
+/* ---------- sample emblem + shapes into cell lists ---------- */
+const off=document.createElement('canvas');off.width=COLS;off.height=ROWS;
+const oc=off.getContext('2d',{willReadFrequently:true});
+const isGlyph=(X,Y)=>{const dx=X-CX,dy=Y-CY;if(Math.hypot(dx,dy)>192)return false;if(Math.abs(dx)<6&&(Y<215||Y>452))return false;return Y>150&&Y<500};
+let F,forms,nP;
+function build(){
+ oc.setTransform(1,0,0,1,0,0);oc.clearRect(0,0,COLS,ROWS);oc.imageSmoothingQuality='high';oc.drawImage(img,0,0,COLS,ROWS);
+ const d=oc.getImageData(0,0,COLS,ROWS).data;
+ const fr=[],kg=[];
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const i=(y*COLS+x)*4;if(d[i+3]<80)continue;
+  const c=[Math.min(1,d[i]*1.5/255),Math.min(1,d[i+1]*1.9/255),Math.min(1,d[i+2]*1.9/255)];
+  const X=(x+.5)*440/COLS,Y=(y+.5)*641/ROWS;
+  (isGlyph(X,Y)?kg:fr).push({x:x+.5,y:y+.5,c})}
+ const shapes=[];
+ for(let s=1;s<SHAPE_DRAW.length;s++){
+  oc.setTransform(1,0,0,1,0,0);oc.clearRect(0,0,COLS,ROWS);oc.setTransform(COLS/440,0,0,ROWS/641,0,0);oc.save();SHAPE_DRAW[s](oc);oc.restore();
+  const dd=oc.getImageData(0,0,COLS,ROWS).data,list=[];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const i=(y*COLS+x)*4;if(dd[i+3]>140)list.push({x:x+.5,y:y+.5,l:dd[i]/255})}
+  shapes.push(list)}
+ const Ng=Math.max(kg.length,...shapes.map(s=>s.length));
+ const byPos=(a,b)=>a.y-b.y||a.x-b.x;kg.sort(byPos);shapes.forEach(s=>s.sort(byPos));
+ const Fn=fr.length;nP=Fn+Ng;
+ const colors=new Float32Array(nP*3),rnd=new Float32Array(nP*4);
+ forms=[...Array(5)].map(()=>({pos:new Float32Array(nP*2),lum:new Float32Array(nP)}));
+ fr.forEach((p,i)=>{colors.set(p.c,i*3);rnd.set([Math.random(),0,0,0],i*4);forms.forEach(f=>{f.pos[i*2]=p.x;f.pos[i*2+1]=p.y;f.lum[i]=1})});
+ for(let k=0;k<Ng;k++){const i=Fn+k,kc=kg[Math.floor(k*kg.length/Ng)];
+  colors.set(kc.c,i*3);rnd.set([Math.random(),Math.random()-.5,Math.random()-.5,1],i*4);
+  forms[0].pos[i*2]=kc.x;forms[0].pos[i*2+1]=kc.y;forms[0].lum[i]=1;
+  shapes.forEach((s,j)=>{const t=s[Math.floor(k*s.length/Ng)]||kc;forms[j+1].pos[i*2]=t.x;forms[j+1].pos[i*2+1]=t.y;forms[j+1].lum[i]=t.l||1})}
+ upload(colors,rnd);
+ hud.textContent=`cells ${nP} (frame ${Fn}, glyph ${Ng})`;
+}
+
+/* ---------- WebGL ---------- */
+const VS=`attribute vec2 a_s,a_t;attribute float a_ls,a_lt;attribute vec3 a_c;attribute vec4 a_r;
+uniform float u_t,u_cell,u_pass,u_sa,u_sb;uniform vec2 u_grid;varying vec3 v_c;
+void main(){
+ float d=(a_s.x/u_grid.x*.4+a_s.y/u_grid.y*.6)*.4+a_r.x*.16;
+ float t=clamp((u_t-d)/.44,0.,1.);
+ float e=t<.5?4.*t*t*t:1.-pow(-2.*t+2.,3.)/2.;
+ float s=sin(3.14159*t)*a_r.w;
+ vec2 p=mix(a_s,a_t,e)+a_r.yz*s*34.;
+ p=floor(p)+.5;
+ gl_Position=vec4(p.x/u_grid.x*2.-1.,1.-p.y/u_grid.y*2.,0.,1.);
+ gl_PointSize=u_cell*(u_pass>.5?5.:1.);
+ float fl=a_r.w>.5?s:.22*sin(3.14159*u_t);
+ float tl=clamp(dot(a_c,vec3(.34))/.5,0.,1.5);
+ float g=a_r.w>.5?1.:0.;
+ vec3 cf=(u_sa*g>.5)?vec3(1.,.2,.27)*(.12+.98*a_ls*a_ls)*(.78+.3*tl):a_c;
+ vec3 ct=(u_sb*g>.5)?vec3(1.,.2,.27)*(.12+.98*a_lt*a_lt)*(.78+.3*tl):a_c;
+ v_c=mix(mix(cf,ct,e),vec3(1.,.4,.5),fl*.6);}`;
+const FS=`precision mediump float;uniform float u_fp;varying vec3 v_c;
+void main(){vec2 c=gl_PointCoord;
+ if(u_fp<.5){if(c.x<.08||c.x>.92||c.y<.08||c.y>.92)discard;gl_FragColor=vec4(v_c,1.);}
+ else{float a=1.-length(c-.5)*2.;if(a<=0.)discard;a=a*a*.07;gl_FragColor=vec4(v_c*a,a);}}`;
+const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o};
+const prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw gl.getProgramInfoLog(prog);gl.useProgram(prog);
+const L={};['a_s','a_t','a_ls','a_lt','a_c','a_r'].forEach(n=>L[n]=gl.getAttribLocation(prog,n));
+const U={};['u_t','u_cell','u_pass','u_fp','u_grid','u_sa','u_sb'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));
+const B={};function buf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return b}
+function upload(colors,rnd){B.c=buf(colors);B.r=buf(rnd);forms.forEach(f=>{f.bp=buf(f.pos);f.bl=buf(f.lum)})}
+function attr(loc,b,n){gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,n,gl.FLOAT,false,0,0)}
+let A=0,Bf=0;
+function bind(a,b){A=a;Bf=b;gl.uniform1f(U.u_sa,a?1:0);gl.uniform1f(U.u_sb,b?1:0);attr(L.a_s,forms[a].bp,2);attr(L.a_t,forms[b].bp,2);attr(L.a_ls,forms[a].bl,1);attr(L.a_lt,forms[b].bl,1);attr(L.a_c,B.c,3);attr(L.a_r,B.r,4)}
+function size(){const dpr=Math.min(devicePixelRatio||1,2),w=Math.round(stage.clientWidth*dpr);cv.width=w;cv.height=Math.round(w*ROWS/COLS);gl.viewport(0,0,cv.width,cv.height)}
+function render(u){gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.enable(gl.BLEND);
+ gl.uniform2f(U.u_grid,COLS,ROWS);gl.uniform1f(U.u_cell,cv.width/COLS);gl.uniform1f(U.u_t,u);
+ gl.blendFunc(gl.ONE,gl.ONE);gl.uniform1f(U.u_pass,1);gl.uniform1f(U.u_fp,1);gl.drawArrays(gl.POINTS,0,nP);
+ gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.uniform1f(U.u_pass,0);gl.uniform1f(U.u_fp,0);gl.drawArrays(gl.POINTS,0,nP)}
+
+/* ---------- choreography ---------- */
+let cur=0,busy=false,paused=false,auto=true,timer=0,raf=0;
+const ease=t=>t;
+function setLabel(i){label.style.opacity=0;setTimeout(()=>{label.textContent=i?NAMES[i]:'';if(i)label.style.opacity=1},220)}
+function morph(to,done){
+ if(busy||to===cur){done&&done();return}
+ busy=true;const from=cur;bind(from,to);render(0);
+ cv.style.opacity=1;requestAnimationFrame(()=>{img.style.opacity=0});
+ setLabel(0);
+ const t0=performance.now();
+ const step=now=>{
+  if(paused){raf=requestAnimationFrame(step);return}
+  const u=Math.min(1,(now-t0)/DUR);render(u);
+  if(u<1)raf=requestAnimationFrame(step);
+  else{cur=to;busy=false;
+   if(to===0){img.style.opacity=1;setTimeout(()=>{if(cur===0&&!busy)cv.style.opacity=0},320)}else setLabel(to);
+   done&&done()}};
+ raf=requestAnimationFrame(step)}
+function loop(){clearTimeout(timer);if(!auto)return;
+ timer=setTimeout(()=>{if(paused||busy)return loop();
+  const chain=[1,2,3,4,0];let i=0;
+  const next=()=>{if(!auto)return;const to=chain[i++];morph(to,()=>{timer=setTimeout(to===0?loop:next,to===0?0:HOLD_S)})};next()},HOLD_K)}
+$('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||busy)return;
+ if(b.id==='auto'){auto=!auto;b.classList.toggle('on',auto);if(auto&&cur===0)loop();return}
+ auto=false;$('auto').classList.remove('on');clearTimeout(timer);
+ morph(+b.dataset.s,()=>{timer=setTimeout(()=>morph(0),HOLD_S+800)})});
+
+function start(){try{size();build();bind(0,0);addEventListener('resize',()=>{size();render(cur===0?0:1)});loop();
+ new IntersectionObserver(e=>{paused=!e[0].isIntersecting}).observe(stage);
+ document.addEventListener('visibilitychange',()=>{paused=document.hidden});window.__go=(i)=>morph(i);window.__u=(a,b,u)=>{bind(a,b);cv.style.opacity=1;img.style.opacity=0;render(u)}}catch(err){hud.textContent='fallback: static K ('+err+')'}}
+const boot=()=>(window.requestIdleCallback||setTimeout)(start);
+const ready=()=>img.decode?img.decode().then(boot,boot):boot();
+document.readyState==='complete'?ready():addEventListener('load',ready);
+})();
+</script></body></html>

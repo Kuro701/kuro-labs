@@ -23,3 +23,4 @@ if(soldEls.length)fetch('/api/sales-count').then(r=>r.ok?r.json():null).then(dat
  });
 }).catch(()=>{});
 })();
+;(function(){var a=document.querySelector('.kl-art');if(!a||!('IntersectionObserver' in window))return;new IntersectionObserver(function(e){a.classList.toggle('kl-paused',!e[0].isIntersecting)}).observe(a);document.addEventListener('visibilitychange',function(){a.classList.toggle('kl-paused',document.hidden)})})();
