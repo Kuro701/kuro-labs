@@ -64,45 +64,81 @@ async function pairUp(a,b){
  return upload({n:N,s,t,ca,cb,r})}
 
 /* ---- WebGL ---- */
-const VS=`attribute vec2 a_s,a_t;attribute vec3 a_ca,a_cb,a_r;uniform float u_t,u_cell,u_k;uniform vec2 u_grid;varying vec3 v_c;
+const VS=`attribute vec2 a_s,a_t;attribute vec3 a_ca,a_cb,a_r;uniform float u_t,u_cell,u_k,u_pat;uniform vec2 u_grid;varying vec3 v_c;
 float ss(float x){x=clamp(x,0.,1.);return x*x*x*(x*(x*6.-15.)+10.);}
+float hh(float x){return fract(sin(x*127.1+311.7)*43758.5453);}
+vec3 rotX(vec3 p,float a){float c=cos(a),s=sin(a);return vec3(p.x,c*p.y-s*p.z,s*p.y+c*p.z);}
+vec3 rotY(vec3 p,float a){float c=cos(a),s=sin(a);return vec3(c*p.x+s*p.z,p.y,-s*p.x+c*p.z);}
+vec3 rotZ(vec3 p,float a){float c=cos(a),s=sin(a);return vec3(c*p.x-s*p.y,s*p.x+c*p.y,p.z);}
 void main(){
  float T=clamp((u_t-a_r.x*.14)/.86,0.,1.);
  float a=ss(T/.34),b=ss((T-.66)/.34);
  vec2 ctr=.5*u_grid;
- float rn=.05+.95*sqrt(a_r.z);
- float arm=floor(a_r.y*3.);
- float phv=arm*2.0944+rn*5.2+(fract(a_r.y*3.)-.5)*.55+u_t*(10.-7.*rn);
- float rv=rn*170.*u_k;
+
+ float U=a_r.y,W=a_r.z,X=fract(a_r.x*91.7+U*13.1),Y=fract(a_r.x*37.3+W*29.9),R=186.*u_k,TP=6.28318,dep=1.,jw=5.;
+ vec3 q=vec3(0.);
+ if(u_pat<.5){                                   // 0 star compass: four-point star, tick ring, inner ring
+  if(W<.55){float th=U*TP,env=pow(pow(abs(cos(th)),.6667)+pow(abs(sin(th)),.6667),-2.55),ang=th+u_t*.8;q=vec3(cos(ang),sin(ang),0.)*env*.98*R*sqrt(X);jw=0.;}
+  else if(W<.82){float g=floor(U*72.),th=g/72.*TP-u_t*.5,len=mod(g,6.)<.5?.14:(mod(g,2.)<.5?.07:.04);q=vec3(cos(th),sin(th),0.)*R*(.97-len*X);jw=2.6;}
+  else{float th=U*TP-u_t*.5;q=vec3(cos(th),sin(th),0.)*R*.5;jw=4.;}
+ }else if(u_pat<1.5){                            // 1 gyroscope: three rings tilting in 3D
+  if(W<.96){float k=floor(W/.32),t=U*TP,rr=(k<.5?.97:(k<1.5?.79:.61))*R;vec3 p=vec3(cos(t),sin(t),0.)*rr;
+   if(k<.5)p=rotX(p,u_t*1.3+.7);else if(k<1.5){p=rotY(p,u_t*1.7+1.2);p=rotZ(p,.5);}else{p=rotX(p,-u_t*1.1+1.6);p=rotZ(p,-.7);}
+   q=p;dep=.6+.4*(p.z/R*.5+.5);jw=8.;}
+  else{float th=Y*TP;q=vec3(cos(th),sin(th),0.)*.1*R*sqrt(X);jw=0.;}
+ }else if(u_pat<2.5){                            // 2 wireframe cubes (outer + counter-rotating inner) with perspective
+  float e=floor(W*12.),ax=floor(e/4.),a4=mod(e,4.),s1=mod(a4,2.)*2.-1.,s2=floor(a4/2.)*2.-1.,tt=U*2.-1.;
+  vec3 p=ax<.5?vec3(tt,s1,s2):(ax<1.5?vec3(s2,tt,s1):vec3(s1,s2,tt));
+  float inner=X<.3?1.:0.,dir=inner>.5?-1.:1.;p*=.5*R*(inner>.5?.5:1.);
+  p=rotY(p,u_t*1.2*dir);p=rotX(p,.55+u_t*.8*dir);jw=7.;
+  float f=1./(1.-p.z/(4.*R));q=vec3(p.xy*f,p.z);dep=clamp(.55+.45*(p.z/(.9*R)*.5+.5),0.,1.);
+ }else if(u_pat<3.5){                            // 3 DNA helix with rungs
+  float t=U*2.-1.,ang=t*TP*1.4+u_t*2.6;vec3 p;
+  if(W<.7){float sgn=W<.35?0.:3.14159,a2=ang+sgn;p=vec3(cos(a2)*.5*R,t*.93*R,sin(a2)*.5*R);jw=7.;}
+  else{float tq=floor(U*22.)/22.*2.-1.,a2=tq*TP*1.4+u_t*2.6;vec3 p1=vec3(cos(a2),0.,sin(a2))*.5*R,p2=-p1;p=mix(p1,p2,X);p.y=tq*.93*R;jw=3.5;}
+  p=rotZ(p,.38);q=p;dep=clamp(.55+.45*(p.z/(.5*R)*.5+.5),0.,1.);
+ }else{                                          // 4 rune circle: rings, counter-rotating triangles, glyph band, centre star
+  if(W<.12){float th=U*TP+u_t*.4;q=vec3(cos(th),sin(th),0.)*R*(.97+(X-.5)*.01);jw=3.5;}
+  else if(W<.2){float th=U*TP-u_t*.3;q=vec3(cos(th),sin(th),0.)*R*(.6+(X-.5)*.01);jw=3.5;}
+  else if(W<.46){float tri=W<.33?0.:1.,e=floor(X*3.),rot=(tri<.5?1.:-1.)*u_t*.6+tri*1.0472;
+   float a0=rot+e*2.0944,a1=rot+(e+1.)*2.0944;vec2 v0=vec2(cos(a0),sin(a0))*.78*R,v1=vec2(cos(a1),sin(a1))*.78*R;q=vec3(mix(v0,v1,U),0.);jw=4.;}
+  else if(W<.88){float g=floor(U*12.),ca=g*TP/12.+u_t*.5,s=floor(Y*3.);
+   vec2 p0=vec2(hh(g*7.+s*1.3)-.5,hh(g*3.1+s*2.7)-.5)*.13*R,p1=vec2(hh(g*5.3+s*.7+9.)-.5,hh(g*11.+s*4.1+2.)-.5)*.13*R;
+   vec2 lp=mix(p0,p1,fract(X*13.7+U*5.));float c=cos(ca+1.5708),sn=sin(ca+1.5708);
+   q=vec3(vec2(cos(ca),sin(ca))*.79*R+vec2(c*lp.x-sn*lp.y,sn*lp.x+c*lp.y),0.);jw=3.;}
+  else{float th=U*TP,env=.15+.85*pow(abs(cos(2.*th)),2.4),ang=th-u_t*.9;q=vec3(cos(ang),sin(ang),0.)*env*.24*R*sqrt(X);jw=0.;}
+ }
+ vec2 V=q.xy+(vec2(fract(X*7.3),fract(Y*5.1))-.5)*jw*u_k;
+ float rv=length(V),phv=atan(V.y,V.x),rn=rv/R;
  vec2 sc=a_s-ctr,tc=a_t-ctr;
  float rs=length(sc),ths=atan(sc.y,sc.x),rt=length(tc),tht=atan(tc.y,tc.x);
- float dA=mod(phv-ths,6.28318)+6.28318,dB=mod(tht-phv,6.28318)+6.28318;
+ float dA=mod(phv-ths+3.14159,6.28318)-3.14159,dB=mod(tht-phv+3.14159,6.28318)-3.14159;
  vec2 p;
- if(b>0.){float r=mix(rv,rt,b),g=phv+dB*b;p=ctr+vec2(cos(g),sin(g))*r;}
- else{float r=mix(rs,rv,a),g=ths+dA*a;p=ctr+vec2(cos(g),sin(g))*r;}
+ if(b>0.){float r=mix(rv,rt,b),g=phv+dB*b+.9*sin(3.14159*b);p=ctr+vec2(cos(g),sin(g))*r;}
+ else{float r=mix(rs,rv,a),g=ths+dA*a+.9*sin(3.14159*a);p=ctr+vec2(cos(g),sin(g))*r;}
  gl_Position=vec4(p.x/u_grid.x*2.-1.,1.-p.y/u_grid.y*2.,0.,1.);
- gl_PointSize=u_cell;
+ gl_PointSize=u_cell*(1.+.45*a*(1.-b));
  float core=a*(1.-b)*(1.-smoothstep(0.,.22,rn));
- v_c=mix(a_ca,a_cb,ss((T-.42)/.16))*(1.+.8*core);}`;
+ v_c=mix(a_ca,a_cb,ss((T-.42)/.16))*(1.+.8*core)*mix(1.,dep,a*(1.-b));}`;
 const FS=`precision mediump float;varying vec3 v_c;
 void main(){float a=smoothstep(.5,.2,length(gl_PointCoord-.5));if(a<=0.)discard;gl_FragColor=vec4(v_c*a,a);}`;
 const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o};
 const prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(prog);
 if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw gl.getProgramInfoLog(prog);gl.useProgram(prog);
 const L={};['a_s','a_t','a_ca','a_cb','a_r'].forEach(n=>L[n]=gl.getAttribLocation(prog,n));
-const U={};['u_t','u_cell','u_grid','u_k'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));
+const U={};['u_t','u_cell','u_grid','u_k','u_pat'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));
 function buf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return b}
 function upload(P){P.g={s:buf(P.s),t:buf(P.t),ca:buf(P.ca),cb:buf(P.cb),r:buf(P.r)};P.s=P.t=P.ca=P.cb=P.r=null;return P}
 function free(P){if(P&&P.g){for(const k in P.g)gl.deleteBuffer(P.g[k]);P.g=null}}
 function attr(loc,b,n,type,norm,stride){gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,n,type||gl.FLOAT,!!norm,stride||0,0)}
-let P=null,lastU=0,stopped=false;
+let P=null,lastU=0,stopped=false,pat=0;
 function alive(){const w=cv.width,h=cv.height,px=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,px);let n=0;for(let i=3;i<px.length;i+=16)if(px[i])n++;return n>200&&gl.getError()===gl.NO_ERROR}
 function fallback(){stopped=true;clearTimeout(timer);cv.style.transition='none';cv.style.opacity=0;frameEl.style.opacity=0;img.style.transition='none';img.style.opacity=1;if(label){label.textContent=LABEL0;label.style.opacity=1}}
 cv.addEventListener('webglcontextlost',e=>{e.preventDefault();fallback()});
 function use(p){const old=P;P=p;attr(L.a_s,p.g.s,2);attr(L.a_t,p.g.t,2);attr(L.a_ca,p.g.ca,3,gl.UNSIGNED_BYTE,true,4);attr(L.a_cb,p.g.cb,3,gl.UNSIGNED_BYTE,true,4);attr(L.a_r,p.g.r,3);return old}
 function size(){const dpr=Math.min(devicePixelRatio||1,2),w=Math.round(stage.clientWidth*dpr);cv.width=w;cv.height=Math.round(w*GH/GW);gl.viewport(0,0,cv.width,cv.height)}
 function render(u){lastU=u;gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
- gl.uniform2f(U.u_grid,GW,GH);gl.uniform1f(U.u_k,S);gl.uniform1f(U.u_cell,Math.max(1.7,cv.width/GW*1.6));gl.uniform1f(U.u_t,u);gl.drawArrays(gl.POINTS,0,P.n)}
+ gl.uniform2f(U.u_grid,GW,GH);gl.uniform1f(U.u_k,S);gl.uniform1f(U.u_pat,pat);gl.uniform1f(U.u_cell,Math.max(1.7,cv.width/GW*1.6));gl.uniform1f(U.u_t,u);gl.drawArrays(gl.POINTS,0,P.n)}
 
 /* ---- choreography ---- */
 let cur=0,busy=false,paused=false,timer=0;const prep={};
@@ -110,7 +146,7 @@ const key=(a,b)=>a+'>'+b;
 const prepare=(a,b)=>prep[key(a,b)]||(prep[key(a,b)]=pairUp(a,b));
 function setLabel(i){if(!label)return;label.style.opacity=0;setTimeout(()=>{label.textContent=i?'KURO LABS / '+NAMES[i]:LABEL0;label.style.opacity=1},320)}
 async function morph(to){
- if(busy)return;busy=true;const from=cur,p=await prepare(from,to),old=use(p);
+ if(busy)return;busy=true;const from=cur,p=await prepare(from,to),old=use(p);pat=chain.indexOf(to);
  render(0);if(old&&old!==p)free(old);                                    // frame 0 == the frame the previous morph ended on
  if(label)label.style.opacity=0;
  await new Promise(res=>{let elapsed=0,last=performance.now();
