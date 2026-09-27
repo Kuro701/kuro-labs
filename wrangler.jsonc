@@ -11,7 +11,10 @@
     // /about/ and /about both resolve to /about/index.html
     "html_handling": "auto-trailing-slash",
     // serve our own themed 404 instead of Cloudflare's default
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    // Without this, Cloudflare answers any path that is not a file (like /api/...) with the 404 page and never runs
+    // the Worker. Only /api/* goes to the Worker first; every page and image is still served straight from assets.
+    "run_worker_first": ["/api/*"]
   },
   // Dragons & Ladders online rooms: one Durable Object per room (class DnlRoom, exported from site/worker.js).
   // new_sqlite_classes is the only storage kind the Workers Free plan allows.
