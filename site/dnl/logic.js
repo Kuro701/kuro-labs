@@ -93,13 +93,15 @@ const humans = room => room.players.filter(p => !p.bot);
 const findPlayer = (room, pid) => room.players.find(p => p.pid === pid) || null;
 const cur = room => room.players[room.turn] || null;
 const fail = (code, message) => ({ ok: false, code, message });
+// After seats are deleted (lobby, or a finished game) the turn index must still point at a seat.
+const fixTurn = room => { if (room.turn >= room.players.length || room.turn < 0) room.turn = 0; };
 
 /* ---------- create / join ---------- */
 
 function createRoom(code, now) {
   return {
     v: 1, code, phase: 'lobby', createdAt: now, lastActivity: now, hostPid: null,
-    rules: { six: false }, players: [], turn: 0, sixes: 0, winnerPid: null, readyAt: 0, seq: 0, botSeq: 0
+    rules: { six: false }, players: [], turn: 0, sixes: 0, winnerPid: null, readyAt: 0, seq: 0, botSeq: 0, ranked: false, results: []
   };
 }
 
@@ -109,21 +111,26 @@ function transferHost(room) {
 }
 
 // Join a new seat (lobby only) or take back an existing one with pid + secret.
+// req.uid (optional) is the id of the logged-in account, put there by the server, never by the browser. It is kept on the seat
+// so wins can be saved to the account, and it is never sent to any client.
 function join(room, req, now, rng) {
   rng = rng || defaultRng;
+  const uid = Number.isInteger(req.uid) && req.uid > 0 ? req.uid : null;
   const existing = req.pid ? findPlayer(room, req.pid) : null;
   if (existing && !existing.bot && existing.secret && safeEqual(existing.secret, req.secret || '')) {
     existing.connected = true; existing.lastSeen = now; room.lastActivity = now;
+    if (uid && !existing.uid && !room.players.some(q => q !== existing && !q.bot && q.uid === uid)) existing.uid = uid;   // first account to sit here keeps the seat's results
     return { ok: true, player: existing, isNew: false };
   }
   if (req.pid && (!existing || existing.bot)) return fail('seat_gone', 'Your seat in this room is gone.');
   if (req.pid) return fail('bad_secret', 'That seat belongs to someone else.');
   if (room.phase !== 'lobby') return fail('started', 'That game has already started.');
   if (room.players.length >= E.MAX_PLAYERS) return fail('full', 'That room is full.');
+  if (uid && room.players.some(q => !q.bot && q.uid === uid)) return fail('dup_account', 'Your account already has a seat in this room. Rejoin from the browser you used before.');
   const p = {
     pid: freshPid(room, rng), secret: randomString(rng, 24),
     name: sanitizeName(req.name, room.players.map(q => q.name), 'Player ' + (room.players.length + 1)),
-    bot: false, pos: 0, turns: 0, connected: true, lastSeen: now
+    bot: false, uid, pos: 0, turns: 0, connected: true, lastSeen: now
   };
   room.players.push(p);
   if (!room.hostPid) room.hostPid = p.pid;
@@ -155,15 +162,32 @@ function addBot(room, pid, now, rng) {
   room.lastActivity = now; return { ok: true };
 }
 
-// Host removes a bot, or kicks a human, from the lobby.
+// Host removes a bot, or kicks a human. In the lobby (or after a game) the seat is simply deleted; in a running game a kicked
+// human's seat turns into a bot, exactly as if they had left, so nobody else is stuck.
 function removePlayer(room, pid, msg, now) {
-  const e = requireHost(room, pid) || requirePhase(room, 'lobby'); if (e) return e;
+  const e = requireHost(room, pid); if (e) return e;
   const t = findPlayer(room, msg.pid);
   if (!t || t.pid === pid) return fail('bad_target', 'No such player.');
-  room.players = room.players.filter(q => q.pid !== t.pid);
+  if (room.phase === 'playing') {
+    if (t.bot) return fail('bad_target', 'Bots stay until the game is over.');
+    t.bot = true; t.left = true; t.secret = null; t.connected = true;
+    room.lastActivity = now; room.seq++;
+    return { ok: true, kicked: [t.pid] };
+  }
+  room.players = room.players.filter(q => q.pid !== t.pid); fixTurn(room);
   room.lastActivity = now;
   return { ok: true, kicked: t.bot ? [] : [t.pid] };
 }
+
+// The host ends the room for everyone.
+function closeByHost(room, pid) {
+  const e = requireHost(room, pid); if (e) return e;
+  return { ok: true, closed: true };
+}
+
+// Results still waiting to be saved to accounts (the Durable Object saves them, then clears them).
+const pendingResults = room => (room.results || []).slice();
+function clearResults(room) { room.results = []; }
 
 function rename(room, pid, msg, now) {
   const e = requirePhase(room, 'lobby'); if (e) return e;
@@ -176,7 +200,8 @@ function start(room, pid, now, rng) {
   const e = requireHost(room, pid) || requirePhase(room, 'lobby'); if (e) return e;
   if (room.players.length < 2) return fail('need_players', 'You need at least two players. Add a bot or wait for a friend.');
   room.phase = 'playing'; room.winnerPid = null; room.sixes = 0;
-  room.players.forEach(p => { p.pos = 0; p.turns = 0; });
+  room.players.forEach(p => { p.pos = 0; p.turns = 0; p.h0 = !p.bot; });
+  room.ranked = room.players.filter(p => !p.bot).length >= 2;        // wins count for accounts only when at least two people play
   room.turn = (rng || defaultRng)(room.players.length);
   room.readyAt = now + T.START_DELAY_MS; room.lastActivity = now; room.seq++;
   return { ok: true };
@@ -186,7 +211,7 @@ function rematch(room, pid, now) {
   const e = requireHost(room, pid) || requirePhase(room, 'over'); if (e) return e;
   room.players = room.players.filter(p => !p.left);       // seats of people who left mid-game are gone
   room.players.forEach(p => { p.pos = 0; p.turns = 0; });
-  room.phase = 'lobby'; room.winnerPid = null; room.turn = 0; room.sixes = 0; room.readyAt = 0;
+  room.phase = 'lobby'; room.winnerPid = null; room.turn = 0; room.sixes = 0; room.readyAt = 0; room.ranked = false;       // results not yet saved stay in room.results until the server has saved them
   room.lastActivity = now; room.seq++;
   return { ok: true };
 }
@@ -195,7 +220,7 @@ function rematch(room, pid, now) {
 function leave(room, pid, now) {
   const p = findPlayer(room, pid); if (!p) return { ok: true };
   if (room.phase === 'playing') { p.bot = true; p.left = true; p.secret = null; p.connected = true; }
-  else room.players = room.players.filter(q => q.pid !== pid);
+  else { room.players = room.players.filter(q => q.pid !== pid); fixTurn(room); }
   if (room.hostPid === pid) transferHost(room);
   room.lastActivity = now; room.seq++;
   return { ok: true, closed: humans(room).length === 0 };
@@ -222,6 +247,10 @@ function doRoll(room, pid, now, rng, auto) {
   const event = { t: 'roll', pid: p.pid, roll, out, auto: !!auto };
   if (out.win) {
     room.phase = 'over'; room.winnerPid = p.pid; room.readyAt = now;
+    // What the game server saves to accounts: only in games with 2+ people, only for people who stayed to the end.
+    // (still needs two people seated at the end, so a player cannot kick or outlast the others and then "win" alone against bots)
+    const still = room.players.filter(q => q.h0 && !q.left).length >= 2;
+    if (room.ranked && still) room.results = (room.results || []).concat(room.players.filter(q => q.h0 && q.uid && !q.left).map(q => ({ uid: q.uid, won: q.pid === p.pid, turns: q.turns })));
   } else {
     const nt = E.nextTurn({ turn: room.turn, sixes: room.sixes, count: room.players.length, six: room.rules.six }, roll);
     room.turn = nt.turn; room.sixes = nt.sixes;
@@ -239,7 +268,7 @@ function tick(room, now, rng) {
   if (room.phase !== 'playing') {
     const gone = humans(room).filter(p => !p.connected && now - p.lastSeen > T.GONE_MS).map(p => p.pid);
     if (gone.length) {
-      room.players = room.players.filter(p => gone.indexOf(p.pid) < 0);
+      room.players = room.players.filter(p => gone.indexOf(p.pid) < 0); fixTurn(room);
       if (gone.indexOf(room.hostPid) >= 0) transferHost(room);
       changed = true; room.seq++;
     }
@@ -294,6 +323,7 @@ function handle(room, pid, msg, now, rng) {
     case 'rename':  return rename(room, pid, msg, now);
     case 'rematch': return rematch(room, pid, now);
     case 'leave':   return leave(room, pid, now);
+    case 'close':   return closeByHost(room, pid);
     default:        return fail('bad_message', 'Unknown message.');
   }
 }
@@ -306,7 +336,7 @@ function publicState(room, now) {
   return {
     code: room.code, phase: room.phase, hostPid: room.hostPid, rules: { six: room.rules.six },
     players: room.players.map(q => ({ pid: q.pid, name: q.name, bot: q.bot, pos: q.pos, turns: q.turns, connected: q.connected, left: !!q.left })),
-    turn: room.turn, sixes: room.sixes, winnerPid: room.winnerPid, seq: room.seq,
+    turn: room.turn, sixes: room.sixes, winnerPid: room.winnerPid, seq: room.seq, ranked: !!room.ranked || (room.phase === 'lobby' && humans(room).length >= 2),
     readyIn: playing ? Math.max(0, room.readyAt - now) : 0,
     deadlineIn: playing && p && !p.bot ? Math.max(0, dueAt(room) - now) : null,
     max: E.MAX_PLAYERS
@@ -322,5 +352,5 @@ module.exports = {
   ALPHABET, CODE_LEN, T, defaultRng, newCode, normalizeCode, isValidCode, sanitizeName,
   createRoom, join, disconnect, handle, tick, nextAlarm, dueAt, shouldClose, publicState, publicInfo,
   // exported for tests
-  doRoll, start, leave, addBot, rematch
+  doRoll, start, leave, addBot, rematch, pendingResults, clearResults
 };

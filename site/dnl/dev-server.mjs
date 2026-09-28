@@ -8,6 +8,7 @@
 // once after deploying. State lives in memory and is lost when this process stops.
 //
 //   --fast    shorter server timers and pacing, so whole games run in seconds (used by the automated tests)
+//   --real-limits   keep the real room-creation limit (8 an hour per address) instead of the test-friendly one
 //   GET /__dev/hibernate/CODE   simulate Cloudflare evicting the room object from memory (sockets stay connected)
 //
 // It also runs the ACCOUNTS backend (login, saves, admin) with an in-memory SQLite database and pretend Discord / email /
@@ -16,7 +17,7 @@
 //   --db file.sqlite      keep the accounts database in a file between runs
 //   Emails are printed here and listed at /__dev/mailbox. "Continue with Discord" opens a small pretend Discord page.
 //   /__dev/make-admin?u=NAME   makes a user an administrator      /__dev/bump-rules[?u=NAME]   makes everyone (or one user) re-accept the rules
-//   /__dev/cleanup             runs the nightly cleanup now       /__dev/age-sessions   makes every login look old ("confirm it is you")
+//   /__dev/record?u=NAME&won=1&turns=30   saves a pretend game result for a user     /__dev/cleanup   runs the nightly cleanup now       /__dev/age-sessions   makes every login look old ("confirm it is you")
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -149,6 +150,10 @@ const env = {
   }
 };
 
+// the same accounts database is what the room server uses to know who is logged in and to save wins
+Object.assign(env, accountsEnv);
+if (!args.includes('--real-limits')) Object.assign(env, { DNL_ROOMS_PER_HOUR: 1e6, DNL_ROOMS_PER_DAY: 1e6 });   // tests create many rooms; --real-limits switches the 8/hour rule on
+
 /* ---------- 4. WebSocket framing (RFC 6455, what a browser speaks) ---------- */
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 function frame(opcode, payload) {
@@ -232,6 +237,11 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/__dev/discord-authorize') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(DISCORD_PAGE(Object.fromEntries(url.searchParams))); return; }
     if (accountsEnv.DB && url.pathname === '/__dev/make-admin') { await accountsEnv.DB.prepare('UPDATE users SET is_admin = 1 WHERE username_lower = ?').bind(String(url.searchParams.get('u') || '').toLowerCase()).run(); res.writeHead(200); res.end('ok'); return; }
     if (accountsEnv.DB && url.pathname === '/__dev/bump-rules') { const u = url.searchParams.get('u'); await (u ? accountsEnv.DB.prepare('UPDATE users SET rules_version = 0 WHERE username_lower = ?').bind(u.toLowerCase()) : accountsEnv.DB.prepare('UPDATE users SET rules_version = 0')).run(); res.writeHead(200); res.end('ok'); return; }
+    if (accountsEnv.DB && url.pathname === '/__dev/record') {                          // pretend the game server saved a result: ?u=NAME&won=1&turns=30
+      const u = await accountsEnv.DB.prepare('SELECT id FROM users WHERE username_lower = ?').bind(String(url.searchParams.get('u') || '').toLowerCase()).first();
+      if (!u) { res.writeHead(404); res.end('no such user'); return; }
+      await accounts.recordGameResult(accountsEnv, u.id, 'dragons-and-ladders', { won: url.searchParams.get('won') === '1', turns: Number(url.searchParams.get('turns')) || 40 }); res.writeHead(200); res.end('ok'); return;
+    }
     if (accountsEnv.DB && url.pathname === '/__dev/age-sessions') { await accountsEnv.DB.prepare('UPDATE sessions SET last_auth_at = 0').run(); res.writeHead(200); res.end('ok'); return; }
     if (accountsEnv.DB && url.pathname === '/__dev/cleanup') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(await accounts.runCleanup(accountsEnv))); return; }
     if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/dnl/')) {
@@ -246,7 +256,8 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/dnl/')) {
       const chunks = []; for await (const c of req) chunks.push(c);
-      const r = await handleDnl(toRequest(req, Buffer.concat(chunks)), env);
+      const dreq = toRequest(req, Buffer.concat(chunks)); dreq.headers.set('cf-connecting-ip', req.socket.remoteAddress || '');
+      const r = await handleDnl(dreq, env);
       return sendResponse(res, r || new NativeResponse('not found', { status: 404 }));
     }
     let file = path.join(ROOT, decodeURIComponent(url.pathname));
@@ -260,7 +271,8 @@ const server = http.createServer(async (req, res) => {
 
 server.on('upgrade', async (req, socket) => {
   try {
-    const r = await handleDnl(toRequest(req), env);
+    const ureq = toRequest(req); ureq.headers.set('cf-connecting-ip', req.socket.remoteAddress || '');
+    const r = await handleDnl(ureq, env);
     if (!r || r.status !== 101) {
       const body = r ? Buffer.from(await r.arrayBuffer()) : Buffer.from('not found');
       socket.write(`HTTP/1.1 ${r ? r.status : 404} Error\r\ncontent-type: application/json\r\ncontent-length: ${body.length}\r\nconnection: close\r\n\r\n`); socket.end(body); return;

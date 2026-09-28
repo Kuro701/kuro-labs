@@ -8,6 +8,7 @@
   "public/contact/index.html",
   "public/shop/crescent-rose/index.html",
   "public/shop/gift-basket/index.html",
+  "public/shop/predator-nanomask/index.html",
   "public/projects/cloe/index.html",
   "public/projects/raphael/index.html",
   "public/projects/vretil/index.html",
@@ -19,5 +20,6 @@
   "public/rules/index.html",
   "public/privacy/index.html",
   "public/account/index.html",
+  "public/leaderboard/index.html",
   "public/admin/index.html"
 ]

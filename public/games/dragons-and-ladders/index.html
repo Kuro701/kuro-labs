@@ -83,6 +83,7 @@ details p,details li{color:var(--muted);font-size:.92rem}
 .roomline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .roomline b{font:700 1.25rem/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.18em;color:var(--gold2)}
 .roomline button{margin-left:auto}
+.roomline button + button{margin-left:0}
 
 /* ---- modals ---- */
 .modal{position:fixed;inset:0;background:rgba(4,8,9,.78);display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
@@ -127,7 +128,7 @@ input[type=text],.row input,.row select{width:100%;min-height:44px;background:#0
     <aside class="panel" aria-label="Game controls">
       <p class="netbar" id="netbar" role="status" hidden></p>
       <section class="card" id="roomcard" hidden>
-        <div class="roomline"><span>Room</span><b id="roomcode"></b><button type="button" class="mini" id="copyLink2">Copy invite link</button></div>
+        <div class="roomline"><span>Room</span><b id="roomcode"></b><button type="button" class="mini" id="copyLink2">Copy invite link</button><button type="button" class="mini" id="closeRoom" hidden>Close room</button></div>
       </section>
       <section class="card">
         <div class="turn">
@@ -155,7 +156,8 @@ input[type=text],.row input,.row select{width:100%;min-height:44px;background:#0
           <li>Land on the foot of a ladder and you climb to its top.</li>
           <li>Land on a dragon's head and it carries you down to its tail.</li>
           <li>You need the exact number to land on 100. Roll too high and you stay put.</li>
-          <li>Online: one player creates a room and shares the 5-character code (or the invite link). Friends join with it, the host can add bots and starts the game.</li>
+          <li>Online: one player creates a room and shares the 5-character code (or the invite link). Friends join with it, the host can add bots and starts the game. The host can also remove a player or close the room.</li>
+          <li>Logged in on kurolabs.net? Wins in online rooms with two or more people are saved to your account and can appear on the <a href="/leaderboard/">leaderboard</a>. You can hide yourself from it in your account settings.</li>
         </ul>
       </details>
       <p class="note" id="footnote">Playing as a guest. A game on this device is saved in this browser only.</p>
@@ -214,7 +216,8 @@ input[type=text],.row input,.row select{width:100%;min-height:44px;background:#0
     </div>
     <label class="chk"><input type="checkbox" id="netSix"> A six gives an extra roll</label>
     <p class="hint" id="lobbyHint"></p>
-    <div class="actions"><button type="button" id="leaveRoom">Leave room</button><button type="button" id="startOnline" class="primary">Start game</button></div>
+    <p class="hint" id="acctLine"></p>
+    <div class="actions"><button type="button" id="leaveRoom">Leave room</button><button type="button" id="closeRoom2" hidden>Close room</button><button type="button" id="startOnline" class="primary">Start game</button></div>
   </div>
 </div>
 
@@ -223,6 +226,7 @@ input[type=text],.row input,.row select{width:100%;min-height:44px;background:#0
     <div class="crown" aria-hidden="true">&#128081;</div>
     <h2 id="winTitle">Winner</h2>
     <p id="winText"></p>
+    <p class="hint" id="winSaved" hidden></p>
     <div class="actions">
       <button type="button" id="again" class="primary">Play again</button>
       <button type="button" id="change">Change players</button>
@@ -433,6 +437,7 @@ function say(msg){
 const online = () => S.mode === 'online';
 const myTurnOnline = () => online() && S.phase === 'idle' && cur() && cur().pid === Net.pid && !cur().bot;
 
+const armedKick = { pid:null, t:null };       // which player the host has clicked Remove on once (kept here because the panel is redrawn on every server message)
 function renderPanel(){
   const p = cur();
   const btn = $('#roll'), who = $('#who'); who.textContent = '';
@@ -468,15 +473,29 @@ function renderPanel(){
       if (q.connected === false) li.appendChild(tag('offline'));
     }
     const sq = document.createElement('span'); sq.className = 'sq'; sq.textContent = q.pos ? 'Square ' + q.pos : 'Start';
-    li.appendChild(sq); ul.appendChild(li);
+    li.appendChild(sq);
+    if (online() && S.phase !== 'lobby' && S.phase !== 'over' && Net.room && Net.room.hostPid === Net.pid && q.pid !== Net.pid && !q.bot) {   // the host can remove a human in a running game
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = 'Remove'; b.setAttribute('aria-label', 'Remove ' + q.name);
+      if (armedKick.pid === q.pid) b.textContent = 'Sure?';
+      b.addEventListener('click', () => {
+        if (armedKick.pid === q.pid) { clearTimeout(armedKick.t); armedKick.pid = null; send({ t:'remove', pid:q.pid }); return; }
+        armedKick.pid = q.pid; clearTimeout(armedKick.t); armedKick.t = setTimeout(() => { armedKick.pid = null; renderPanel(); }, 3500); renderPanel();
+      });
+      li.appendChild(b);
+    }
+    ul.appendChild(li);
   });
   layout();
 }
 function tag(t){ const s = document.createElement('span'); s.className = 'tag'; s.textContent = t; return s; }
 
 const app = $('#app');
-function openModal(id, focusSel){ app.inert = true; const m = $(id); m.hidden = false; const f = m.querySelector(focusSel || 'input,button'); if (f) f.focus(); }
-function closeModal(id){ $(id).hidden = true; if (['#setup','#winner','#lobby'].every(x => $(x).hidden)) app.inert = false; }
+let returnFocus = null;
+function openModal(id, focusSel){ if (!app.inert) returnFocus = document.activeElement; app.inert = true; const m = $(id); m.hidden = false; const f = m.querySelector(focusSel || 'input:not(:disabled),button:not(:disabled)'); if (f) f.focus(); }
+function closeModal(id){
+  $(id).hidden = true;
+  if (['#setup','#winner','#lobby'].every(x => $(x).hidden)) { const was = app.inert; app.inert = false; if (was && returnFocus && document.contains(returnFocus) && !returnFocus.disabled) { try { returnFocus.focus({ preventScroll:true }); } catch(e){} } returnFocus = null; }
+}
 
 /* ================= one move, animated (used by both modes) ================= */
 function bounce(i){
@@ -712,7 +731,7 @@ function openSetup(mode, note){
   $('#cancel').hidden = !S.hold;
   const ses = readSession(); $('#netRejoin').hidden = !ses; if (ses) $('#netRejoin').textContent = 'Rejoin room ' + ses.code;
   $('#netCancel').hidden = !(online() && Net.pid);
-  $('#netName').value = store.get(NAME_KEY) || '';
+  $('#netName').value = store.get(NAME_KEY) || (Acct.user ? Acct.user.slice(0, 16) : '');
   drawRows(); setMode(mode || 'local');
   if (note) $('#netMsg').textContent = note;
   openModal('#setup');
@@ -725,6 +744,29 @@ $('#go').addEventListener('click', () => {
 });
 $('#resume').addEventListener('click', () => { const sv = readSave(); if (sv) startGame(sv.players, sv.six, sv); });
 $('#cancel').addEventListener('click', cancelSetup);
+
+/* ================= who is logged in (optional: only to prefill the name and say what gets saved) ================= */
+const Acct = { user:null };
+function acctLine(ranked){
+  if (!online()) return '';
+  if (Acct.user) return ranked ? 'Logged in as ' + Acct.user + ': your result is saved to your account and can appear on the leaderboard.' : 'Logged in as ' + Acct.user + '. Results count once at least two people play together.';
+  return 'Playing as a guest. Log in on kurolabs.net first if you want your wins saved to the leaderboard.';
+}
+fetch('/api/me', { credentials:'same-origin' }).then(r => r.ok ? r.json() : null).then(j => {
+  if (!j || !j.user) return;
+  Acct.user = j.user.username;
+  const nm = document.querySelector('#netName'); if (nm && !nm.value) nm.value = Acct.user.slice(0, 16);
+  if (online() && Net.room) { $('#acctLine').textContent = acctLine(Net.room.ranked); }
+}).catch(() => {});
+
+/* two-step buttons for things that cannot be undone: the first click asks, the second one does it */
+function twoStep(btn, askLabel, action){
+  let armed = false, t = null; const label = btn.textContent;
+  btn.addEventListener('click', () => {
+    if (!armed) { armed = true; btn.textContent = askLabel; t = setTimeout(() => { armed = false; btn.textContent = label; }, 3500); return; }
+    clearTimeout(t); armed = false; btn.textContent = label; action();
+  });
+}
 
 /* ================= MODE 2: online rooms ================= */
 const Net = { ws:null, code:null, pid:null, secret:null, name:'', joined:false, queue:[], pumping:false, session:0, tries:0,
@@ -750,6 +792,7 @@ async function createRoom(){
   netMsg('Creating a room…'); setNetBusy(true);
   try {
     const r = await fetch('/api/dnl/room', { method:'POST' });
+    if (r.status === 429) { netMsg('You have made a lot of rooms in a short time. Please wait a while, or join a friend\'s room with its code.'); setNetBusy(false); return; }
     if (!r.ok) throw new Error('status ' + r.status);
     const { code } = await r.json();
     await joinRoom(code, name, null);
@@ -786,22 +829,23 @@ function connect(){
   if (Net.joined) netBar('Reconnecting…');
   const ws = new WebSocket(wsUrl(Net.code)); Net.ws = ws;
   ws.onopen = () => {
-    if (my !== Net.session) return;
+    if (my !== Net.session || ws !== Net.ws) return;
     ws.send(JSON.stringify({ t:'hello', name:Net.name, pid:Net.pid || undefined, secret:Net.secret || undefined }));
     clearInterval(Net.pingTimer); Net.pingTimer = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch(e){} }, 25000);
   };
   ws.onmessage = e => {
-    if (my !== Net.session || e.data === 'pong') return;
+    if (my !== Net.session || ws !== Net.ws || e.data === 'pong') return;
     let m; try { m = JSON.parse(e.data); } catch(err){ return; }
-    onNetMessage(m, my);
+    m.rx = Date.now(); onNetMessage(m, my);
   };
   ws.onclose = ev => {
-    if (my !== Net.session) return;
+    if (my !== Net.session || ws !== Net.ws) return;         // an old socket closing late must not start a second connection
     clearInterval(Net.pingTimer);
     if (Net.intentional) return;
     if (ev.code === 4001) { leaveToSetup('This room was opened in another tab or window, so this one was disconnected.'); return; }
     if (ev.code === 4002) { leaveToSetup('The host removed you from the room.'); return; }
     if (ev.code === 4000) { leaveToSetup('That room has closed.'); return; }
+    if (ev.code === 4003 && Net.joined) { leaveToSetup('Your seat in that room is gone.'); return; }
     if (!Net.joined) { if (!$('#netMsg').textContent || $('#netMsg').textContent.indexOf('…') >= 0) netMsg('Could not join that room.'); setNetBusy(false); return; }
     scheduleReconnect(my);
   };
@@ -813,6 +857,7 @@ function scheduleReconnect(my){
   Net.tries++;
   if (Net.tries > 14) { leaveToSetup('The connection was lost.'); return; }
   netBar('Connection lost. Reconnecting…'); renderPanel();
+  if (Net.tries >= 2) fetch('/api/dnl/room/' + Net.code).then(r => { if (r.status === 404 && my === Net.session) leaveToSetup('That room has closed.'); }).catch(() => {});   // the room is gone for good: stop retrying
   clearTimeout(Net.reconnectTimer);
   Net.reconnectTimer = setTimeout(() => { if (my === Net.session) connect(); }, Math.min(5000, 400 * Math.pow(1.6, Net.tries)));
 }
@@ -827,16 +872,17 @@ function onNetMessage(m, my){
   switch (m.t) {
     case 'welcome':
       Net.pid = m.pid; Net.secret = m.secret; Net.joined = true; Net.tries = 0; saveSession(); netBar('');
-      Net.queue = []; setNetBusy(false); enterOnline(); applyState(m.state); break;
+      Net.queue = []; setNetBusy(false); enterOnline(); applyState(m.state, m.rx); break;
     case 'state': case 'roll':
       Net.queue.push(m); pump(); break;
     case 'error':
       if (!Net.joined) {
         if (m.code === 'seat_gone' || m.code === 'bad_secret') store.del(SESSION_KEY);
-        const map = { full:'That room is full.', started:'That game has already started.', seat_gone:'Your seat in that room is gone.', bad_secret:'Your seat in that room is gone.' };
+        const map = { full:'That room is full.', started:'That game has already started.', seat_gone:'Your seat in that room is gone.', bad_secret:'Your seat in that room is gone.', dup_account:'Your account already has a seat in this room. Use the browser you joined with, or use Rejoin.' };
         netMsg(map[m.code] || m.message || 'Could not join that room.'); setNetBusy(false);
         resetNet(); Net.session++;
-      } else say(m.message || 'Something went wrong.');
+      } else if (m.code === 'seat_gone' || m.code === 'bad_secret') { leaveToSetup('Your seat in that room is gone.'); }
+      else say(m.message || 'Something went wrong.');
       break;
     case 'kicked': leaveToSetup('The host removed you from the room.'); break;
     case 'closed': leaveToSetup('That room has closed.'); break;
@@ -864,7 +910,7 @@ async function pump(){
       const m = Net.queue.shift();
       INSTANT = Net.queue.length > 2; applySpeed();
       if (m.t === 'roll') await onRollEvent(m, my);
-      else applyState(m.state);
+      else applyState(m.state, m.rx);
     }
   } finally { INSTANT = false; applySpeed(); Net.pumping = false; }
 }
@@ -875,13 +921,13 @@ async function onRollEvent(m, my){
   await playRoll(i, m.roll, m.out, () => Net.session === my);
 }
 
-function applyState(st){
+function applyState(st, rx){
   if (!online()) return;
-  Net.room = st;
+  Net.room = st; rx = rx || Date.now();      // the server's timers are relative to when it SENT the state, not to when the animation queue got to it
   S.players = st.players.map(p => ({ pid:p.pid, name:p.name, bot:p.bot, pos:p.pos, turns:p.turns, connected:p.connected, left:p.left }));
   S.turn = st.turn; S.rules = { six:st.rules.six }; S.sixes = st.sixes;
-  Net.readyAt = Date.now() + st.readyIn; Net.deadlineAt = st.deadlineIn == null ? null : Date.now() + st.deadlineIn;
-  clearTimeout(Net.readyTimer); Net.readyTimer = setTimeout(renderRoomTimer, Math.max(0, st.readyIn) + 30);   // enable Roll the moment the server is ready
+  Net.readyAt = rx + st.readyIn; Net.deadlineAt = st.deadlineIn == null ? null : rx + st.deadlineIn;
+  clearTimeout(Net.readyTimer); Net.readyTimer = setTimeout(renderRoomTimer, Math.max(0, Net.readyAt - Date.now()) + 30);   // enable Roll the moment the server is ready
   syncTokens();
   if (st.phase === 'lobby') {
     if (S.phase !== 'lobby') say('Waiting in the lobby. Share the room code with your friends.');
@@ -901,10 +947,18 @@ function applyState(st){
       const isHost = st.hostPid === Net.pid;
       say((w ? w.name : 'Someone') + ' reaches square 100 and wins!'); sfx.win();
       showWinner((w ? w.name : 'Someone') + ' wins!', 'Reached square 100 in ' + (w ? w.turns : '?') + ' turns.');
-      $('#again').textContent = isHost ? 'Play again' : 'Waiting for the host…'; $('#again').disabled = !isHost;
       $('#change').textContent = 'Leave room';
+      const saved = $('#winSaved'); saved.hidden = !(Acct.user && st.ranked);
+      if (!saved.hidden) { saved.textContent = 'Your result was saved to your account. '; const a = document.createElement('a'); a.href = '/leaderboard/'; a.textContent = 'See the leaderboard'; saved.appendChild(a); }
     }
   }
+  const host = st.hostPid === Net.pid;
+  if (st.phase === 'over') {                                    // updated on every state, so a new host (the old one left) gets the button
+    $('#again').textContent = host ? 'Play again' : 'Waiting for the host…'; $('#again').disabled = !host;
+    if (!$('#winner').hidden && document.activeElement && document.activeElement.disabled) $('#change').focus();
+  }
+  $('#closeRoom').hidden = !host; $('#closeRoom2').hidden = !host || st.phase !== 'lobby';
+  $('#acctLine').textContent = acctLine(st.ranked);
   renderRoomTimer();
 }
 
@@ -981,6 +1035,8 @@ $('#addBot').addEventListener('click', () => send({ t:'addBot' }));
 $('#netSix').addEventListener('change', e => send({ t:'rules', six:e.target.checked }));
 $('#startOnline').addEventListener('click', () => { ac(); send({ t:'start' }); });
 $('#leaveRoom').addEventListener('click', leaveRoom);
+twoStep($('#closeRoom'), 'Close for everyone?', () => send({ t:'close' }));
+twoStep($('#closeRoom2'), 'Close for everyone?', () => send({ t:'close' }));
 
 /* ================= shared buttons ================= */
 $('#roll').addEventListener('click', () => {

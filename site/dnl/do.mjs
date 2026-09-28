@@ -6,13 +6,14 @@
 //
 // WebSocket messages (JSON):
 //   client -> server   hello {name, pid?, secret?}   first message: join, or reclaim a seat
-//                      roll | start | addBot | rules {six} | remove {pid} | rename {name} | rematch | leave
+//                      roll | start | addBot | rules {six} | remove {pid} | rename {name} | rematch | leave | close (host)
 //   server -> client   welcome {pid, secret, you, state}   (only to the socket that said hello)
 //                      state {you, state}                  (after every change, to everyone)
 //                      roll {pid, roll, out, auto}         (the animation to play; a state follows)
 //                      error {code, message} | kicked | closed
 import { DurableObject } from 'cloudflare:workers';
 import logic from './logic.js';
+import accounts from '../accounts/accounts.js';        // only recordGameResult: saves wins to the logged-in players' accounts
 
 const MAX_MESSAGE = 1024;      // characters; every legitimate message is far smaller
 const MAX_SOCKETS = 12;        // per room (4 players + reconnect overlaps + spectator-ish leftovers)
@@ -52,11 +53,19 @@ export class DnlRoom extends DurableObject {
     if (action === 'ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'expected_websocket' }, 426);
       if (!this.room) return json({ error: 'not_found' }, 404);
-      if (this.ctx.getWebSockets().length >= MAX_SOCKETS) return json({ error: 'busy' }, 503);
+      // cap on joined players and, separately, on sockets that have not said hello (those are closed after 15 s), so idle sockets cannot lock a room
+      let joined = 0, idle = 0; const nowMs = Date.now();
+      for (const w of this.ctx.getWebSockets()) {
+        const a = w.deserializeAttachment() || {};
+        if (a.pid) joined++; else if (a.t && nowMs - a.t > 15000) this.safeClose(w, 4008, 'no hello'); else idle++;
+      }
+      if (joined >= MAX_SOCKETS || idle >= MAX_SOCKETS) return json({ error: 'busy' }, 503);
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
-      server.serializeAttachment({ pid: null });
+      // x-kl-uid is put there by routes.mjs from the login cookie (it removes any copy the browser sent); it never reaches a client.
+      const uid = Number(request.headers.get('x-kl-uid')) || null;
+      server.serializeAttachment({ pid: null, uid, t: Date.now() });
       return new Response(null, { status: 101, webSocket: client });
     }
 
@@ -76,10 +85,10 @@ export class DnlRoom extends DurableObject {
 
     if (msg.t === 'hello') {
       if (att.pid) return;                                       // already joined on this socket
-      const j = logic.join(this.room, { name: msg.name, pid: msg.pid, secret: msg.secret }, now);
+      const j = logic.join(this.room, { name: msg.name, pid: msg.pid, secret: msg.secret, uid: att.uid }, now);
       if (!j.ok) { this.send(ws, { t: 'error', code: j.code, message: j.message }); this.safeClose(ws, 4003, j.code); return; }
       const pid = j.player.pid;
-      ws.serializeAttachment({ pid });
+      ws.serializeAttachment({ pid, uid: att.uid || null });
       for (const other of this.ctx.getWebSockets()) {            // a newer connection replaces an older one for the same seat
         if (other === ws) continue;
         const a = other.deserializeAttachment();
@@ -106,12 +115,14 @@ export class DnlRoom extends DurableObject {
         if (a && a.pid === kicked) { other.serializeAttachment({ pid: null }); this.send(other, { t: 'kicked' }); this.safeClose(other, 4002, 'removed'); }
       }
     }
+    if (msg.t === 'close' && res.closed) { await this.closeRoom(); return; }
     if (msg.t === 'leave') {
       ws.serializeAttachment({ pid: null });
       this.safeClose(ws, 1000, 'left');
       if (res.closed) { await this.closeRoom(); return; }
     }
     this.broadcastState(now);
+    await this.settle();
     await this.save(); await this.schedule();
   }
 
@@ -137,10 +148,30 @@ export class DnlRoom extends DurableObject {
     for (const ev of r.events) this.broadcast({ t: 'roll', pid: ev.pid, roll: ev.roll, out: ev.out, auto: ev.auto });
     if (r.closed) { await this.closeRoom(); return; }
     if (r.changed) this.broadcastState(now);
+    await this.settle();
     await this.save(); await this.schedule();
   }
 
   /* ---------- helpers ---------- */
+  // Save the result of a finished game to the accounts of the people who played it (only the game server does this, so scores
+  // cannot be edited from a browser). An item is dropped once saved; a failed one is tried again on the next save, at most 3 times.
+  async settle() {
+    if (this.settling || !this.room) return;                          // another message or the alarm is already saving them: never save twice
+    const items = logic.pendingResults(this.room); if (!items.length) return;
+    logic.clearResults(this.room);                                     // take them out first, so nothing else can pick them up
+    if (!this.env || !this.env.DB) return;
+    this.settling = true;
+    try {
+      await this.save();
+      const left = [];
+      for (const x of items) {
+        try { await accounts.recordGameResult(this.env, x.uid, 'dragons-and-ladders', { won: x.won, turns: x.turns }); }
+        catch (e) { if (!/FOREIGN|constraint/i.test(String(e && e.message)) && (x.tries || 0) < 3) left.push({ ...x, tries: (x.tries || 0) + 1 }); }
+      }
+      if (this.room && left.length) this.room.results = (this.room.results || []).concat(left);
+    } finally { this.settling = false; }
+  }
+
   save() { return this.ctx.storage.put('room', this.room); }
   schedule() { return this.ctx.storage.setAlarm(logic.nextAlarm(this.room, Date.now())); }
 

@@ -32,6 +32,8 @@ Deadline: answer **within one month** (can be extended by two more months for co
 - Every admin action is written to the moderation log (kept 12 months, then deleted automatically).
 - Someone who is banned can write to Kuro701@seznam.cz to appeal. Look again, answer, and lift the ban if it was a mistake (Unban button).
 - Room nicknames go through the same bad-word filter as usernames; the host can remove players from the lobby. Guests cannot be reported; if a room code is abused, write it down and consider a block.
+- **Leaderboard and stats.** Results (wins, games, fastest win) are written only by the game server after online rooms with 2+ people; browsers cannot write them. Players can hide themselves (account settings). If someone cheats or has a bad name: ban or rename in /admin/ (banned people vanish from the board), or remove just their numbers in the D1 console: `DELETE FROM stats WHERE user_id = (SELECT id FROM users WHERE username_lower = 'name');`. Known limit: a person with two accounts or a friend's help can farm wins; if that becomes a problem, add a minimum number of different opponents or reset the board.
+- Room creation is limited per address (8 an hour, 40 a day); a brake on looking up room codes is best-effort. Hosts can remove players and close rooms.
 - Someone under 18 found with an account: delete the account (admin Delete) and log it in the request register. Do not keep the reason beyond "under age".
 
 ## 5. Backups and restores
@@ -69,7 +71,8 @@ Under-18 / ban appeals: date | username | outcome.
 | Account, login, progress | username, password hash, Discord ID and/or email, rules acceptance, dates | providing the service | until deletion or 24 months unused | Cloudflare, Resend (email only) |
 | Online rooms | guest nickname, seat id, game state | providing the service | about 2 h after last move | Cloudflare |
 | Leaderboards / stats | scores, wins | providing the service | with the account | Cloudflare |
-| Abuse limits | keyed-hash counters of IP and email address | legitimate interest (security) | under 2 days | Cloudflare |
+| Abuse limits | keyed-hash counters of IP (login codes, room creation) and email address | legitimate interest (security) | under 2 days | Cloudflare |
+| Game results | wins, games played, fastest win per game | providing the service (leaderboard; opt-out in settings) | with the account | Cloudflare |
 | Moderation | reports, moderation log | legitimate interest | 6 months after handled / 12 months | Cloudflare |
 | Ban fingerprint | keyed hash of Discord ID / email | legitimate interest | up to 3 years | Cloudflare |
 | Backups | copy of the above | legitimate interest (recovery) | up to 30 days | Cloudflare |

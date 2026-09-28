@@ -219,4 +219,84 @@ test('the room object survives a JSON round trip (that is how it is stored)', ()
   const copy = JSON.parse(JSON.stringify(r)); assert.deepEqual(copy, r);
   assert.ok(L.doRoll(copy, copy.players[copy.turn].pid, 9000, rigged([2])).ok);
 });
+/* ---- accounts: seats know their account, wins are saved by the server, and only when it is fair ---- */
+test('accounts: a seat keeps the account id privately; the same account cannot take two seats; ids never reach clients', () => {
+  const r = fresh(); const a = L.join(r, { name: 'A', uid: 7 }, 1000), b = L.join(r, { name: 'B', uid: 8 }, 1001), g = L.join(r, { name: 'G' }, 1002);
+  assert.equal(a.player.uid, 7); assert.equal(g.player.uid, null);
+  assert.equal(L.join(r, { name: 'Twin', uid: 7 }, 1003).code, 'dup_account');
+  assert.equal(L.join(r, { name: 'Bad', uid: 'x' }, 1004).player.uid, null);                          // junk is not an account
+  assert.equal(L.join(r, { pid: g.player.pid, secret: g.player.secret, uid: 9 }, 1005).player.uid, 9); // logging in later binds the seat once
+  L.join(r, { pid: g.player.pid, secret: g.player.secret, uid: 10 }, 1006); assert.equal(g.player.uid, 9);
+  L.join(r, { pid: b.player.pid, secret: b.player.secret, uid: 7 }, 1007); assert.equal(b.player.uid, 8);   // and cannot take another seat's account
+  assert.ok(!JSON.stringify(L.publicState(r, 2000)).includes('"uid"'));
+});
+test('results: a finished game with two or more people is saved for logged-in players who stayed; bots-only, one person, and leavers are not', () => {
+  const win = (r, ps, w) => { ps[w].pos = 99; while (r.phase === 'playing') { const c = r.players[r.turn]; if (c === ps[w]) { L.doRoll(r, c.pid, r.readyAt + 10, rigged([0])); } else { c.pos = 3; L.doRoll(r, c.pid, r.readyAt + 10, rigged([0])); } } };
+  // two people, one guest: only the account is saved
+  let { r, ps } = lobby(['A', 'B']); ps[0].uid = 5;
+  L.handle(r, ps[0].pid, { t: 'start' }, 2000, rigged([0])); assert.equal(r.ranked, true);
+  win(r, ps, 0); assert.deepEqual(L.pendingResults(r), [{ uid: 5, won: true, turns: r.players[0].turns }]);
+  L.clearResults(r); assert.deepEqual(L.pendingResults(r), []);
+  // the loser is saved as a loss
+  ({ r, ps } = lobby(['A', 'B'])); ps[0].uid = 5; ps[1].uid = 6;
+  L.handle(r, ps[0].pid, { t: 'start' }, 2000, rigged([0])); win(r, ps, 1);
+  assert.deepEqual(L.pendingResults(r).map(x => [x.uid, x.won]), [[5, false], [6, true]]);
+  // one person against bots: nothing counts
+  ({ r, ps } = lobby(['A'])); ps[0].uid = 5; L.handle(r, ps[0].pid, { t: 'addBot' }, 1500);
+  L.handle(r, ps[0].pid, { t: 'start' }, 2000, rigged([0])); assert.equal(r.ranked, false); win(r, r.players, 0); assert.deepEqual(L.pendingResults(r), []);
+  // someone who left mid-game is not saved (no win, no loss)
+  ({ r, ps } = lobby(['A', 'B', 'C'])); ps.forEach((p, i) => { p.uid = 10 + i; });
+  L.handle(r, ps[0].pid, { t: 'start' }, 2000, rigged([0])); L.handle(r, ps[2].pid, { t: 'leave' }, 2500); win(r, ps, 1);
+  assert.deepEqual(L.pendingResults(r).map(x => x.uid).sort(), [10, 11]);
+  // a rematch does not lose results that are still waiting to be saved, and does not carry the ranked flag over
+  L.handle(r, ps[0].pid, { t: 'rematch' }, 9000); assert.deepEqual(L.pendingResults(r).map(x => x.uid).sort(), [10, 11]); assert.equal(r.ranked, false); L.clearResults(r);
+  // farming: two accounts start with a bot, one leaves, the other beats the bot alone -> nothing is saved
+  ({ r, ps } = lobby(['A', 'B'])); ps[0].uid = 20; ps[1].uid = 21; L.handle(r, ps[0].pid, { t: 'addBot' }, 1500);
+  L.handle(r, ps[0].pid, { t: 'start' }, 2000, rigged([0])); assert.equal(r.ranked, true); L.handle(r, ps[1].pid, { t: 'leave' }, 2500); win(r, ps, 0);
+  assert.deepEqual(L.pendingResults(r), [], 'a win over bots after the other person left does not count');
+});
+test('host can remove a player mid-game (they become a bot) and can close the room; others cannot', () => {
+  const { r, ps } = started(['A', 'B', 'C'], 0, 1000);
+  assert.equal(L.handle(r, ps[1].pid, { t: 'remove', pid: ps[2].pid }, 2000).code, 'not_host');
+  const bot = L.handle(r, ps[0].pid, { t: 'addBot' }, 2000); assert.equal(bot.code, 'bad_phase');
+  const k = L.handle(r, ps[0].pid, { t: 'remove', pid: ps[2].pid }, 2000);
+  assert.deepEqual(k.kicked, [ps[2].pid]); assert.equal(ps[2].bot, true); assert.equal(ps[2].left, true); assert.equal(ps[2].secret, null); assert.equal(r.players.length, 3);
+  assert.equal(L.join(r, { pid: ps[2].pid, secret: 'x' }, 3000).code, 'seat_gone');
+  assert.equal(L.handle(r, ps[0].pid, { t: 'remove', pid: ps[2].pid }, 2000).code, 'bad_target');       // bots stay until the game is over
+  assert.equal(L.handle(r, ps[1].pid, { t: 'close' }, 2000).code, 'not_host');
+  assert.equal(L.handle(r, ps[0].pid, { t: 'close' }, 2000).closed, true);
+});
+test('fuzz: hundreds of random rooms with joins, kicks, leaves, drops and timers never break the rules', () => {
+  let seed = 12345; const rnd = k => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * k); };
+  const seen = { over: 0, leaves: 0, kicks: 0, drops: 0 };
+  for (let g = 0; g < 400; g++) {
+    let now = 1000; const r = fresh(now); const seats = [];
+    for (let i = 0, c = 1 + rnd(4); i < c; i++) { const j = L.join(r, { name: 'P' + i, uid: rnd(3) ? 100 + i : undefined }, now, rnd); if (j.ok) seats.push(j.player); }
+    if (!seats.length) continue;
+    for (let i = 0, c = rnd(3); i < c; i++) L.handle(r, r.hostPid, { t: 'addBot' }, now, rnd);
+    L.handle(r, r.hostPid, { t: 'rules', six: !!rnd(2) }, now);
+    L.handle(r, r.hostPid, { t: 'start' }, now, rnd);
+    for (let step = 0; step < 900 && r.phase !== 'closed'; step++) {
+      now += 500 + rnd(4000);
+      const s = seats[rnd(seats.length)], a = rnd(12);
+      if (a === 0) { L.disconnect(r, s.pid, now); seen.drops++; }
+      else if (a === 1) L.join(r, { pid: s.pid, secret: s.secret }, now);
+      else if (a === 2 && rnd(3) === 0) { L.handle(r, s.pid, { t: 'leave' }, now); seen.leaves++; }
+      else if (a === 3 && rnd(3) === 0) { if (L.handle(r, r.hostPid || s.pid, { t: 'remove', pid: seats[rnd(seats.length)].pid }, now).kicked) seen.kicks++; }
+      else if (a < 8) L.handle(r, s.pid, { t: 'roll' }, now, rnd);
+      const t = L.tick(r, now, rnd);
+      // invariants
+      assert.ok(r.players.every(p => p.pos >= 0 && p.pos <= 100), 'position in range');
+      assert.ok(r.players.length <= E.MAX_PLAYERS);
+      if (r.players.length) assert.ok(r.turn >= 0 && r.turn < r.players.length, 'turn in range');
+      const hp = r.players.filter(p => !p.bot); if (hp.length) assert.ok(r.players.some(p => p.pid === r.hostPid && !p.bot), 'host is a present human');
+      assert.equal(new Set(r.players.map(p => p.pid)).size, r.players.length, 'unique pids');
+      JSON.stringify(L.publicState(r, now));
+      if (r.phase === 'over') { seen.over++; assert.ok(!r.players.some(p => p.pid === r.winnerPid) || r.players.find(p => p.pid === r.winnerPid).pos === 100, 'the winner (if still seated) is on 100'); L.pendingResults(r).forEach(x => assert.ok(Number.isInteger(x.uid))); break; }
+      if (t.closed) break;
+    }
+  }
+  assert.ok(seen.over > 40 && seen.leaves > 50 && seen.kicks > 20 && seen.drops > 100, 'the fuzz really exercised games, leaves, kicks and drops: ' + JSON.stringify(seen));
+});
+
 console.log(`\n${n} logic tests passed`);

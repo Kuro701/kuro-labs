@@ -7,19 +7,20 @@ module.exports = {
   // every logged-in user is then asked to read and accept them again. The pages /rules/ and /privacy/ show these.
   RULES_VERSION: 2,
   RULES_DATE: '2026-09-27',
-  PRIVACY_VERSION: 3,
+  PRIVACY_VERSION: 4,
   PRIVACY_DATE: '2026-09-27',
 
   // Build-time switch for the wording of the legal pages: while false they say accounts are "not open yet".
   // Flip to true when the dashboard steps are done and logins work, then run the site build.
-  ACCOUNTS_OPEN: false,
+  ACCOUNTS_OPEN: true,
 
   CONTACT_EMAIL: 'Kuro701@seznam.cz',
   OPERATOR: 'Jiří Fikejs, Zvole – Černíky, 252 45, Czech Republic',
 
-  // Games that may keep a save on the server. The kids' game (Star Quest) is deliberately NOT here.
+  // Games that may keep a save, stats and a leaderboard on the server. The kids' game (Star Quest) is deliberately NOT here.
   SAVE_GAMES: ['dragons-and-ladders'],
   MAX_SAVE_BYTES: 16 * 1024,
+  LEADERBOARD_SIZE: 50,           // rows shown on /leaderboard/
 
   MS: { MINUTE: 60000, HOUR: 3600000, DAY: 86400000 },
   SESSION_DAYS: 30,              // sliding: renewed when used

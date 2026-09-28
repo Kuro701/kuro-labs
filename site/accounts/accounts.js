@@ -471,6 +471,21 @@ async function routeDeleteAccount(ctx) {
   clearCookie(ctx, 'kl_session'); return reply(ctx, { ok: true });
 }
 
+/* ---- stats and leaderboard (numbers are written only by the game servers, see recordGameResult) ---- */
+async function routeMyStats(ctx) {
+  const s = await requireUser(ctx);
+  const rows = (await ctx.db.prepare('SELECT game, played, won, best_turns FROM stats WHERE user_id = ?').bind(s.user.id).all()).results;
+  return reply(ctx, { ok: true, stats: rows.map(r => ({ game: r.game, played: r.played, won: r.won, bestTurns: r.best_turns })) });
+}
+async function routeLeaderboard(ctx, game) {
+  if (!cfg.SAVE_GAMES.includes(game)) throw fail(404, 'bad_game', 'No such game.');
+  const rows = (await ctx.db.prepare(
+    `SELECT u.username, s.played, s.won, s.best_turns FROM stats s JOIN users u ON u.id = s.user_id
+     WHERE s.game = ? AND s.played > 0 AND u.hide_lb = 0 AND u.status = 'active'
+     ORDER BY s.won DESC, s.played ASC, s.best_turns ASC LIMIT ?`).bind(game, cfg.LEADERBOARD_SIZE).all()).results;
+  return reply(ctx, { ok: true, game, players: rows.map((r, i) => ({ rank: i + 1, username: r.username, played: r.played, won: r.won, bestTurns: r.best_turns })) }, 200, { 'cache-control': 'public, max-age=30' });
+}
+
 /* ---- saves ---- */
 async function routeSave(ctx, game) {
   if (!cfg.SAVE_GAMES.includes(game)) throw fail(404, 'bad_game', 'No such game.');
@@ -553,7 +568,7 @@ async function routeAdmin(ctx, parts) {
 /* ---------- entry point ---------- */
 async function handleAccounts(request, env) {
   const url = new URL(request.url), path = url.pathname;
-  const mine = path.startsWith('/api/auth/') || path === '/api/me' || path.startsWith('/api/me/') || path.startsWith('/api/save/') || path === '/api/report' || path.startsWith('/api/admin/');
+  const mine = path.startsWith('/api/auth/') || path.startsWith('/api/leaderboard/') || path === '/api/me' || path.startsWith('/api/me/') || path.startsWith('/api/save/') || path === '/api/report' || path.startsWith('/api/admin/');
   if (!mine) return null;
   if (!env.DB) {
     if (path === '/api/auth/config') return new Response(JSON.stringify({ ok: true, enabled: false }), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -579,6 +594,8 @@ async function handleAccounts(request, env) {
     if (path === '/api/me/username' && m === 'POST') return await routeSetUsername(ctx);
     if (path === '/api/me/settings' && m === 'POST') return await routeSettings(ctx);
     if (path === '/api/me/export' && m === 'GET') return await routeExport(ctx);
+    if (path === '/api/me/stats' && m === 'GET') return await routeMyStats(ctx);
+    if (parts[0] === 'leaderboard' && parts.length === 2 && m === 'GET') return await routeLeaderboard(ctx, parts[1]);
     if (path === '/api/me' && m === 'DELETE') return await routeDeleteAccount(ctx);
     if (parts[0] === 'save' && parts.length === 2) return await routeSave(ctx, parts[1]);
     if (path === '/api/report' && m === 'POST') return await routeReport(ctx);
@@ -589,6 +606,29 @@ async function handleAccounts(request, env) {
     if (e instanceof HttpError) return makeResponse(c, JSON.stringify({ ok: false, error: e.code, message: e.message, ...e.extra }), e.status, { 'content-type': 'application/json; charset=utf-8' });
     return makeResponse(c, JSON.stringify({ ok: false, error: 'server', message: 'Something went wrong. Please try again.' }), 500, { 'content-type': 'application/json; charset=utf-8' });
   }
+}
+
+/* ---------- helpers for the game servers (never for browsers) ---------- */
+// Who is logged in on this request? Read-only: does not renew the login. Returns { id, username } or null.
+// Only accounts in good standing that have accepted the current rules count.
+async function sessionUser(request, env) {
+  if (!env || !env.DB) return null;
+  try {
+    await ensureSchema(env.DB);
+    const token = parseCookies(request).kl_session; if (!token) return null;
+    const row = await env.DB.prepare(`SELECT u.id, u.username, u.status, u.rules_version, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`).bind(await sha(token)).first();
+    if (!row || row.expires_at < Date.now() || row.status !== 'active' || row.rules_version !== cfg.RULES_VERSION) return null;
+    return { id: row.id, username: row.username };
+  } catch (e) { return null; }
+}
+// Per-address limiter (the address is stored only as a keyed hash that is deleted after 2 days). true = allowed.
+async function limitByIp(env, request, name, limit, windowMs) {
+  if (!env || !env.DB) return true;
+  try {
+    await ensureSchema(env.DB);
+    const secret = await getSecret(env), ip = request.headers.get('cf-connecting-ip') || 'unknown';
+    return await rateHit({ db: env.DB, now: Date.now() }, name + ':' + await C.hmacHex(secret, 'ip:' + ip), limit, windowMs);
+  } catch (e) { return true; }        // if the limiter itself breaks, do not lock people out
 }
 
 /* ---------- stats (called by game servers, never by browsers) ---------- */
@@ -633,4 +673,4 @@ async function runCleanup(env, now) {
   return out;
 }
 
-module.exports = { handleAccounts, runCleanup, recordGameResult, accountsConfig, normalizeEmail, isDisposable, HttpError };
+module.exports = { handleAccounts, runCleanup, recordGameResult, sessionUser, limitByIp, accountsConfig, normalizeEmail, isDisposable, HttpError };

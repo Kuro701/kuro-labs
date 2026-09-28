@@ -443,5 +443,50 @@ const test = async (name, fn) => { await fn(); n++; console.log('ok -', name); }
     assert.equal((await new Browser(e).post('/api/auth/login', { username: 'nopassned', password: 'my first password' })).status, 200);
   });
 
+  /* ===== stats, leaderboard, and helpers for the game servers ===== */
+  await test('leaderboard: public, ranked by wins, hides people who opted out, banned people and unknown games; stats are written only by the server', async () => {
+    const e = newEnv(); const users = {}; const mk = async (email, name) => { const x = new Browser(e); await x.registerEmail(email, name); users[name] = x; return x; };
+    const ann = await mk('lb1@example.org', 'LbAnn'), bob = await mk('lb2@example.org', 'LbBob'), cy = await mk('lb3@example.org', 'LbCy'), dee = await mk('lb4@example.org', 'LbDee');
+    const id = async n => (await q(e, 'SELECT id FROM users WHERE username = ?', n)).id;
+    const G = 'dragons-and-ladders';
+    for (let i = 0; i < 3; i++) await A.recordGameResult(e, await id('LbAnn'), G, { won: true, turns: 30 + i });
+    await A.recordGameResult(e, await id('LbAnn'), G, { won: false, turns: 50 });
+    await A.recordGameResult(e, await id('LbBob'), G, { won: true, turns: 25 }); await A.recordGameResult(e, await id('LbBob'), G, { won: false, turns: 40 });
+    await A.recordGameResult(e, await id('LbCy'), G, { won: true, turns: 20 }); await A.recordGameResult(e, await id('LbDee'), G, { won: false, turns: 60 });
+    const pub = new Browser(e);                                                          // no login needed to look
+    let lb = await pub.get('/api/leaderboard/' + G); assert.equal(lb.status, 200); assert.match(lb.res.headers.get('cache-control'), /public/);
+    assert.deepEqual(lb.json.players.map(x => [x.rank, x.username, x.won, x.played, x.bestTurns]), [[1, 'LbAnn', 3, 4, 30], [2, 'LbCy', 1, 1, 20], [3, 'LbBob', 1, 2, 25], [4, 'LbDee', 0, 1, null]]);   // fewer games ranks higher on equal wins
+    assert.ok(!JSON.stringify(lb.json).match(/email|user_id|discord/i), 'nothing private is listed');
+    assert.equal((await pub.get('/api/leaderboard/star-quest')).status, 404); assert.equal((await pub.get('/api/leaderboard/nothing')).status, 404);
+    assert.equal((await ann.post('/api/me/settings', { hideLeaderboards: true })).status, 200);
+    assert.deepEqual((await pub.get('/api/leaderboard/' + G)).json.players.map(x => x.username), ['LbCy', 'LbBob', 'LbDee']);
+    await e.DB.prepare("UPDATE users SET status = 'banned' WHERE username = 'LbBob'").run();
+    assert.deepEqual((await pub.get('/api/leaderboard/' + G)).json.players.map(x => x.username), ['LbCy', 'LbDee']);
+    // my own numbers (even when hidden), and no way to write them from a browser
+    const mine = await ann.get('/api/me/stats'); assert.deepEqual(mine.json.stats, [{ game: G, played: 4, won: 3, bestTurns: 30 }]);
+    assert.equal((await new Browser(e).get('/api/me/stats')).status, 401);
+    for (const path of ['/api/me/stats', '/api/leaderboard/' + G]) assert.ok([404, 405].includes((await ann.post(path, { played: 999, won: 999 })).status), 'no browser can write stats');
+    assert.equal((await ann.post('/api/save/' + G, { stats: { won: 999 } })).status !== 500, true);
+    assert.equal((await ann.get('/api/me/stats')).json.stats[0].won, 3);
+    // a deleted account cannot be credited (the game server drops that result instead of failing forever)
+    await assert.rejects(() => A.recordGameResult(e, 99999, G, { won: true, turns: 1 }), /FOREIGN|constraint/i);
+  });
+  await test('sessionUser and limitByIp: the room server can tell who is logged in without renewing anything, and can brake spam per address', async () => {
+    const e = newEnv(); const a = new Browser(e); await a.registerEmail('su@example.org', 'SuSam');
+    const withCookie = jar => new Request(ORIGIN + '/api/dnl/room/ABCDE/ws', { headers: { cookie: Object.entries(jar).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('; '), 'cf-connecting-ip': IP } });
+    const u = await A.sessionUser(withCookie(a.jar), e); assert.equal(u.username, 'SuSam'); assert.ok(u.id > 0);
+    assert.equal(await A.sessionUser(new Request(ORIGIN + '/x'), e), null); assert.equal(await A.sessionUser(withCookie({ kl_session: 'made-up' }), e), null);
+    assert.equal(await A.sessionUser(withCookie(a.jar), {}), null);                                  // no database: nobody is logged in
+    await e.DB.prepare('UPDATE users SET rules_version = 0').run(); assert.equal(await A.sessionUser(withCookie(a.jar), e), null, 'must accept the current rules first');
+    await e.DB.prepare('UPDATE users SET rules_version = ?, status = ?').bind(cfg.RULES_VERSION, 'suspended').run(); assert.equal(await A.sessionUser(withCookie(a.jar), e), null);
+    await e.DB.prepare("UPDATE users SET status = 'active'").run();
+    const before = (await q(e, 'SELECT expires_at FROM sessions')).expires_at; await A.sessionUser(withCookie(a.jar), e); assert.equal((await q(e, 'SELECT expires_at FROM sessions')).expires_at, before, 'reading does not renew');
+    const req = new Request(ORIGIN + '/api/dnl/room', { method: 'POST', headers: { 'cf-connecting-ip': '198.51.100.7' } }), other = new Request(ORIGIN + '/api/dnl/room', { method: 'POST', headers: { 'cf-connecting-ip': '198.51.100.8' } });
+    const got = []; for (let i = 0; i < 5; i++) got.push(await A.limitByIp(e, req, 'test:room', 3, 3600000));
+    assert.deepEqual(got, [true, true, true, false, false]); assert.equal(await A.limitByIp(e, other, 'test:room', 3, 3600000), true);
+    assert.equal(await A.limitByIp({}, req, 'x', 1, 1000), true);                                     // no database: never blocks
+    assert.ok(!(await e.DB.prepare('SELECT key FROM rate').all()).results.some(r => r.key.includes('198.51.100')), 'addresses are stored only as keyed hashes');
+  });
+
   console.log(`\n${n} account tests passed`);
 })().catch(e => { console.error('\nFAILED:', e && e.stack || e); process.exit(1); });

@@ -5,6 +5,7 @@
       "slug": "crescent-rose",
       "name": "Crescent Rose",
       "price": "$10",
+      "tag": "PCVR · Windows",
       "short": "Three forms. One prop. Animated Scythe, Gun and compact Pack modes for your PCVR avatar.",
       "long": "A transforming VRChat avatar prop with connected mechanical animations, lower-back storage and right-hand deployment. Includes VRCFury integration, mode icons, a visibility toggle and setup instructions. Requires a compatible humanoid avatar, VRChat SDK and VRCFury installed separately. Fit the pack and hand alignment to your avatar in Unity. Personal avatar use only; no redistribution or resale. Avatar not included.",
       "specs": [
@@ -38,6 +39,7 @@
       "slug": "gift-basket",
       "name": "Aesthetic Gift Basket",
       "price": "$10",
+      "tag": "PC + Quest",
       "short": "Cursed decor prop pack. Wholesome gift basket, absolutely unhinged contents.",
       "long": "A decorative gift basket for VRChat worlds and avatars, filled with things nobody would actually gift. Built for PC and Quest, delivered as a unitypackage you drop straight into your project.",
       "specs": [
@@ -56,6 +58,40 @@
       ],
       "img": "/assets/img/gift-basket-cover.png",
       "buy": "https://rajcu.gumroad.com/l/Aesthetic-gift-basket",
+      "buy2": null
+    },
+    {
+      "slug": "predator-nanomask",
+      "name": "Predator Nanomask",
+      "price": "$10",
+      "tag": "PCVR · Windows",
+      "short": "Necklace to nanomask. Four vision modes and twenty rigged dreads for your PCVR avatar.",
+      "long": "A deployable nanotech mask for VRChat avatars that transforms out of a necklace, with twenty rigged dread strands, a particle transfer effect and four wearer-only vision modes (Clear, Thermal, UV, Wireframe) plus a persistent HUD. Includes VRCFury integration, custom expression-menu icons and full fitting/installation tools. Requires a compatible humanoid avatar, VRChat SDK and VRCFury installed separately. Personal avatar use only; no redistribution or resale. Avatar not included.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Modes",
+          "Clear / Thermal / UV / Wireframe vision + necklace-mask transform"
+        ],
+        [
+          "Format",
+          "Unity package + setup guide"
+        ],
+        [
+          "Requires",
+          "VRChat SDK, VRCFury and a compatible humanoid avatar"
+        ],
+        [
+          "License",
+          "Personal avatar use; no redistribution or resale"
+        ]
+      ],
+      "img": "/assets/img/predator-nanomask-poster.jpg",
+      "video": "/assets/video/predator-nanomask-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/predator-nanomask",
       "buy2": null
     }
   ]

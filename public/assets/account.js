@@ -5,7 +5,8 @@
 'use strict';
 const root = document.getElementById('kl-techno'); if (!root) return;
 const slot = document.getElementById('kl-account');
-const isAccountPage = !!document.getElementById('kl-account-page'), isAdminPage = !!document.getElementById('kl-admin-page');
+const isAccountPage = !!document.getElementById('kl-account-page'), isAdminPage = !!document.getElementById('kl-admin-page'), isLeaderboardPage = !!document.getElementById('kl-leaderboard-page');
+const GAMES = { 'dragons-and-ladders': 'Dragons & Ladders' };
 const S = { config: null, me: null };
 
 /* ---------- small helpers ---------- */
@@ -214,6 +215,17 @@ function renderAccountPage() {
   page.append(card('Your name', el('p', {}, 'Other players see this name.'), nameForm, nameErr,
     canRename ? null : el('p', { class: 'kl-note' }, 'You can change it again on ' + new Date(me.renameAt).toLocaleDateString() + '.')));
 
+  // my games (numbers only the game server can change)
+  { const box = el('div', {}, el('p', { class: 'kl-note' }, 'Loading…'));
+    page.append(card('Your games', box));
+    api('/api/me/stats').then(r => {
+      box.textContent = '';
+      if (!r.stats.length) { box.append(el('p', { class: 'kl-note' }, 'No results yet. Wins in online rooms with two or more people are saved here.')); return; }
+      for (const g of r.stats) box.append(el('p', {}, el('strong', {}, (GAMES[g.game] || g.game) + ': '), g.won + (g.won === 1 ? ' win' : ' wins') + ' in ' + g.played + (g.played === 1 ? ' game' : ' games') + (g.bestTurns ? ', fastest win ' + g.bestTurns + ' turns' : '') + '.'));
+      box.append(el('p', { class: 'kl-note' }, 'See the ', el('a', { href: '/leaderboard/' }, 'leaderboard'), '. You can hide yourself from it under Privacy below.'));
+    }).catch(() => { box.textContent = 'Could not load your results.'; });
+  }
+
   // password
   {
     const f = el('form', { novalidate: true }), pErr = errBox();
@@ -278,6 +290,23 @@ function renderAccountPage() {
   page.append(card('Delete my account', del), say, err);
 }
 
+/* ---------- /leaderboard/ (public: no login needed to look) ---------- */
+async function renderLeaderboard() {
+  const page = document.getElementById('kl-leaderboard-page'); page.textContent = '';
+  for (const game of Object.keys(GAMES)) {
+    let rows;
+    try { rows = (await api('/api/leaderboard/' + game)).players; } catch (e) { page.append(el('p', { class: 'kl-note' }, 'The leaderboard is not available right now.')); return; }
+    const box = el('section', { class: 'kl-card' }, el('h2', {}, GAMES[game]));
+    if (!rows.length) box.append(el('p', { class: 'kl-note' }, 'No results yet. Log in, then play an online room with a friend and your wins show up here.'));
+    else {
+      const t = el('table', { class: 'kl-table' }, el('thead', {}, el('tr', {}, el('th', { scope: 'col' }, '#'), el('th', { scope: 'col' }, 'Player'), el('th', { scope: 'col' }, 'Wins'), el('th', { scope: 'col' }, 'Games'), el('th', { scope: 'col' }, 'Fastest win'))),
+        el('tbody', {}, ...rows.map(r => el('tr', {}, el('td', {}, String(r.rank)), el('th', { scope: 'row' }, r.username), el('td', {}, String(r.won)), el('td', {}, String(r.played)), el('td', {}, r.bestTurns ? r.bestTurns + ' turns' : '–')))));
+      box.append(el('div', { class: 'kl-scroll' }, t));
+    }
+    page.append(box);
+  }
+}
+
 /* ---------- /admin/ ---------- */
 function renderAdminPage() {
   const page = document.getElementById('kl-admin-page'); page.textContent = '';
@@ -335,6 +364,7 @@ async function refresh() {
   if (isAdminPage) renderAdminPage();
 }
 (async function start() {
+  if (isLeaderboardPage) renderLeaderboard();
   try { S.config = await api('/api/auth/config'); } catch (e) { return; }
   if (!S.config.enabled) {
     const page = document.getElementById('kl-account-page') || document.getElementById('kl-admin-page');

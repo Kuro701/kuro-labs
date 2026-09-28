@@ -77,7 +77,7 @@ async def main():
             # ---- legal pages ----
             pg = await new_page(browser, base, "/rules/", viewport={"width": 1100, "height": 900})
             assert "Rules and terms" in await pg.inner_text("h1"); assert await pg.locator("ol.kl-rules li").count() == 10
-            assert "Version 2" in await pg.inner_text(".kl-page-head p"); assert "not open yet" in await pg.inner_text(".kl-callout")     # ACCOUNTS_OPEN is false in config.js until launch
+            assert "Version 2" in await pg.inner_text(".kl-page-head p"); assert await pg.locator(".kl-callout").count() == 0     # ACCOUNTS_OPEN is true in config.js: no "not open yet" notes
             await pg.screenshot(path=f"{OUT}/rules.png", full_page=True); ok("/rules/: ten rules, version shown, footer and header present")
             pg = await new_page(browser, base, "/privacy/", viewport={"width": 1100, "height": 900})
             txt = await pg.inner_text("main"); assert "Jiří Fikejs" in txt and "Kuro701@seznam.cz" in txt and "24 months" in txt and "18 or older" in txt
@@ -198,6 +198,18 @@ async def main():
             await H.request.get(base + "/__dev/age-sessions"); await H.goto(base + "/account/"); await H.wait_for_selector("#kl-reauth-pw"); assert await H.locator("#kl-del-confirm").count() == 0
             await H.fill("#kl-reauth-pw", "nope nope nope"); await H.click("button:has-text('Confirm with password')"); await wait_until(lambda: H.evaluate("document.body.innerText.includes('not right')"), 5, "wrong reauth password")
             await H.fill("#kl-reauth-pw", "another long phrase"); await H.click("button:has-text('Confirm with password')"); await H.wait_for_selector("#kl-del-confirm"); ok("an old login can be confirmed with the password to unlock deleting")
+
+            # ---- leaderboard and my games ----
+            L = await new_page(browser, base, "/leaderboard/", viewport={"width": 1100, "height": 800})
+            await wait_until(lambda: L.evaluate("document.querySelector('#kl-leaderboard-page').textContent.includes('No results yet')"), 10, "empty leaderboard")
+            await H.request.get(base + "/__dev/record?u=FayFlyer&won=1&turns=31"); await H.request.get(base + "/__dev/record?u=FayFlyer&won=0&turns=50")
+            await L.reload(); await wait_until(lambda: L.evaluate("document.querySelector('#kl-leaderboard-page tbody tr')?.textContent.includes('FayFlyer')"), 10, "row appears")
+            row = await L.inner_text("#kl-leaderboard-page tbody tr"); assert "1" in row and "2" in row and "31 turns" in row, row
+            assert "noindex" in await L.evaluate("document.querySelector('meta[name=robots]').content"); await L.screenshot(path=f"{OUT}/leaderboard.png", full_page=True)
+            await H.goto(base + "/account/"); await H.wait_for_selector("text=Your games"); await wait_until(lambda: H.evaluate("document.body.innerText.includes('1 win in 2 games')"), 10, "my results")
+            await H.goto(base + "/account/"); await H.wait_for_selector("#kl-hide-lb"); await H.check("#kl-hide-lb"); await asyncio.sleep(0.5)
+            await L.reload(); await wait_until(lambda: L.evaluate("document.querySelector('#kl-leaderboard-page').textContent.includes('No results yet')"), 10, "hidden from the leaderboard")
+            ok("leaderboard page lists players by wins, 'Your games' shows my numbers, and 'hide me' removes me from the list")
         finally:
             await browser.close(); server.kill(); off.kill()
     print(f"\n{passed} account UI tests passed")

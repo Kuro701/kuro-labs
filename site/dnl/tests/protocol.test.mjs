@@ -17,8 +17,8 @@ const api = async (p, opt) => { const r = await fetch(BASE + p, opt); return { s
 
 class Client {
   constructor(name) { this.name = name; this.inbox = []; this.waiters = []; this.state = null; this.pid = null; this.secret = null; this.closed = null; }
-  async connect(code, creds) {
-    this.ws = new WebSocket(`ws://127.0.0.1:${PORT}/api/dnl/room/${code}/ws`);
+  async connect(code, creds, headers) {
+    this.ws = new WebSocket(`ws://127.0.0.1:${PORT}/api/dnl/room/${code}/ws`, headers ? { headers } : undefined);
     this.ws.onmessage = e => { if (e.data === 'pong') return; const m = JSON.parse(e.data); if (m.t === 'state' || m.t === 'welcome') this.state = m.state; this.inbox.push(m); this.waiters = this.waiters.filter(w => !w()); };
     this.ws.onclose = e => { this.closed = { code: e.code }; this.waiters = this.waiters.filter(w => !w()); };
     await new Promise((res, rej) => { this.ws.onopen = res; this.ws.onerror = () => rej(new Error('ws error')); });
@@ -37,6 +37,31 @@ class Client {
   }
   async until(pred, ms) { for (;;) { if (this.state && pred(this.state)) return this.state; await this.next(m => m.t === 'state', ms); } }
   close() { try { this.ws.close(); } catch (e) {} }
+}
+
+
+// A logged-in visitor, made through the real account routes of the dev server (email code read from the dev mailbox).
+async function signup(email, username) {
+  const H = { origin: BASE, 'content-type': 'application/json' }, jar = {};
+  const keep = r => { for (const c of r.headers.getSetCookie()) { const [kv] = c.split(';'); const i = kv.indexOf('='); jar[kv.slice(0, i)] = kv.slice(i + 1); } };
+  const cookie = () => Object.entries(jar).map(([k, v]) => k + '=' + v).join('; ');
+  const post = async (p, body) => { const r = await fetch(BASE + p, { method: 'POST', headers: { ...H, cookie: cookie() }, body: JSON.stringify(body) }); keep(r); return { status: r.status, body: await r.json() }; };
+  assert.equal((await post('/api/auth/email/start', { email, turnstileToken: 'x', purpose: 'login' })).status, 200);
+  const box = await (await fetch(BASE + '/__dev/mailbox')).json(); const code = /(\d{6})/.exec([...box].reverse().find(m => m.to === email).text)[1];
+  assert.equal((await post('/api/auth/email/verify', { email, code, purpose: 'login' })).body.next, 'register');
+  const reg = await post('/api/auth/register', { agreedRules: true, is18: true, username, password: 'correct horse battery' }); assert.equal(reg.status, 200, JSON.stringify(reg.body));
+  return { username, cookie: cookie() };
+}
+const board = async () => (await api('/api/leaderboard/dragons-and-ladders')).body.players;
+// Every client rolls whenever it is their turn, until the game is over.
+async function playOut(cs) {
+  await Promise.all(cs.map(async c => {
+    while (c.state.phase !== 'over') {
+      const s = c.state;
+      if (s.phase === 'playing' && s.players[s.turn].pid === c.pid) c.send({ t: 'roll' });
+      try { await c.next(m => m.t === 'state', 1500); } catch (e) { /* nothing new; try again */ }
+    }
+  }));
 }
 
 let n = 0;
@@ -164,6 +189,61 @@ try {
     });
     assert.equal(await probe('https://evil.example'), 403);
     assert.equal(await probe(`http://127.0.0.1:${PORT}`), 101);
+  });
+
+  await test('accounts: wins are saved to the logged-in players\' accounts by the server; guests, bots-only games and faked headers count for nothing', async () => {
+    const ann = await signup('winann@example.org', 'WinAnn'), bob = await signup('winbob@example.org', 'WinBob');
+    assert.deepEqual(await board(), []);
+    // 1. two logged-in people, one game
+    let code = await room(); const a = mk('Ann'), b = mk('Bob');
+    await a.connect(code, undefined, { cookie: ann.cookie }); await b.connect(code, undefined, { cookie: bob.cookie });
+    await a.until(st => st.players.length === 2 && st.ranked === true); a.send({ t: 'start' }); await a.until(st => st.phase === 'playing');
+    assert.ok(!JSON.stringify(a.state).includes('uid'));
+    await playOut([a, b]);
+    let lb = []; for (let i = 0; i < 40 && lb.length < 2; i++) { lb = await board(); if (lb.length < 2) await sleep(100); }
+    assert.deepEqual(lb.map(x => x.played), [1, 1]); assert.equal(lb.reduce((t, x) => t + x.won, 0), 1);
+    const winner = a.state.players.find(p => p.pid === a.state.winnerPid).name; assert.equal(lb[0].username, winner === 'Ann' ? 'WinAnn' : 'WinBob');
+    // 2. the same account cannot sit twice in one room
+    code = await room(); const a2 = mk('Ann'), a3 = mk('Ann again');
+    await a2.connect(code, undefined, { cookie: ann.cookie }); const dup = await a3.connect(code, undefined, { cookie: ann.cookie }); assert.equal(dup.code, 'dup_account');
+    // 3. a guest and a faked header: the header is thrown away, so nobody is credited (the first account made has id 1)
+    code = await room(); const g1 = mk('Guest'), g2 = mk('Faker');
+    await g1.connect(code); await g2.connect(code, undefined, { 'x-kl-uid': '1' }); await g1.until(st => st.players.length === 2); g1.send({ t: 'start' }); await g1.until(st => st.phase === 'playing');
+    await playOut([g1, g2]); await sleep(300); assert.deepEqual((await board()).map(x => x.played), [1, 1]);
+    // 4. one logged-in person against bots: not saved
+    code = await room(); const c = mk('Solo'); await c.connect(code, undefined, { cookie: ann.cookie });
+    c.send({ t: 'addBot' }); c.send({ t: 'addBot' }); await c.until(st => st.players.length === 3 && st.ranked === false); c.send({ t: 'start' }); await c.until(st => st.phase === 'playing');
+    await playOut([c]); await sleep(300); assert.deepEqual((await board()).map(x => x.played), [1, 1]);
+    // 5. a person who leaves mid-game gets neither a win nor a loss
+    code = await room(); const l1 = mk('Stayer'), l2 = mk('Leaver'), l3 = mk('Third');
+    await l1.connect(code, undefined, { cookie: ann.cookie }); await l2.connect(code, undefined, { cookie: bob.cookie }); await l3.connect(code);
+    await l1.until(st => st.players.length === 3); l1.send({ t: 'start' }); await l1.until(st => st.phase === 'playing');
+    l2.send({ t: 'leave' }); await playOut([l1, l3]); await sleep(300);
+    const after = await board(); const stayer = after.find(x => x.username === 'WinAnn'), leaver = after.find(x => x.username === 'WinBob');
+    assert.equal(stayer.played, 2); assert.equal(leaver.played, 1);
+  });
+
+  await test('host tools mid-game: kick turns the seat into a bot and tells them; close ends the room for everyone', async () => {
+    const code = await room(); const a = mk('Host'), b = mk('Guest'), c = mk('Third');
+    await a.connect(code); await b.connect(code); await c.connect(code); await a.until(st => st.players.length === 3);
+    a.send({ t: 'start' }); await a.until(st => st.phase === 'playing');
+    b.send({ t: 'remove', pid: c.pid }); assert.equal((await b.next(m => m.t === 'error')).code, 'not_host');
+    a.send({ t: 'remove', pid: c.pid }); await c.next(m => m.t === 'kicked'); await sleep(100); assert.equal(c.closed.code, 4002);
+    const st = await a.until(s => s.players.find(p => p.pid === c.pid).bot === true); assert.equal(st.players.find(p => p.pid === c.pid).left, true);
+    b.send({ t: 'close' }); assert.equal((await b.next(m => m.t === 'error')).code, 'not_host');
+    a.send({ t: 'close' }); await a.next(m => m.t === 'closed'); await b.next(m => m.t === 'closed');
+    assert.equal((await api('/api/dnl/room/' + code)).status, 404);
+  });
+
+  await test('room creation is limited per address (8 an hour) and looking a room up is still allowed', async () => {
+    const P2 = PORT + 3000, s2 = spawn(process.execPath, [path.join(here, '..', 'dev-server.mjs'), '--fast', '--real-limits', '--port', String(P2)], { stdio: ['ignore', 'pipe', 'inherit'] });
+    try {
+      await new Promise((res, rej) => { s2.stdout.on('data', d => String(d).includes('dev server on') && res()); s2.on('exit', c => rej(new Error('server exited ' + c))); });
+      const mkRoom = async () => (await fetch(`http://127.0.0.1:${P2}/api/dnl/room`, { method: 'POST' })).status;
+      const got = []; for (let i = 0; i < 10; i++) got.push(await mkRoom());
+      assert.deepEqual(got, [200, 200, 200, 200, 200, 200, 200, 200, 429, 429]);
+      assert.equal((await fetch(`http://127.0.0.1:${P2}/api/dnl/room/ZZZZZ`)).status, 404);          // looking a room up is not the same as creating one
+    } finally { s2.kill(); }
   });
 
   console.log(`\n${n} protocol tests passed`);

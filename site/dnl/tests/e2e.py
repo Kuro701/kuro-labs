@@ -48,6 +48,22 @@ async def autoplay(pages, timeout=120):
         await asyncio.sleep(0.05)
     raise AssertionError("game did not finish in time")
 
+
+async def sign_in(ctx, email, username):
+    """Log a browser context in through the real account routes (email code read from the dev mailbox)."""
+    H = {"origin": BASE}
+    r = await ctx.request.post(BASE + "/api/auth/email/start", data={"email": email, "turnstileToken": "x", "purpose": "login"}, headers=H); assert r.ok, await r.text()
+    box = await (await ctx.request.get(BASE + "/__dev/mailbox")).json()
+    code = re.search(r"(\d{6})", [m for m in box if m["to"] == email][-1]["text"]).group(1)
+    r = await ctx.request.post(BASE + "/api/auth/email/verify", data={"email": email, "code": code, "purpose": "login"}, headers=H); assert (await r.json())["next"] == "register"
+    r = await ctx.request.post(BASE + "/api/auth/register", data={"agreedRules": True, "is18": True, "username": username, "password": "correct horse battery"}, headers=H); assert r.ok, await r.text()
+
+async def new_ctx_page(browser, url, **ctxopts):
+    ctx = await browser.new_context(**ctxopts); pg = await ctx.new_page()
+    pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    pg.on("console", lambda m: errors.append(f"console {m.type}: {m.text}") if m.type == "error" else None)
+    return ctx, pg
+
 async def main():
     server = subprocess.Popen(["node", os.path.join(HERE, "..", "dev-server.mjs"), "--fast", "--port", str(PORT)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     for _ in range(100):
@@ -183,6 +199,35 @@ async def main():
             await B.fill("#netCode", "ZZZZZ"); await B.click("#netJoin"); await wait_until(lambda: B.evaluate("document.querySelector('#netMsg').textContent.includes('No room')"), 8, what="no room msg")
             await B.fill("#netCode", "12"); await B.click("#netJoin"); assert "does not look right" in await B.inner_text("#netMsg")
             ok("online: friendly messages for unknown and malformed codes")
+
+            # ---------- C. logged-in players, and the host's tools in a running game ----------
+            cx, X = await new_ctx_page(browser, GAME, viewport={"width": 1100, "height": 800}); cy, Y = await new_ctx_page(browser, GAME, viewport={"width": 1100, "height": 800}); cz, Z = await new_ctx_page(browser, GAME, viewport={"width": 1100, "height": 800})
+            await sign_in(cx, "hostx@example.org", "HostXavier"); await sign_in(cy, "guesty@example.org", "GuestYara")
+            for pg in (X, Y, Z): await pg.goto(GAME + "?debug=1")
+            await X.click("#modeSeg [data-mode=online]")
+            await wait_until(lambda: X.evaluate("document.querySelector('#netName').value==='HostXavier'"), 10, what="name prefilled from the account")
+            await X.click("#netCreate"); await wait_until(lambda: X.is_visible("#lobby"), 10, what="host lobby")
+            code = (await X.inner_text("#lobbyCode")).strip()
+            await Y.click("#modeSeg [data-mode=online]"); await Y.fill("#netCode", code); await Y.click("#netJoin"); await wait_until(lambda: Y.is_visible("#lobby"), 10, what="Y in lobby")
+            await Z.click("#modeSeg [data-mode=online]"); await Z.fill("#netName", "Zed"); await Z.fill("#netCode", code); await Z.click("#netJoin"); await wait_until(lambda: Z.is_visible("#lobby"), 10, what="Z in lobby")
+            await wait_until(lambda: X.evaluate("document.querySelectorAll('#lobbyPlayers li').length===3"), 10, what="three in the lobby")
+            assert "saved to your account" in await X.inner_text("#acctLine"), await X.inner_text("#acctLine")
+            assert "guest" in (await Z.inner_text("#acctLine")).lower(); assert await Y.evaluate("document.querySelector('#netName').value") == "GuestYara"
+            assert await X.is_visible("#closeRoom2") and not await Y.is_visible("#closeRoom2") and not await Y.is_visible("#closeRoom")
+            ok("online: logged-in players get their name filled in and are told results are saved; guests are told to log in")
+            await X.click("#startOnline"); await wait_until(lambda: X.evaluate("DNL.S().phase==='idle'"), 10, what="game started")
+            await wait_until(lambda: X.is_visible("#closeRoom"), 5, what="host has Close room"); assert not await Y.is_visible("#closeRoom")
+            rm = X.locator("#players li", has_text="Zed").locator("button"); await rm.wait_for(timeout=5000)
+            assert await X.locator("#players li", has_text="GuestYara").locator("button").count() == 1 and await X.locator("#players li", has_text="HostXavier").locator("button").count() == 0
+            assert await Y.locator("#players button").count() == 0                                # only the host gets Remove
+            await rm.click(); assert "Sure" in await rm.inner_text(); await rm.click()
+            await wait_until(lambda: Z.is_visible("#setup"), 10, what="Zed sent to setup"); assert "removed" in await Z.inner_text("#netMsg")
+            await wait_until(lambda: X.evaluate("DNL.S().players.some(p=>p.name==='Zed'&&p.bot)"), 5, what="Zed's seat is now a bot")
+            ok("online: in a running game the host removes a player after a second click; their seat becomes a bot")
+            close = X.locator("#closeRoom"); await close.click(); assert "everyone" in await close.inner_text(); await close.click()
+            await wait_until(lambda: Y.is_visible("#setup"), 10, what="Y told the room closed"); assert "closed" in await Y.inner_text("#netMsg")
+            await wait_until(lambda: X.is_visible("#setup"), 10, what="host back at setup")
+            ok("online: the host can close the room for everyone")
         finally:
             await browser.close()
     server.kill()
