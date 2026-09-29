@@ -5,25 +5,24 @@
    Save-Data / no WebGL / any failure. */
 (()=>{
 const DUR=4400,HOLD_K=4200,HOLD_S=2600;
-const S=1.5,GW=Math.round(440*S),GH=Math.round(641*S),CX=220,CY=320,BOX=400;   // sampling grid = emblem x1.5
+const S=1.5,GW=Math.round(480*S),GH=GW,CX=240,CY=240,BOX=440;                // square grid matches the approved K artwork
 const stage=document.querySelector('.kl-art .kl-k');if(!stage)return;
 const img=stage.querySelector('img'),cv=stage.querySelector('canvas'),label=document.querySelector('.kl-art-label');
 if(matchMedia('(prefers-reduced-motion:reduce)').matches||(navigator.connection&&navigator.connection.saveData))return;
 const gl=cv.getContext('webgl',{antialias:false,alpha:true,premultipliedAlpha:true});if(!gl)return;
 const LABEL0=label?label.textContent:'';
 const NAMES=['K','SOFTWARE & AI','3D & VR','WEB DESIGN','BROWSER GAMES'];
-const V='?v=20260933',SRC={frame:'/assets/img/k-frame.webp'+V,shapes:[null,1,2,3,4].map(i=>i&&'/assets/img/k-shape-'+i+'.webp'+V)};
-const GLOW='drop-shadow(0 0 24px #ed294540)';
+const V='?v=20260929',SRC={frame:'/assets/img/k-frame.webp'+V,shapes:[null,1,2,3,4].map(i=>i&&'/assets/img/k-shape-purple-'+i+'.png'+V)};
+const GLOW='drop-shadow(0 0 24px #8b5cf666)';
 
 /* ---- fixed HD ring layer sits under the point canvas ---- */
-const frameEl=document.createElement('img');frameEl.alt='';frameEl.setAttribute('aria-hidden','true');frameEl.decoding='async';
-frameEl.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;pointer-events:none;z-index:1;transition:none;filter:brightness(1.55) '+GLOW;
+const frameEl=document.createElement('img');frameEl.alt='';frameEl.setAttribute('aria-hidden','true');frameEl.decoding='async';frameEl.src=SRC.frame;
+frameEl.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;opacity:0;pointer-events:none;z-index:1;transition:none;filter:'+GLOW;
 stage.insertBefore(frameEl,cv);
 cv.style.zIndex=2;cv.style.transition='none';cv.style.filter=GLOW;
 
 /* ---- sample artwork into point clouds (real texel colours, x1.55 to match the site's CSS brightness) ---- */
 const oc=document.createElement('canvas');oc.width=GW;oc.height=GH;const ox=oc.getContext('2d',{willReadFrequently:true});
-const isGlyph=(X,Y)=>{const dx=X-CX,dy=Y-CY;if(Math.hypot(dx,dy)>192)return false;if(Math.abs(dx)<6&&(Y<215||Y>452))return false;return Y>150&&Y<500};
 function sample(draw,test){
  ox.setTransform(1,0,0,1,0,0);ox.clearRect(0,0,GW,GH);ox.imageSmoothingQuality='high';draw(ox);
  const d=ox.getImageData(0,0,GW,GH).data,xs=[],ys=[],cs=[];
@@ -32,7 +31,7 @@ function sample(draw,test){
  return{n:xs.length,x:Float32Array.from(xs),y:Float32Array.from(ys),c:Uint8Array.from(cs)}}
 let forms=[],shapeImgs=[];
 function buildForms(){
- forms=[sample(c=>c.drawImage(img,0,0,GW,GH),isGlyph)];
+ forms=[sample(c=>c.drawImage(img,0,0,GW,GH))];
  for(let s=1;s<=4;s++)forms.push(sample(c=>c.drawImage(shapeImgs[s],(CX-BOX/2)*S,(CY-BOX/2)*S,BOX*S,BOX*S)))}
 
 /* ---- pair two clouds so neighbours stay neighbours: recursive median bisection with native numeric sorts.
@@ -170,7 +169,7 @@ async function start(){
   const r=await Promise.all([load(SRC.frame),...SRC.shapes.slice(1).map(load)]);frameEl.src=SRC.frame;shapeImgs=[null,...r.slice(1)];
   size();buildForms();
   const p=await prepare(0,1);use(p);render(0);if(!alive())throw new Error('blank canvas');
-  cv.style.transition='opacity .35s';cv.style.opacity=1;frameEl.style.opacity=1;              // ring is pixel-identical to the K image's ring
+  cv.style.transition='opacity .35s';cv.style.opacity=1;frameEl.style.opacity=0;              // ring is pixel-identical to the K image's ring
   setTimeout(()=>{img.style.transition='none';img.style.opacity=0},400);                     // K picture is only the first paint / no-JS fallback
   addEventListener('resize',()=>{size();if(P&&P.g)render(lastU)});
   new IntersectionObserver(e=>{paused=!e[0].isIntersecting}).observe(stage);

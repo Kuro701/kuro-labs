@@ -1,0 +1,122 @@
+:root{color-scheme:dark}body{margin:0;background:#07050d}
+#kl-techno{--red:#8b5cf6;--violet:#8b5cf6;--lilac:#c4a7ff;--line:#2a1f38;--muted:#9f95ab;--round:0;background:radial-gradient(circle at 82% 8%,rgba(76,29,149,.14),transparent 34%),#07050d;color:#f4f0fa;min-height:100vh}
+#kl-techno .kl-red{color:var(--violet)}
+#kl-techno .kl-header{position:relative;z-index:20;padding:18px 5%;background:rgba(7,5,13,.94);border-color:var(--line);backdrop-filter:blur(18px)}
+#kl-techno .kl-brand img{width:31px;height:39px;filter:drop-shadow(0 0 12px rgba(139,92,246,.5));object-fit:contain}
+#kl-techno .kl-brand .kl-red{margin-left:-4px}
+#kl-techno .kl-nav a{color:#9d93aa;padding:12px 11px;min-height:44px}
+#kl-techno .kl-nav a[aria-current=page]{color:#fff;box-shadow:inset 0 -2px var(--violet)}
+#kl-techno .kl-menu-toggle{background:#100b18;border-color:#4d3768}
+#kl-techno .kl-wrap{max-width:1480px;margin:auto;padding-inline:clamp(22px,5vw,82px)}
+#kl-techno h1{font-size:clamp(54px,7vw,108px);line-height:.92;letter-spacing:-.055em;font-weight:600}
+#kl-techno h2{font-size:clamp(34px,4vw,62px);letter-spacing:-.04em}
+#kl-techno h3{font-weight:600}
+#kl-techno p{color:var(--muted)}
+#kl-techno .kl-eye{color:var(--lilac)}
+#kl-techno .kl-eye:before{width:22px;height:1px;background:var(--violet);margin-right:12px}
+#kl-techno .kl-mono{color:#91859d}
+#kl-techno .kl-action{background:#100b18;border-color:#38284d;border-radius:0}
+#kl-techno .kl-action:hover{background:#1a1028;border-color:#8b5cf6;box-shadow:0 0 22px rgba(139,92,246,.15)}
+#kl-techno .kl-primary{background:linear-gradient(135deg,#6d28d9,#9b5de5);border-color:#a878ed}
+#kl-techno .kl-primary:hover{background:linear-gradient(135deg,#7c36e7,#ad70ee)}
+#kl-techno .kl-page-head{min-height:430px;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line);padding:80px 0 55px;position:relative;overflow:hidden}
+#kl-techno .kl-page-head:after{content:"";position:absolute;right:5%;width:340px;height:340px;border:1px solid rgba(139,92,246,.18);border-radius:50%;box-shadow:0 0 80px rgba(109,40,217,.1),inset 0 0 70px rgba(109,40,217,.05);pointer-events:none}
+#kl-techno .kl-page-head h1{max-width:920px;position:relative;z-index:1}
+#kl-techno .kl-page-head p{font-size:18px;line-height:1.7;max-width:720px;position:relative;z-index:1}
+#kl-techno .kl-section{padding:90px 0;border-color:var(--line)}
+#kl-techno .kl-section:after,#kl-techno .kl-footer:before{display:none}
+#kl-techno .kl-grid{gap:18px}
+#kl-techno .kl-tile,#kl-techno .kl-feature{border-radius:0;border-color:var(--line);background:linear-gradient(145deg,#130d1e,#0a0710)}
+#kl-techno .kl-tile:before,#kl-techno .kl-feature:before,#kl-techno .kl-tile:after,#kl-techno .kl-feature:after{border-color:var(--violet);border-radius:0}
+#kl-techno .kl-shot{padding:0;object-fit:cover;aspect-ratio:1.45;background:#09070e;border-color:var(--line)}
+#kl-techno .kl-tag{color:var(--lilac);border-color:#52386f;background:rgba(109,40,217,.08)}
+#kl-techno .kl-num{color:var(--violet)}
+#kl-techno .kl-callout{border-radius:0;border-color:#56387b;border-left:1px solid #7448a8;background:linear-gradient(120deg,#1b0f2d,#0c0813 70%)}
+#kl-techno .kl-callout:before{background:radial-gradient(circle,transparent 0 58%,rgba(139,92,246,.2) 58.4%,transparent 59.4% 70%,rgba(139,92,246,.12) 70.4%,transparent 71.4%)}
+#kl-techno .kl-footer{border-color:var(--line);padding:38px 5%;background:#08060d}
+#kl-techno .kl-footer-brand{display:flex;align-items:center;gap:14px}
+#kl-techno .kl-footer-brand img{width:42px;height:52px;object-fit:contain;filter:drop-shadow(0 0 16px rgba(139,92,246,.42))}
+
+/* Home keeps the established morph and receives the new palette. */
+.kl-page-home #kl-techno .kl-hero{min-height:690px;background:radial-gradient(ellipse at 82% 48%,rgba(92,35,155,.22),transparent 58%),linear-gradient(90deg,transparent 99%,rgba(255,255,255,.018) 99%),#07050d;border-bottom:1px solid var(--line)}
+.kl-page-home #kl-techno .kl-hero h1 span{color:var(--violet)}
+.kl-page-home #kl-techno .kl-art:before{background:conic-gradient(from 0deg,transparent 0 55%,rgba(139,92,246,0) 55%,rgba(139,92,246,.78) 100%)}
+.kl-page-home #kl-techno .kl-r1,.kl-page-home #kl-techno .kl-r2,.kl-page-home #kl-techno .kl-r3{border-color:rgba(139,92,246,.58)}
+.kl-page-home #kl-techno .kl-ring:before{background:#c29afa;box-shadow:0 0 12px 2px #8b5cf6}
+.kl-page-home #kl-techno .kl-art .kl-orb{background:radial-gradient(circle,rgba(139,92,246,.28),rgba(109,40,217,.08) 42%,transparent 68%)}
+.kl-page-home #kl-techno .kl-art img{filter:drop-shadow(0 0 28px rgba(139,92,246,.45))}
+.kl-page-home #kl-techno .kl-art .kl-k{aspect-ratio:1}
+.kl-page-home #kl-techno .kl-strip{border-color:var(--line);color:#a99eb5}
+
+/* About: editorial identity composition. */
+.kl-about-page .kl-bio{grid-template-columns:1.05fr .75fr;gap:18px;margin-top:70px;align-items:stretch}
+.kl-about-page .kl-bio>div{border:1px solid var(--line);padding:clamp(30px,5vw,68px);background:linear-gradient(145deg,#130d1e,#09070e)}
+.kl-about-page .kl-bio>img{box-sizing:border-box;width:100%;height:100%;max-height:none;object-fit:contain;padding:55px;border:1px solid #56387b;background:linear-gradient(165deg,#1b102a,#07050d);filter:drop-shadow(0 0 32px rgba(139,92,246,.46))}
+
+/* Games: layered arcade mosaic and irregular library. */
+.kl-games-page .kl-page-head{width:43%;min-height:620px;border:0}
+.kl-games-page{position:relative}
+.kl-game-mosaic{position:absolute;right:4%;top:95px;width:50%;height:540px}
+.kl-game-tile{position:absolute;margin:0;border:1px solid #5d4184;background:#08060d;box-shadow:0 24px 70px rgba(0,0,0,.58);overflow:hidden}
+.kl-game-tile img{width:100%;height:100%;object-fit:cover;padding:0}
+.kl-game-tile figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;background:linear-gradient(transparent,rgba(5,3,9,.96));font:9px 'IBM Plex Mono',monospace;letter-spacing:.12em}
+.kl-game-tile-1{left:4%;top:15%;width:60%;height:64%;transform:rotate(-2deg);z-index:3}.kl-game-tile-2{right:2%;top:4%;width:42%;height:39%;transform:rotate(4deg);z-index:2}.kl-game-tile-3{right:0;bottom:3%;width:46%;height:43%;transform:rotate(-4deg);z-index:4}
+.kl-mosaic-reticle{position:absolute;left:42%;top:49%;width:86px;height:86px;border:1px solid rgba(196,167,255,.4);border-radius:50%;z-index:5}
+.kl-game-library{clear:both;grid-template-columns:repeat(12,1fr);padding-top:55px;border-top:1px solid var(--line)}
+.kl-game-library .kl-tile{grid-column:span 4}.kl-game-library .kl-tile:first-child{grid-column:span 7}.kl-game-library .kl-tile:nth-child(2){grid-column:span 5}
+
+/* Projects: system map and alternating technical index. */
+.kl-projects-page .kl-page-head{width:48%;min-height:560px;border:0}
+.kl-projects-page{position:relative}
+.kl-system-map{position:absolute;right:5%;top:135px;width:40%;border:1px solid #5b3e7b;background:linear-gradient(145deg,#1a0f28,#07050d);padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.kl-system-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px;font:9px 'IBM Plex Mono',monospace;letter-spacing:.12em}.kl-system-head b{color:var(--lilac)}
+.kl-system-row{display:grid;grid-template-columns:95px 1fr auto;gap:14px;align-items:center;padding:20px 4px;border-bottom:1px solid rgba(80,57,105,.45)}.kl-system-row span,.kl-system-row i{font:9px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:#887a96}.kl-system-row strong{font-size:18px}.kl-system-row i{font-style:normal;color:#ad84e8}.kl-signal-line{position:absolute;left:-16px;top:24%;bottom:10%;width:1px;background:linear-gradient(transparent,var(--violet),transparent)}
+.kl-project-list{clear:both;display:grid;grid-template-columns:1fr;padding-top:55px;border-top:1px solid var(--line)}
+.kl-project-list .kl-tile{display:grid;grid-template-columns:minmax(280px,42%) 1fr;min-height:320px}.kl-project-list .kl-tile:nth-child(even){grid-template-columns:1fr minmax(280px,42%)}.kl-project-list .kl-tile:nth-child(even)>:first-child{order:2}.kl-project-list .kl-pad{justify-content:center;padding:clamp(28px,4vw,58px)}.kl-project-list h3{font-size:clamp(30px,4vw,50px)}.kl-project-list .kl-shot{height:100%;aspect-ratio:auto}
+
+/* Shop: featured product and live counters. */
+.kl-shop-page .kl-page-head{width:46%;min-height:620px;border:0}
+.kl-shop-page{position:relative}
+.kl-shop-showpiece{position:absolute;right:5%;top:90px;width:42%;height:560px;border:1px solid #65428d;background:#08060d;overflow:hidden;box-shadow:0 35px 90px rgba(0,0,0,.58)}
+.kl-shop-showpiece>img{width:100%;height:100%;object-fit:cover}.kl-shop-showpiece:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 42%,rgba(6,4,10,.97))}.kl-shop-showpiece>div{position:absolute;left:30px;right:30px;bottom:30px;z-index:2;display:flex;flex-direction:column}.kl-shop-showpiece small,.kl-shop-showpiece em,.kl-showpiece-view,.kl-showpiece-sold{font:9px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:var(--lilac);font-style:normal}.kl-shop-showpiece strong{font-size:34px;margin:8px 0}.kl-showpiece-view{position:absolute;right:24px;top:24px;z-index:3;padding:9px 12px;border:1px solid #65428d;background:#11091b}.kl-showpiece-sold{align-self:flex-start;margin-top:12px;padding:7px 9px;border:1px solid rgba(139,92,246,.44);background:rgba(8,5,13,.76)}
+.kl-shop-page>.kl-grid{clear:both;grid-template-columns:repeat(3,minmax(0,1fr));padding-top:55px;border-top:1px solid var(--line)}
+#kl-techno .kl-sold-count{width:100%;margin:14px 0 0;padding:12px 0 0;border-top:1px solid rgba(139,92,246,.22);color:#c5a5f5;text-transform:uppercase}
+#kl-techno .kl-sold-count:before,.kl-showpiece-sold:before{content:"";display:inline-block;width:6px;height:6px;margin-right:8px;border-radius:50%;background:#9e63ec;box-shadow:0 0 12px rgba(158,99,236,.8);vertical-align:1px}
+
+/* Commissions: capability blueprint. */
+.kl-commissions-page .kl-page-head{width:48%;min-height:620px;border:0}.kl-commissions-page{position:relative}.kl-blueprint{position:absolute;right:5%;top:105px;width:40%;display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid #65448d;padding:22px;background-color:#0d0814;background-image:linear-gradient(rgba(137,91,198,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(137,91,198,.08) 1px,transparent 1px);background-size:24px 24px}.kl-blueprint-head{grid-column:1/-1;display:flex!important;justify-content:space-between;aspect-ratio:auto!important;border:0!important;background:none!important;font:9px 'IBM Plex Mono',monospace;letter-spacing:.12em}.kl-blueprint-head b{color:var(--lilac)}.kl-blueprint>div:not(.kl-blueprint-head){aspect-ratio:1.25;border:1px solid rgba(141,93,203,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;background:rgba(10,7,15,.78)}.kl-blueprint>div>span{position:absolute;left:10px;top:10px;font:9px 'IBM Plex Mono',monospace;color:#7f6c92}.kl-blueprint>div>strong{font:38px 'IBM Plex Mono',monospace;color:#b894ef}.kl-blueprint>div>small{font:9px 'IBM Plex Mono',monospace;letter-spacing:.1em;margin-top:14px}.kl-blueprint svg{position:absolute;inset:18%;width:64%;height:64%;pointer-events:none}.kl-blueprint path{fill:none;stroke:rgba(184,148,239,.18);stroke-width:.3;stroke-dasharray:2 2}
+.kl-commissions-page>.kl-four{clear:both;border-top:1px solid var(--line);padding-top:55px}
+
+/* Contact: useful above-fold communication console. */
+.kl-contact-page .kl-page-head{width:50%;min-height:620px;border:0}.kl-contact-page{position:relative}.kl-contact-console{position:absolute;right:5%;top:115px;width:40%;min-height:440px;border:1px solid #684692;background:linear-gradient(155deg,#221236,#08050d);padding:28px;display:flex;flex-direction:column;box-shadow:0 35px 90px rgba(0,0,0,.58)}.kl-console-head{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px;font:9px 'IBM Plex Mono',monospace;letter-spacing:.12em}.kl-console-head b{color:#b58af2}.kl-contact-console>p{font:9px 'IBM Plex Mono',monospace;letter-spacing:.15em;margin-top:58px}.kl-contact-console>strong{font-size:clamp(48px,6vw,80px);letter-spacing:-.05em}.kl-contact-console>small{color:#a397af;max-width:430px}.kl-console-links{display:grid;grid-template-columns:repeat(4,1fr);margin-top:auto;border:1px solid var(--line)}.kl-console-links a{padding:14px 10px;font:9px 'IBM Plex Mono',monospace;letter-spacing:.1em;border-right:1px solid var(--line)}.kl-console-links a:last-child{border:0}.kl-contact-detail{clear:both}
+
+/* Detail, legal, account, leaderboard and admin pages retain their hooks. */
+#kl-techno .kl-detail-layout>img,#kl-techno .kl-product-video{border-radius:0;border-color:var(--line);background:#0d0914}
+#kl-techno .kl-detail-layout h1{color:#f4f0fa}
+#kl-techno .kl-legal section.kl-card,#kl-techno .kl-card{border-radius:0;border-color:var(--line);background:#0e0a16}
+#kl-techno .kl-acct-btn,#kl-techno .kl-acct-menu{border-radius:0;border-color:#493461;background:#100b18}
+#kl-techno .kl-acct-btn:hover,#kl-techno .kl-acct-menu a:hover,#kl-techno .kl-acct-menu button:hover{background:#1d112d;border-color:var(--violet)}
+#kl-techno dialog.kl-dialog{border-radius:0;border-color:#543a72;background:#0d0914}
+#kl-techno .kl-dialog input,#kl-techno .kl-card input,#kl-techno textarea{border-radius:0;border-color:#493461;background:#08060d}
+#kl-techno .kl-check input{accent-color:var(--violet)}
+#kl-techno .kl-danger{border-color:#8f3156;color:#ff9fc1}
+
+@media(max-width:1000px){.kl-game-library .kl-tile,.kl-game-library .kl-tile:first-child,.kl-game-library .kl-tile:nth-child(2){grid-column:span 6}.kl-shop-page>.kl-grid{grid-template-columns:1fr 1fr}.kl-system-row{grid-template-columns:80px 1fr}.kl-system-row i{display:none}}
+@media(max-width:820px){#kl-techno .kl-nav{border-color:var(--line);background:#08060d}.kl-games-page .kl-page-head,.kl-projects-page .kl-page-head,.kl-shop-page .kl-page-head,.kl-commissions-page .kl-page-head,.kl-contact-page .kl-page-head{width:100%;min-height:auto;padding-top:90px}.kl-game-mosaic,.kl-system-map,.kl-shop-showpiece,.kl-blueprint,.kl-contact-console{position:relative;top:auto;right:auto;width:100%;margin:0 0 70px}.kl-game-mosaic{height:460px}.kl-shop-showpiece{height:500px}.kl-game-library,.kl-project-list,.kl-shop-page>.kl-grid,.kl-commissions-page>.kl-four{padding-top:45px}.kl-project-list .kl-tile,.kl-project-list .kl-tile:nth-child(even){grid-template-columns:1fr}.kl-project-list .kl-tile:nth-child(even)>:first-child{order:0}.kl-project-list .kl-shot{min-height:260px}.kl-about-page .kl-bio{grid-template-columns:1fr}}
+@media(max-width:600px){#kl-techno h1{font-size:52px}.kl-game-library{grid-template-columns:1fr}.kl-game-library .kl-tile,.kl-game-library .kl-tile:first-child,.kl-game-library .kl-tile:nth-child(2){grid-column:1}.kl-shop-page>.kl-grid{grid-template-columns:1fr}.kl-game-mosaic{height:360px}.kl-shop-showpiece{height:420px}.kl-blueprint{padding:12px}.kl-console-links{grid-template-columns:1fr 1fr}.kl-contact-console>strong{font-size:52px}}
+
+/* Page layouts deliberately outrank the legacy shared grid declarations. */
+#kl-techno .kl-about-page .kl-bio{grid-template-columns:1.05fr .75fr}
+#kl-techno .kl-games-page .kl-page-head{width:43%;min-height:650px}
+#kl-techno .kl-projects-page .kl-page-head{width:48%;min-height:600px}
+#kl-techno .kl-shop-page .kl-page-head{width:46%;min-height:700px}
+#kl-techno .kl-commissions-page .kl-page-head{width:48%;min-height:680px}
+#kl-techno .kl-contact-page .kl-page-head{width:50%;min-height:680px}
+#kl-techno .kl-game-library{grid-template-columns:repeat(12,minmax(0,1fr))}
+#kl-techno .kl-project-list{grid-template-columns:1fr}
+#kl-techno .kl-project-list .kl-tile{display:grid;grid-template-columns:minmax(280px,42%) 1fr}
+#kl-techno .kl-project-list .kl-tile:nth-child(even){grid-template-columns:1fr minmax(280px,42%)}
+#kl-techno .kl-shop-page>.kl-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1000px){#kl-techno .kl-shop-page>.kl-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:820px){#kl-techno .kl-about-page .kl-bio{grid-template-columns:1fr}#kl-techno .kl-games-page .kl-page-head,#kl-techno .kl-projects-page .kl-page-head,#kl-techno .kl-shop-page .kl-page-head,#kl-techno .kl-commissions-page .kl-page-head,#kl-techno .kl-contact-page .kl-page-head{width:100%;min-height:auto}#kl-techno .kl-project-list .kl-tile,#kl-techno .kl-project-list .kl-tile:nth-child(even){grid-template-columns:1fr}}
+@media(max-width:600px){#kl-techno .kl-game-library,#kl-techno .kl-shop-page>.kl-grid{grid-template-columns:1fr}}
