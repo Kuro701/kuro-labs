@@ -93,6 +93,40 @@
       "video": "/assets/video/predator-nanomask-showcase.mp4",
       "buy": "https://rajcu.gumroad.com/l/predator-nanomask",
       "buy2": null
+    },
+    {
+      "slug": "metal-boots",
+      "name": "Metal Boots",
+      "price": "$10",
+      "tag": "PCVR · Windows",
+      "short": "Heavy black combat boots with purple accents, loose-lace PhysBones and RGB lace color controls for your PCVR avatar.",
+      "long": "A heavy, detailed pair of black PCVR boots with purple accents, visible stitching, embossed KuroLabs marks and readable kurolabs.net rear straps. Includes a Unity humanoid fitting tool, VRCFury armature links, two branched lace PhysBones with fitted leg colliders, and saved RGB controls for changing the lace colour in VRChat. Requires a compatible humanoid avatar, VRChat SDK and VRCFury installed separately. Avatar proportions differ, so calf width, trousers, covered feet and clipping should still be checked on your own avatar. Personal avatar use only; no redistribution or resale. Avatar not included.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Rigging",
+          "RGB lace colour controls + two lace PhysBones with fitted colliders"
+        ],
+        [
+          "Format",
+          "Unity package + HTML setup guide"
+        ],
+        [
+          "Requires",
+          "VRChat SDK, VRCFury and a compatible humanoid avatar"
+        ],
+        [
+          "License",
+          "Personal avatar use; no redistribution or resale"
+        ]
+      ],
+      "img": "/assets/img/metal-boots-poster.png",
+      "video": "/assets/video/metal-boots-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/KuroLabs-Metal-Boots",
+      "buy2": null
     }
   ]
 }
