@@ -9,7 +9,7 @@ const S=1.5,GW=Math.round(480*S),GH=GW,CX=240,CY=240,BOX=440;                // 
 const stage=document.querySelector('.kl-art .kl-k');if(!stage)return;
 const img=stage.querySelector('img'),cv=stage.querySelector('canvas'),label=document.querySelector('.kl-art-label');
 if(matchMedia('(prefers-reduced-motion:reduce)').matches||(navigator.connection&&navigator.connection.saveData))return;
-const gl=cv.getContext('webgl',{antialias:false,alpha:true,premultipliedAlpha:true});if(!gl)return;
+const gl=cv.getContext('webgl',{antialias:false,alpha:true,premultipliedAlpha:true,preserveDrawingBuffer:true});if(!gl)return;
 const LABEL0=label?label.textContent:'';
 const NAMES=['K','SOFTWARE & AI','3D & VR','WEB DESIGN','BROWSER GAMES'];
 const V='?v=20260929',SRC={frame:'/assets/img/k-frame.webp'+V,shapes:[null,1,2,3,4].map(i=>i&&'/assets/img/k-shape-purple-'+i+'.png'+V)};
