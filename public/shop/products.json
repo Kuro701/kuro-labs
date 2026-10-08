@@ -127,6 +127,36 @@
       "video": "/assets/video/metal-boots-showcase.mp4",
       "buy": "https://rajcu.gumroad.com/l/KuroLabs-Metal-Boots",
       "buy2": null
+    },
+    {
+      "slug": "harbinger",
+      "name": "Harbinger",
+      "price": "$10",
+      "tag": "PCVR · Windows",
+      "short": "Five forms. One weapon. Sword, Extended Sword, Gun, Scythe and Packed modes for your PCVR avatar.",
+      "long": "Harbinger is a transforming VRChat weapon with five forms: Sword, Extended Sword, Gun, Scythe and Packed, with animated transformations between them. Built for PCVR avatars. Requires a compatible humanoid avatar and the VRChat SDK installed separately; check fit and hand alignment on your own avatar in Unity. Avatar not included.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Forms",
+          "Sword / Extended Sword / Gun / Scythe / Packed"
+        ],
+        [
+          "Format",
+          "Unity package"
+        ],
+        [
+          "Requires",
+          "VRChat SDK and a compatible humanoid avatar"
+        ]
+      ],
+      "img": "/assets/img/harbinger-poster.jpg",
+      "video": "/assets/video/harbinger-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/harbinger-pcvr",
+      "buy2": null
     }
   ]
 }
