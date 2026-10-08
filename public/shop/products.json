@@ -133,8 +133,8 @@
       "name": "Harbinger",
       "price": "$10",
       "tag": "PCVR · Windows",
-      "short": "Five forms. One weapon. Sword, Extended Sword, Gun, Scythe and Packed modes for your PCVR avatar.",
-      "long": "Harbinger is a transforming VRChat weapon with five forms: Sword, Extended Sword, Gun, Scythe and Packed, with animated transformations between them. Built for PCVR avatars. Requires a compatible humanoid avatar and the VRChat SDK installed separately; check fit and hand alignment on your own avatar in Unity. Avatar not included.",
+      "short": "Five forms. One weapon. Animated Sword, Extended Sword, Gun, Scythe and Packed modes for your PCVR avatar.",
+      "long": "Harbinger is a transforming VRChat weapon with five forms: Sword, Extended Sword, Gun, Scythe and Packed. Featuring animated transformations, moving cogwheels, a katana-style wrapped handle and an extending red scythe edge. Includes an easy avatar installer and installation guide, custom menu icons with separate transformation controls, hand and back placement with adjustable fitting and overall size, Show/Hide, World Lock and Flip Grip, and left-hand click-to-reposition along the deployed scythe handle. Gun mode includes the transformation; firing effects are not included. Requires your own humanoid avatar, VRChat Avatars SDK, VRCFury and Poiyomi Toon 9.3 (not included). Quest headsets can use it through a PC connection; standalone Quest/Android is not supported. Personal avatar use only; modification for your own avatars is allowed. No redistribution, sharing, resale or inclusion in avatars offered for sale.",
       "specs": [
         [
           "Platforms",
@@ -145,12 +145,24 @@
           "Sword / Extended Sword / Gun / Scythe / Packed"
         ],
         [
-          "Format",
-          "Unity package"
+          "Controls",
+          "Show/Hide, World Lock, Flip Grip, hand/back placement, adjustable size"
+        ],
+        [
+          "Stats",
+          "48,596 triangles · 20 synced parameter bits"
         ],
         [
           "Requires",
-          "VRChat SDK and a compatible humanoid avatar"
+          "VRChat Avatars SDK, VRCFury, Poiyomi Toon 9.3 and a humanoid avatar"
+        ],
+        [
+          "Tested with",
+          "Unity 2022.3.22f1"
+        ],
+        [
+          "License",
+          "Personal avatar use; modification allowed; no redistribution or resale"
         ]
       ],
       "img": "/assets/img/harbinger-poster.jpg",
