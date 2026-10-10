@@ -120,3 +120,5 @@
 @media(max-width:1000px){#kl-techno .kl-shop-page>.kl-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:820px){#kl-techno .kl-about-page .kl-bio{grid-template-columns:1fr}#kl-techno .kl-games-page .kl-page-head,#kl-techno .kl-projects-page .kl-page-head,#kl-techno .kl-shop-page .kl-page-head,#kl-techno .kl-commissions-page .kl-page-head,#kl-techno .kl-contact-page .kl-page-head{width:100%;min-height:auto}#kl-techno .kl-project-list .kl-tile,#kl-techno .kl-project-list .kl-tile:nth-child(even){grid-template-columns:1fr}}
 @media(max-width:600px){#kl-techno .kl-game-library,#kl-techno .kl-shop-page>.kl-grid{grid-template-columns:1fr}}
+
+.kl-console-mail{margin:26px 0 22px;display:flex;flex-direction:column;gap:6px}.kl-console-mail span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.15em;color:#a397af}.kl-console-mail a{font-size:clamp(18px,2vw,24px);letter-spacing:-.02em;word-break:break-all}
