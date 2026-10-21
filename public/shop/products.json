@@ -169,6 +169,60 @@
       "video": "/assets/video/harbinger-showcase.mp4",
       "buy": "https://rajcu.gumroad.com/l/harbinger-pcvr",
       "buy2": null
+    },
+    {
+      "slug": "seraph-wings",
+      "name": "Seraph Wings",
+      "price": "$15",
+      "tag": "PCVR · Windows",
+      "short": "Six articulated wings with living movement, poses, colour control and watchful eyes for your PCVR avatar.",
+      "long": "Seraph Wings gives your avatar six enormous articulated wings with textured feathers, silver framing, gold accents and six watchful eyes. The wings move on their own — idle motion with occasional casual gestures, directional banking, jumping and airborne transitions, plus takeoff, hovering and landing responses for avatars running GoGoLoco. Staged Reveal and Dismiss sequences open and close them. Pose them yourself with Compact, Resting, Fully Spread, Sleep and Protective Wrap presets, left and right display poses, and manual fold/spread, lift/lower and forward/back controls for each pair; the upper, middle and lower pairs can be shown or hidden individually. Colours are fully adjustable: separate RGB and hue for feathers, frame, trim and irises, brightness and iris glow, Angelic, Fallen, Lunar and Solar presets, and adjustable rainbow modes for wings, eyes or both. The eyes gaze and blink automatically, and a focus joystick aims all of them together — shared-direction aiming, not tracking of people or world targets. Reset Pose and Reset Colors return everything to the default white, silver and gold. Includes a configured Unity prefab, rigged meshes, materials, textures, animations, organized expression menus with 54 custom icons, an editor setup and fitting tool, and both a quickstart and a detailed offline installation guide. Avatar, body, clothing and Blender source file are not included. This is a substantial accessory: expect a Very Poor performance rank, and check your avatar's upload headroom before buying — the wings added roughly 166.78 MiB of uncompressed build data in our measured test, which is separate from the ~27.8 MiB compressed download.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Wings",
+          "Six articulated wings in three pairs, each pair separately hideable"
+        ],
+        [
+          "Poses",
+          "Compact, Resting, Fully Spread, Sleep, Protective Wrap, display poses and manual controls"
+        ],
+        [
+          "Colours",
+          "RGB and hue for feathers, frame, trim and irises · 4 presets · rainbow modes"
+        ],
+        [
+          "Eyes",
+          "Automatic gaze and blinking, focus joystick, straight-ahead and synchronized blink"
+        ],
+        [
+          "Stats",
+          "210,086 triangles · 55 skinned renderers · Very Poor performance rank"
+        ],
+        [
+          "Build size",
+          "~166.78 MiB uncompressed avatar build data in our test · ~27.8 MiB download"
+        ],
+        [
+          "Requires",
+          "VRChat Avatars SDK, VRCFury, Poiyomi Toon 9.3 and a humanoid avatar with a Chest bone"
+        ],
+        [
+          "Tested with",
+          "Unity 2022.3.22f1 · SDK 3.10.4 · VRCFury 1.1418.0 · Poiyomi Toon 9.3.64"
+        ],
+        [
+          "License",
+          "Personal avatar use; modification allowed; no redistribution or resale"
+        ]
+      ],
+      "img": "/assets/img/seraph-wings-poster.jpg",
+      "video": "/assets/video/seraph-wings-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/seraph-wings",
+      "buy2": null
     }
   ]
 }
