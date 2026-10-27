@@ -16,6 +16,9 @@ export { DnlRoom } from './dnl/do.mjs';
 // Accounts (login, saves, reports, admin) and their nightly cleanup: see site/accounts/README.md
 import accounts from './accounts/accounts.js';
 
+// Roblox game bug reports (game-server submit endpoint + owner dashboard API): see site/reports/README.md
+import reports from './reports/reports.js';
+
 const CACHE_TTL_SECONDS = 600; // 10 min: feels live, doesn't hammer Gumroad's API
 
 export default {
@@ -26,6 +29,9 @@ export default {
       const res = await handleDnl(request, env);
       if (res) return res;
     }
+
+    const rep = await reports.handle(request, env);
+    if (rep) return rep;
 
     const acc = await accounts.handleAccounts(request, env);
     if (acc) return acc;
@@ -40,6 +46,7 @@ export default {
   // Runs on the cron trigger in wrangler.jsonc (nightly): removes expired rows and deletes long-unused accounts.
   async scheduled(event, env, ctx) {
     ctx.waitUntil(accounts.runCleanup(env));
+    ctx.waitUntil(reports.runCleanup(env));
   },
 };
 

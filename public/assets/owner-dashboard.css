@@ -1,0 +1,98 @@
+/* Kuro Labs owner dashboard (/admin/ "Roblox Games" tab). Loaded only on /admin/.
+   Uses the site's variables (--red is the violet accent in purple.css) and works from 320px wide up. Selectors start with #kl-techno so they win over the legal-page rules. */
+
+#kl-techno .kl-admin-wide{max-width:1180px}
+#kl-techno .kl-admin-wide .kl-card{max-width:none}
+
+/* tabs */
+#kl-techno .kl-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line,#2a1f38);margin:0 0 26px}
+#kl-techno .kl-tab{border:0;border-bottom:2px solid transparent;background:none;color:#a8a7b1;font:500 14px 'Space Grotesk',system-ui,sans-serif;padding:12px 16px;min-height:44px;cursor:pointer}
+#kl-techno .kl-tab:hover{color:#fff}
+#kl-techno .kl-tab.kl-on{color:#fff;border-bottom-color:var(--red,#8b5cf6)}
+#kl-techno .kl-tab:focus-visible,#kl-techno .od button:focus-visible,#kl-techno .od input:focus-visible,#kl-techno .od select:focus-visible,#kl-techno .od textarea:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* shared */
+#kl-techno .od{display:grid;gap:18px;min-width:0}
+#kl-techno .od *{min-width:0}
+#kl-techno .od h2.od-h{font-size:clamp(24px,4vw,32px);letter-spacing:-.5px;margin:0}
+#kl-techno .od h3{font-size:15px;letter-spacing:0;margin:0 0 8px;color:#fff}
+#kl-techno .od p{max-width:none;margin:0}
+#kl-techno .od-muted{color:var(--muted,#9f95ab);font-size:13px}
+#kl-techno .od-mono{font:12px 'IBM Plex Mono',monospace;color:var(--lilac,#c4a7ff)}
+#kl-techno .od-box{display:grid;gap:12px}
+#kl-techno .od-notice{padding:16px 18px;border:1px solid #38343d;background:#101115;border-radius:8px;color:#d9d6e0;font-size:14px}
+#kl-techno .od-notice.od-bad{border-color:#7a2130;color:#ff9aa8}
+#kl-techno .od-err{color:#ff9aa8;font-size:13px;min-height:1.2em;overflow-wrap:anywhere}
+#kl-techno .od-link{border:0;background:none;padding:0;color:var(--lilac,#c4a7ff);text-decoration:underline;font:inherit;cursor:pointer}
+#kl-techno .od-crumbs{font-size:13px;color:var(--muted,#9f95ab);display:flex;flex-wrap:wrap;gap:2px}
+#kl-techno .od-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#kl-techno .od-head,#kl-techno .od-report-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#kl-techno .od .kl-action{min-height:44px}
+
+/* status badges and chips */
+#kl-techno .od-badge,#kl-techno .od-chip{display:inline-block;padding:3px 9px;border:1px solid #4a3a66;border-radius:3px;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.8px;text-transform:uppercase;color:#d9ccf5;background:#1a1226;white-space:nowrap}
+#kl-techno .od-st-new{color:#ffd9a0;border-color:#6b4a1f;background:#2a1d0c}
+#kl-techno .od-st-investigating{color:#a8d4ff;border-color:#264f7a;background:#0e1d2e}
+#kl-techno .od-st-fixed{color:#9fe6b8;border-color:#245c3a;background:#0d2216}
+#kl-techno .od-st-closed{color:#b9b7c2;border-color:#3d3b46;background:#17161b}
+#kl-techno .od-chips{display:flex;flex-wrap:wrap;gap:6px}
+
+/* games */
+#kl-techno .od-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+#kl-techno .od-card{background:#101115;border:1px solid #28272f;border-radius:8px;padding:20px;display:grid;gap:12px;align-content:start}
+#kl-techno .od-card-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+#kl-techno .od-card h3{font-size:22px;margin:0}
+#kl-techno .od-big{font-size:28px;font-weight:600}
+
+/* inbox */
+#kl-techno .od-bar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+#kl-techno .od-filters{display:flex;gap:6px;flex-wrap:wrap}
+#kl-techno .od-filter{border:1px solid #38343d;background:#121216;color:#e6e4ea;border-radius:999px;padding:8px 14px;min-height:40px;font-size:13px;cursor:pointer}
+#kl-techno .od-filter:hover{border-color:var(--red,#8b5cf6)}
+#kl-techno .od-filter.od-on{background:var(--red,#8b5cf6);border-color:var(--red,#8b5cf6);color:#fff}
+#kl-techno .od-count{opacity:.8;font-family:'IBM Plex Mono',monospace;font-size:12px}
+#kl-techno .od-searchform{display:flex;gap:8px;flex-wrap:wrap;flex:1 1 280px;max-width:520px}
+#kl-techno .od-search,#kl-techno .od-input{width:100%;background:#0b0c0f;color:#f4f2f3;border:1px solid #38343d;border-radius:6px;padding:11px 12px;font:inherit;min-height:44px}
+#kl-techno .od-searchform .od-search,#kl-techno .od-searchform .od-input{flex:1 1 180px;width:auto}
+#kl-techno .od ul.od-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+#kl-techno .od ul.od-list>li{margin:0;padding:0}
+#kl-techno .od-row{display:grid;gap:8px;width:100%;text-align:left;background:#101115;border:1px solid #28272f;border-radius:8px;padding:14px 16px;color:inherit;font:inherit;cursor:pointer}
+#kl-techno .od-row:hover{border-color:var(--red,#8b5cf6);background:#14111d}
+#kl-techno .od-row-top{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center}
+#kl-techno .od-row-text{font-size:14px;line-height:1.5;color:#e6e4ea;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#kl-techno .od-pager{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+
+/* report */
+#kl-techno .od-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+#kl-techno .od-main,#kl-techno .od-side{display:grid;gap:14px}
+#kl-techno .od-block,#kl-techno .od-form{background:#101115;border:1px solid #28272f;border-radius:8px;padding:18px;display:grid;gap:8px;align-content:start}
+#kl-techno .od-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:14px;color:#ece9f1}
+#kl-techno .od-dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 16px;margin:0;font-size:13px}
+#kl-techno .od-dl dt{color:var(--muted,#9f95ab)}
+#kl-techno .od-dl dd{margin:0;overflow-wrap:anywhere;font-family:'IBM Plex Mono',monospace}
+#kl-techno .od-field{display:grid;gap:6px}
+#kl-techno .od-field label{font-size:13px;color:#c9c7d0;margin:0}
+#kl-techno .od textarea.od-input{resize:vertical;min-height:120px;line-height:1.5}
+#kl-techno .od-history{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:13px}
+#kl-techno .od-history li{display:grid;gap:2px;padding-left:12px;border-left:2px solid #38343d;overflow-wrap:anywhere}
+
+/* keys */
+#kl-techno .od-keyrow{display:grid;gap:8px;background:#101115;border:1px solid #28272f;border-radius:8px;padding:14px 16px;justify-items:start}
+#kl-techno .od-secretbox{display:grid;gap:10px;justify-items:start}
+#kl-techno .od-secretbox:empty{display:none}
+#kl-techno .od-secret{display:block;max-width:100%;overflow-wrap:anywhere;background:#0b0c0f;border:1px solid var(--red,#8b5cf6);border-radius:6px;padding:12px 14px;font:13px/1.5 'IBM Plex Mono',monospace;color:#fff;user-select:all}
+
+@media (max-width:860px){
+  #kl-techno .od-cols{grid-template-columns:minmax(0,1fr)}
+  #kl-techno .od-side{order:-1}
+}
+@media (max-width:520px){
+  #kl-techno .kl-tab{flex:1 1 auto;text-align:center}
+  #kl-techno .od-bar,#kl-techno .od-searchform{flex-direction:column;align-items:stretch;max-width:none}
+  #kl-techno .od-searchform .od-search,#kl-techno .od-searchform .od-input{flex:none;width:100%}
+  #kl-techno .od-pager{justify-content:center}
+  #kl-techno .od-dl{grid-template-columns:minmax(0,1fr);gap:0}
+  #kl-techno .od-dl dd{margin-bottom:8px}
+  #kl-techno .od-block,#kl-techno .od-form{padding:14px}
+}
+@media (prefers-reduced-motion:reduce){#kl-techno .od *{transition:none!important}}

@@ -26,6 +26,17 @@ const MIGRATIONS = [
   { n: 2, sql: [
     `ALTER TABLE users ADD COLUMN pw_hash TEXT`,
     `ALTER TABLE users ADD COLUMN pw_changed_at INTEGER`
+  ] },
+  // Roblox game bug reports (site/reports/reports.js). Games are registered rows; each game has its own submission keys (stored only as hashes).
+  { n: 3, sql: [
+    `CREATE TABLE IF NOT EXISTS roblox_games (game_key TEXT PRIMARY KEY, name TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+    `INSERT OR IGNORE INTO roblox_games (game_key, name, created_at) VALUES ('jetbreak', 'JetBreak', CAST(strftime('%s','now') AS INTEGER) * 1000)`,
+    `CREATE TABLE IF NOT EXISTS roblox_game_keys (id INTEGER PRIMARY KEY AUTOINCREMENT, game_key TEXT NOT NULL REFERENCES roblox_games(game_key) ON DELETE CASCADE, key_hash TEXT NOT NULL UNIQUE, label TEXT, created_at INTEGER NOT NULL, created_by INTEGER REFERENCES users(id) ON DELETE SET NULL, revoked_at INTEGER, last_used_at INTEGER)`,
+    `CREATE INDEX IF NOT EXISTS roblox_game_keys_game ON roblox_game_keys(game_key)`,
+    `CREATE TABLE IF NOT EXISTS roblox_reports (id TEXT PRIMARY KEY, game_key TEXT NOT NULL REFERENCES roblox_games(game_key) ON DELETE CASCADE, submission_id TEXT NOT NULL, payload_hash TEXT NOT NULL, build_version TEXT NOT NULL, description TEXT NOT NULL, steps TEXT, expected TEXT, actual TEXT, context TEXT, status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','investigating','fixed','closed')), owner_notes TEXT NOT NULL DEFAULT '', fixed_in_version TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL, updated_by_name TEXT, UNIQUE (game_key, submission_id))`,
+    `CREATE INDEX IF NOT EXISTS roblox_reports_inbox ON roblox_reports(game_key, status, created_at DESC)`,
+    `CREATE TABLE IF NOT EXISTS roblox_report_events (id INTEGER PRIMARY KEY AUTOINCREMENT, report_id TEXT NOT NULL REFERENCES roblox_reports(id) ON DELETE CASCADE, actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL, actor_name TEXT, detail TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS roblox_report_events_report ON roblox_report_events(report_id, id)`
   ] }
 ];
 

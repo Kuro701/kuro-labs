@@ -156,9 +156,16 @@ async function requireAdmin(ctx) {
   return s;
 }
 
+// The site owner: the one account whose *Discord user id* equals the OWNER_DISCORD_ID Worker variable. Fails closed when it is not set.
+// The id on a user row only ever comes from a completed Discord OAuth login or link, never from anything the user typed.
+function isOwnerUser(env, u) {
+  const want = env && env.OWNER_DISCORD_ID != null ? String(env.OWNER_DISCORD_ID).trim() : '';
+  return !!(want && /^\d{5,25}$/.test(want) && u && u.discord_id && u.status === 'active' && C.safeEqual(String(u.discord_id), want));
+}
+
 function publicUser(ctx, s) {
   const u = s.user;
-  return { username: u.username, hasPassword: !!u.pw_hash, discord: !!u.discord_id, email: u.email ? maskEmail(u.email) : null, isAdmin: !!u.is_admin, hideLeaderboards: !!u.hide_lb,
+  return { username: u.username, hasPassword: !!u.pw_hash, discord: !!u.discord_id, email: u.email ? maskEmail(u.email) : null, isAdmin: !!u.is_admin, isOwner: isOwnerUser(ctx.env, u), hideLeaderboards: !!u.hide_lb,
     status: u.status, rulesOk: u.rules_version === cfg.RULES_VERSION, createdAt: u.created_at,
     renameAt: u.username_changed_at + cfg.USERNAME_RENAME_DAYS * MS.DAY, fresh: ctx.now - s.lastAuthAt < cfg.FRESH_LOGIN_MINUTES * MS.MINUTE };
 }
@@ -673,4 +680,7 @@ async function runCleanup(env, now) {
   return out;
 }
 
-module.exports = { handleAccounts, runCleanup, recordGameResult, sessionUser, limitByIp, accountsConfig, normalizeEmail, isDisposable, HttpError };
+// For sibling modules in the same Worker (site/reports/reports.js). Not an API for browsers.
+const internals = { makeCtx, getSession, requireUser, requireSameOrigin, rateHit, fail, reply, makeResponse, isOwnerUser };
+
+module.exports = { handleAccounts, runCleanup, recordGameResult, sessionUser, limitByIp, accountsConfig, normalizeEmail, isDisposable, HttpError, internals };

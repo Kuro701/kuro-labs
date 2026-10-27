@@ -22,7 +22,7 @@ function el(tag, attrs, ...kids) {
 async function api(path, opt) {
   opt = opt || {};
   let r, j = null;
-  try { r = await fetch(path, { method: opt.method || 'GET', credentials: 'same-origin', headers: opt.body ? { 'content-type': 'application/json' } : undefined, body: opt.body ? JSON.stringify(opt.body) : undefined }); }
+  try { r = await fetch(path, { method: opt.method || 'GET', credentials: 'same-origin', headers: Object.assign({}, opt.body ? { 'content-type': 'application/json' } : {}, opt.headers || {}), body: opt.body ? JSON.stringify(opt.body) : undefined }); }
   catch (e) { const err = new Error('Could not reach the server. Check your connection and try again.'); err.code = 'network'; throw err; }
   try { j = await r.json(); } catch (e) { /* not JSON */ }
   if (!r.ok || !j || j.ok === false) { const err = new Error((j && j.message) || 'Something went wrong. Please try again.'); err.code = j && j.error; err.data = j; err.status = r.status; throw err; }
@@ -190,7 +190,7 @@ function renderHeader() {
   if (!me) { slot.append(el('button', { type: 'button', class: 'kl-acct-btn', onclick: openLogin }, 'Log in')); return; }
   const btn = el('button', { type: 'button', class: 'kl-acct-btn kl-signed-in', 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': 'kl-acct-menu' }, me.username, el('span', { 'aria-hidden': 'true' }, ' ▾'));
   const menu = el('div', { id: 'kl-acct-menu', class: 'kl-acct-menu', hidden: true },
-    el('a', { href: '/account/' }, 'Account'), me.isAdmin ? el('a', { href: '/admin/' }, 'Admin') : null, el('button', { type: 'button', onclick: () => logout(false) }, 'Log out'));
+    el('a', { href: '/account/' }, 'Account'), (me.isAdmin || me.isOwner) ? el('a', { href: '/admin/' }, 'Admin') : null, el('button', { type: 'button', onclick: () => logout(false) }, 'Log out'));
   const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
   btn.addEventListener('click', e => { e.stopPropagation(); const open = menu.hidden; menu.hidden = !open; btn.setAttribute('aria-expanded', String(open)); });
   document.addEventListener('click', e => { if (!slot.contains(e.target)) close(); });
@@ -200,6 +200,8 @@ function renderHeader() {
 
 /* ---------- /account/ ---------- */
 const card = (title, ...kids) => el('section', { class: 'kl-card' }, el('h2', {}, title), ...kids);
+// Shared with the owner dashboard (owner-dashboard.js, loaded only on /admin/).
+window.KLAccountKit = { el, api, toast, card };
 function renderAccountPage() {
   const page = document.getElementById('kl-account-page'); page.textContent = '';
   const me = S.me.user;
@@ -310,6 +312,24 @@ async function renderLeaderboard() {
 /* ---------- /admin/ ---------- */
 function renderAdminPage() {
   const page = document.getElementById('kl-admin-page'); page.textContent = '';
+  const me = S.me.user, isOwner = !!(me && me.isOwner), isAdmin = !!(me && me.isAdmin);
+  if (!me || !(isOwner || isAdmin)) { page.append(el('p', {}, me ? 'This page is for administrators.' : 'Please log in.')); if (!me) page.append(el('button', { type: 'button', class: 'kl-action kl-primary', onclick: openLogin }, 'Log in')); return; }
+  // Tabs: the Roblox dashboard is for the owner's Discord account only (the server checks that on every request); Moderation is for administrators.
+  const tabs = [];
+  if (isOwner && window.KLOwner) tabs.push({ id: 'roblox', label: 'Roblox Games', mount: host => window.KLOwner.mount(host, window.KLAccountKit) });
+  if (isAdmin) tabs.push({ id: 'moderation', label: 'Moderation', mount: renderModeration });
+  if (!tabs.length) { page.append(el('p', {}, 'The dashboard could not be loaded. Please reload the page.')); return; }
+  const bar = el('div', { class: 'kl-tabs', role: 'tablist', 'aria-label': 'Admin sections' }), panel = el('div', { class: 'kl-tabpanel', role: 'tabpanel' });
+  const fromHash = () => { const id = location.hash.replace(/^#/, '').split('/')[0]; return tabs.find(t => t.id === id) || tabs[0]; };
+  const show = t => { for (const b of bar.children) { const on = b.dataset.tab === t.id; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; b.classList.toggle('kl-on', on); } panel.textContent = ''; t.mount(panel); };
+  for (const t of tabs) bar.append(el('button', { type: 'button', role: 'tab', class: 'kl-tab', 'data-tab': t.id, onclick: () => { history.pushState(null, '', '#' + t.id); show(t); } }, t.label));
+  bar.addEventListener('keydown', e => { if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return; const all = [...bar.children], i = all.indexOf(document.activeElement); if (i < 0) return; const n = all[(i + (e.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length]; n.focus(); n.click(); });
+  if (!window.__klAdminPop) { window.__klAdminPop = true; window.addEventListener('popstate', () => { const p = document.getElementById('kl-admin-page'); if (p && p.__show) p.__show(); }); }
+  page.__show = () => show(fromHash());
+  page.append(bar, panel); show(fromHash());
+}
+
+function renderModeration(page) {
   const me = S.me.user;
   if (!me || !me.isAdmin) { page.append(el('p', {}, me ? 'This page is for administrators.' : 'Please log in.')); if (!me) page.append(el('button', { type: 'button', class: 'kl-action kl-primary', onclick: openLogin }, 'Log in')); return; }
   const err = errBox(), reports = el('div', {}), users = el('div', {});

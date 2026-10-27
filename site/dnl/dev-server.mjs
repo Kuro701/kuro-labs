@@ -85,6 +85,7 @@ if (FAST) {
 const { DnlRoom } = await import(pathToFileURL(path.join(here, 'do.mjs')).href);
 const { handleDnl } = await import(pathToFileURL(path.join(here, 'routes.mjs')).href);
 const accounts = require('../accounts/accounts.js');
+const reports = require('../reports/reports.js');
 const { D1Shim } = require('../accounts/tests/d1-shim.js');
 const mailbox = [];
 const accountsEnv = ACCOUNTS_ON ? {
@@ -236,6 +237,11 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/__dev/mailbox') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(mailbox)); return; }
     if (url.pathname === '/__dev/discord-authorize') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(DISCORD_PAGE(Object.fromEntries(url.searchParams))); return; }
     if (accountsEnv.DB && url.pathname === '/__dev/make-admin') { await accountsEnv.DB.prepare('UPDATE users SET is_admin = 1 WHERE username_lower = ?').bind(String(url.searchParams.get('u') || '').toLowerCase()).run(); res.writeHead(200); res.end('ok'); return; }
+    if (accountsEnv.DB && url.pathname === '/__dev/make-owner') {                       // ?u=NAME makes that user (who must have logged in with Discord) the dashboard owner
+      const u = await accountsEnv.DB.prepare('SELECT discord_id FROM users WHERE username_lower = ?').bind(String(url.searchParams.get('u') || '').toLowerCase()).first();
+      if (!u || !u.discord_id) { res.writeHead(404); res.end('no such user with Discord'); return; }
+      accountsEnv.OWNER_DISCORD_ID = u.discord_id; res.writeHead(200); res.end('ok'); return;
+    }
     if (accountsEnv.DB && url.pathname === '/__dev/bump-rules') { const u = url.searchParams.get('u'); await (u ? accountsEnv.DB.prepare('UPDATE users SET rules_version = 0 WHERE username_lower = ?').bind(u.toLowerCase()) : accountsEnv.DB.prepare('UPDATE users SET rules_version = 0')).run(); res.writeHead(200); res.end('ok'); return; }
     if (accountsEnv.DB && url.pathname === '/__dev/record') {                          // pretend the game server saved a result: ?u=NAME&won=1&turns=30
       const u = await accountsEnv.DB.prepare('SELECT id FROM users WHERE username_lower = ?').bind(String(url.searchParams.get('u') || '').toLowerCase()).first();
@@ -247,7 +253,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/dnl/')) {
       const chunks = []; for await (const c of req) chunks.push(c);
       const request = toRequest(req, Buffer.concat(chunks)); request.headers.set('cf-connecting-ip', req.socket.remoteAddress || '');
-      const r = await accounts.handleAccounts(request, accountsEnv);
+      const r = (await reports.handle(request, accountsEnv)) || await accounts.handleAccounts(request, accountsEnv);
       if (r && r.status === 302 && String(r.headers.get('location')).startsWith('https://discord.com/oauth2/authorize?')) {   // send "Continue with Discord" to the pretend page
         const q = String(r.headers.get('location')).split('?')[1]; const h = new Headers(r.headers); h.set('location', '/__dev/discord-authorize?' + q);
         return sendResponse(res, new NativeResponse(null, { status: 302, headers: h }));

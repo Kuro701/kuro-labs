@@ -37,6 +37,21 @@ module.exports = {
   USERNAME_RENAME_DAYS: 30,
   REPORTS_PER_DAY: 5,
 
+  // Roblox game bug reports (site/reports/). Retention can be overridden with the Worker variables REPORT_RETENTION_DAYS (fixed/closed reports,
+  // counted from the last change) and REPORT_RETENTION_OPEN_DAYS (new/investigating reports, counted from submission).
+  ROBLOX_REPORTS: {
+    MAX_BODY_BYTES: 40 * 1024,     // 6000 characters of text at 4 bytes each is 24 KB; the rest is JSON overhead
+    BODY_TIMEOUT_MS: 5000,         // a client must deliver the whole body within this time
+    KEY_PER_MINUTE: 60,            // submissions per game key (a safety net behind the per-player cooldown in the game)
+    KEY_PER_HOUR: 600,
+    BAD_KEY_PER_15MIN: 20,         // wrong-key attempts per connection, then 429
+    OWNER_PER_MINUTE: 300,
+    KEYS_CREATED_PER_HOUR: 10,
+    PAGE_SIZE: 25, MAX_PAGE_SIZE: 100,
+    RETENTION_DAYS: 180,
+    RETENTION_OPEN_DAYS: 365
+  },
+
   RETENTION: {                   // must match the privacy page
     INACTIVE_ACCOUNT_MONTHS: 24,
     INACTIVE_WARNING_DAYS: 30,

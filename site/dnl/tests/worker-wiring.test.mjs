@@ -19,7 +19,7 @@ globalThis.WebSocketRequestResponsePair = class {};
 
 // import a temporary copy of worker.js (same code, but as .mjs and with absolute import paths)
 let src = fs.readFileSync(path.join(siteDir, 'worker.js'), 'utf8');
-src = src.replace(/from '\.\/(dnl|accounts)\/([^']+)'/g, (m, d, f) => `from '${pathToFileURL(path.join(siteDir, d, f)).href}'`);
+src = src.replace(/from '\.\/(dnl|accounts|reports)\/([^']+)'/g, (m, d, f) => `from '${pathToFileURL(path.join(siteDir, d, f)).href}'`);
 const tmp = path.join(os.tmpdir(), 'kl-worker-under-test-' + process.pid + '.mjs');
 fs.writeFileSync(tmp, src);
 const mod = await import(pathToFileURL(tmp).href);
@@ -57,5 +57,13 @@ await test('accounts routes are wired: config answers "closed" without a databas
   const me = await mod.default.fetch(new Request('https://kurolabs.net/api/me'), { ASSETS: assets }, ctx); assert.equal(me.status, 503);
   const other = await mod.default.fetch(new Request('https://kurolabs.net/api/mentions'), { ASSETS: assets }, ctx); assert.equal(await other.text(), 'ASSET /api/mentions');
   let waited; await mod.default.scheduled({}, { ASSETS: assets }, { waitUntil: p => { waited = p; } }); assert.deepEqual(await waited, { skipped: 'no database yet' });
+});
+await test('Roblox report routes are wired: closed without a database, and with one the game door wants a key and the owner door wants a login', async () => {
+  const none = await mod.default.fetch(new Request('https://kurolabs.net/api/roblox-reports', { method: 'POST' }), { ASSETS: assets }, ctx); assert.equal(none.status, 503); assert.equal((await none.json()).error, 'unavailable');
+  const own = await mod.default.fetch(new Request('https://kurolabs.net/api/owner/session'), { ASSETS: assets }, ctx); assert.equal(own.status, 503);
+  const { D1Shim } = (await import('node:module')).createRequire(import.meta.url)('../../accounts/tests/d1-shim.js'); const env = { ASSETS: assets, DB: new D1Shim(), OWNER_DISCORD_ID: '123456789012345678' };
+  const noKey = await mod.default.fetch(new Request('https://kurolabs.net/api/roblox-reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }), env, ctx); assert.equal(noKey.status, 401); assert.equal((await noKey.json()).error, 'missing_key');
+  const anon = await mod.default.fetch(new Request('https://kurolabs.net/api/owner/roblox/games'), env, ctx); assert.equal(anon.status, 401);
+  const waits = []; await mod.default.scheduled({}, env, { waitUntil: p => waits.push(p) }); assert.equal(waits.length, 2); const [, rep] = await Promise.all(waits); assert.deepEqual(rep, { closedReports: 0, openReports: 0, keys: 0 });
 });
 console.log(`\n${n} wiring tests passed`);
