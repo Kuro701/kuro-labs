@@ -122,3 +122,5 @@
 @media(max-width:600px){#kl-techno .kl-game-library,#kl-techno .kl-shop-page>.kl-grid{grid-template-columns:1fr}}
 
 .kl-console-mail{margin:26px 0 22px;display:flex;flex-direction:column;gap:6px}.kl-console-mail span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.15em;color:#a397af}.kl-console-mail a{font-size:clamp(18px,2vw,24px);letter-spacing:-.02em;word-break:break-all}
+
+.kl-team-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}.kl-person{display:flex;flex-direction:column;gap:10px}.kl-avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid #684692;margin-bottom:8px}.kl-monogram{display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:600;background:linear-gradient(155deg,#2c1745,#0a0610);color:#fff}.kl-team-actions{margin:40px 0 70px}
