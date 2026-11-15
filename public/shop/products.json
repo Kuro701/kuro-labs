@@ -223,6 +223,116 @@
       "video": "/assets/video/seraph-wings-showcase.mp4",
       "buy": "https://rajcu.gumroad.com/l/seraph-wings",
       "buy2": null
+    },
+    {
+      "slug": "bottle-of-light",
+      "name": "Bottle of Light",
+      "price": "$10",
+      "tag": "PCVR · Windows",
+      "short": "A wearable bottle of light. Sweep the colour from white through yellow to red from your avatar menu.",
+      "long": "Bottle of Light v1.14 by Galvandus. Carry a little light with you in PC VRChat. Adjust light intensity and sweep the colour from white through yellow to red from your avatar menu. The light works with the stopper open or closed. Choose from four configurable attachment positions with independent sizing, and customize the cork, metal, glass and effects tints in Unity. Includes the Unity package, an installation guide and technical stats. Requires VRChat SDK Avatars, VRCFury and Poiyomi Toon (not included). Final VRChat performance rank depends on your complete avatar, so budget using the higher figures listed. Use on your own private and public VRChat avatars is allowed; resale of the asset or its parts is prohibited.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Controls",
+          "Light intensity and colour (white to yellow to red), four attachment positions with independent sizing, adjustable tints"
+        ],
+        [
+          "Stats",
+          "13,986 triangles (Full FX, creator-reported) · 43 synced parameter bits · 4 PhysBones · 1 light. Our test counted 17,442 triangles and 55 bits, so budget with the higher figures"
+        ],
+        [
+          "Requires",
+          "VRChat SDK Avatars, VRCFury and Poiyomi Toon"
+        ],
+        [
+          "Version",
+          "v1.14 by Galvandus"
+        ],
+        [
+          "License",
+          "Use on your own private and public VRChat avatars; no resale of the asset or its parts"
+        ]
+      ],
+      "img": "/assets/img/linx-bottle-of-light-poster.jpg",
+      "video": "/assets/video/linx-bottle-of-light-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/linx-bottle-of-light",
+      "buy2": null
+    },
+    {
+      "slug": "bottle-of-party-essence",
+      "name": "Bottle of Party Essence",
+      "price": "$10",
+      "tag": "PCVR · Windows",
+      "short": "A wearable bottle with a glowing helix that reacts to music in AudioLink worlds.",
+      "long": "Bottle of Party Essence v1.13 by Galvandus. A wearable bottle with a glowing helix and adjustable hues. The effects respond to music in AudioLink-enabled worlds, and basic setup works without installing the full AudioLink package. Set up four attachment positions and customize the cork, metal, glass and effects tints in Unity. Includes the Unity package, an installation guide and technical stats. Requires VRChat SDK Avatars, VRCFury and Poiyomi Toon (not included). Final VRChat performance rank depends on your complete avatar, so budget using the higher figures listed. Use on your own private and public VRChat avatars is allowed; resale of the asset or its parts is prohibited.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Controls",
+          "AudioLink-reactive helix, adjustable hues, four attachment positions, adjustable tints"
+        ],
+        [
+          "Stats",
+          "17,080 triangles (Full FX, creator-reported) · 39 synced parameter bits · 4 PhysBones. Our test counted 20,536 triangles, so budget with the higher figure"
+        ],
+        [
+          "Requires",
+          "VRChat SDK Avatars, VRCFury and Poiyomi Toon"
+        ],
+        [
+          "Version",
+          "v1.13 by Galvandus"
+        ],
+        [
+          "License",
+          "Use on your own private and public VRChat avatars; no resale of the asset or its parts"
+        ]
+      ],
+      "img": "/assets/img/linx-bottle-of-party-essence-poster.jpg",
+      "video": "/assets/video/linx-bottle-of-party-essence-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/linx-bottle-of-party-essence",
+      "buy2": null
+    },
+    {
+      "slug": "moonbound-moth-lantern",
+      "name": "Moonbound Moth Lantern",
+      "price": "$10",
+      "tag": "PCVR · Windows",
+      "short": "Release a moth, let it perch on your finger, or send it home to the lantern.",
+      "long": "Moonbound Moth Lantern v1.4 by Galvandus. Release a moth, let it perch on your finger, or send it home to the lantern. The lantern can also cast real-time light with adjustable strength and range; enabling shadows adds rendering cost. Includes the Unity package, an installation guide, technical stats, images and a showcase video. Requires VRChat SDK Avatars, VRCFury and Poiyomi Toon 10 (not included). Final VRChat performance rank depends on your complete avatar.",
+      "specs": [
+        [
+          "Platforms",
+          "PCVR / Windows only — no standalone Quest or Android"
+        ],
+        [
+          "Controls",
+          "Release the moth, perch it on your finger or recall it to the lantern; real-time light with adjustable strength and range"
+        ],
+        [
+          "Stats",
+          "30,953 triangles (Full FX, creator-reported) · 28 synced parameter bits · 2 PhysBones · 1 light"
+        ],
+        [
+          "Requires",
+          "VRChat SDK Avatars, VRCFury and Poiyomi Toon 10"
+        ],
+        [
+          "Version",
+          "v1.4 by Galvandus"
+        ]
+      ],
+      "img": "/assets/img/linx-moonbound-moth-lantern-poster.jpg",
+      "video": "/assets/video/linx-moonbound-moth-lantern-showcase.mp4",
+      "buy": "https://rajcu.gumroad.com/l/linx-moonbound-moth-lantern",
+      "buy2": null
     }
   ]
 }
