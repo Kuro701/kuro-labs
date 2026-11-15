@@ -1,13 +1,22 @@
 {
-  "_comment": "Add a person = one entry. photo: optional path under /assets/img/ (omit for a monogram). links: optional [[label,url],...].",
+  "_comment": "Add a person = one entry. group: 'lab' (runs Kuro Labs) or 'creators'. photo: optional path under /assets/img/ (omit for a monogram). video/links optional.",
   "members": [
+    {
+      "name": "Kuro",
+      "role": "Founder",
+      "bio": "Founded Kuro Labs. Builds the software, games and this site, makes VRChat assets, and handles the listings, storefronts and promotion for the lab and the creators it works with.",
+      "photo": null,
+      "group": "lab",
+      "links": []
+    },
     {
       "name": "Galvandus",
       "role": "VRChat asset creator",
       "bio": "Galvandus makes interactive avatar props for VRChat, from a wearable bottle that casts light to one that reacts to music in AudioLink worlds. His first two releases with Kuro Labs are Bottle of Light and Bottle of Party Essence.",
       "photo": null,
       "video": "/assets/video/galvandus-showcase.mp4",
-      "links": []
+      "links": [],
+      "group": "creators"
     }
   ]
 }
